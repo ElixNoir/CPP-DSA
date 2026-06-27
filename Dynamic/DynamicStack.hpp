@@ -19,7 +19,7 @@ protected:
 
 public:
 
-    DynamicStack(Address initialCapacity): Capacity(initialCapacity) {
+    DynamicStack(Address initialCapacity = 16): Capacity(initialCapacity) {
         Data = new T[initialCapacity];
     }
 
@@ -93,10 +93,6 @@ public:
     }
 
     T& operator[](const Address address) {
-        return Data[address];
-    }
-
-    const T& operator[](const Address address) {
         return Data[address];
     }
 
