@@ -55,40 +55,49 @@ public:
 
     void reserve(size_t newCapacity) {
         if (newCapacity > Capacity) {
-            T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion in-place is available
-            std::memcpy(newData, Data, Capacity * sizeof(T));
-            
-            size_t freeMaskCount = (newCapacity + Bits - 1) >> BitShift;
-            size_t* newFreeMasks = new size_t[freeMaskCount];
-            std::fill_n(newFreeMasks, freeMaskCount, std::numeric_limits<size_t>::max());
-            std::memcpy(newFreeMasks, FreeMasks, ((Capacity + Bits - 1) >> BitShift) * sizeof(size_t));
-            
-            delete[] Data;
-            delete[] FreeMasks;
-            
-            Data = newData;
-            FreeMasks = newFreeMasks;
-            Capacity = newCapacity;
+            unsafe_grow(newCapacity);
         }
     }
 
-    void resize(size_t newSize) {
-        T* newData = new T[newSize]; // May consider a method of reallocation in the future so shrinking in-place is available
-        std::memcpy(newData, Data, newSize * sizeof(T));
+    void shrink_to_fit() {
+        unsafe_shrink(Size);
+        if (Size > newCapacity) Size = newCapacity;
+    }
 
-        size_t freeMaskCount = (newSize + Bits - 1) >> BitShift;
-        size_t* newFreeMasks = new size_t[freeMaskCount];
-        std::memcpy(newFreeMasks, FreeMasks, freeMaskCount * sizeof(size_t));
+    void unsafe_grow(size_t newCapacity) {
+        size_t newFreeMaskCount = (newCapacity + Bits - 1) >> BitShift;
+        
+        T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
+        size_t* newFreeMasks = new size_t[newFreeMaskCount];
+        
+        std::memcpy(newData, Data, Capacity * sizeof(T));
+        std::fill_n(newFreeMasks, freeMaskCount, std::numeric_limits<size_t>::max());
+        std::memcpy(newFreeMasks, FreeMasks, ((Capacity + Bits - 1) >> BitShift) * sizeof(size_t));
         
         delete[] Data;
         delete[] FreeMasks;
       
         Data = newData;
         FreeMasks = newFreeMasks;
+
+        Capacity = newCapacity;
     }
 
-    void shrink_to_fit() {
-        resize(Top);
+    void unsafe_shrink(size_t newCapacity) {
+        size_t newFreeMaskCount = (newCapacity + Bits - 1) >> BitShift;
+        
+        T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
+        size_t* newFreeMasks = new size_t[newFreeMaskCount];
+        std::memcpy(newData, Data, newCapacity * sizeof(T));
+        std::memcpy(newFreeMasks, FreeMasks, ((newCapacity + Bits - 1) >> BitShift) * sizeof(size_t));
+        
+        delete[] Data;
+        delete[] FreeMasks;
+      
+        Data = newData;
+        FreeMasks = newFreeMasks;
+
+        Capacity = newCapacity;
     }
 
     size_t allocate() {
