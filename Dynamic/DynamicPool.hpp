@@ -116,7 +116,11 @@ public:
         FreeMasks[address >> BitShift] ^= (size_t(1) << (address & (Bits - 1)));
     }
 
-    T& operator[](size_t address) {
+    T& operator[](const size_t address) {
+        return Data[address];
+    }
+
+    const T& operator[](const size_t address) {
         return Data[address];
     }
     
