@@ -4,9 +4,9 @@
 
 namespace Math {
 
-    namespace GCD {
+    namespace Numeric {
 
-        size_t binary(size_t a, size_t b) {
+        size_t gcd_binary(size_t a, size_t b) {
             if (a == 0) return b;
             if (b == 0) return a;
         
@@ -30,7 +30,7 @@ namespace Math {
             return a << shift; // Common power of 2 factor restoration
         }
 
-        size_t euclidean(size_t a, size_t b) {
+        size_t gcd_euclidean(size_t a, size_t b) {
             while (b) {
                 size_t t = a;
                 a = b;
