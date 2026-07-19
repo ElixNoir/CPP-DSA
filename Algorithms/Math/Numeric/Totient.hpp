@@ -1,42 +1,17 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
+#include "Algorithms/Math/Numeric/Primes.hpp"
 
 namespace Math {
 
   namespace Numeric {
 
-    std::vector<size_t> Phi = {0, 1};
-    std::vector<bool> Composite;
-    std::vector<size_t> Primes;
-
-    void build_euler_totient(size_t n) {
-      if (n < Phi.size()) return;
-
-      size_t old = Phi.size();
-
-      Phi.resize(n + 1);
-      Composite.resize(n + 1);
-
-      for (size_t i = old; i <= n; i++) {
-        if (!Composite[i]) {
-          Primes.push_back(i);
-          Phi[i] = i - 1;
-        }
-
-        for (size_t prime : Primes) {
-          size_t x = prime * i;
-          if (x > n) break;
-
-          Composite[x] = true;
-
-          if (i % prime == 0) {
-            Phi[x] = Phi[i] * prime;
-            break;
-          }
-          else Phi[x] = Phi[i] * (prime - 1);
-        }
+    template <std::unsigned_integral T, std::unsigned_integral U>
+    void load_euler_totient(T* phi, const U* primes, const uint64_t* sieve, U end, U start = 3) {
+      for (U integer = start | 1; integer <= end; integer += 2)
+        if (!((sieve[integer >> 6] >> (integer & 0x3F)) & 1ULL)) continue;
+        for (U index = integer; index <= end; index += integer << 1) 
+          phi[index] -= phi[index] / integer;
       }
     }
   
