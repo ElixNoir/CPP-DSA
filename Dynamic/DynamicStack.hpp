@@ -20,11 +20,13 @@ protected:
 public:
 
     DynamicStack(Address initialCapacity = 16): Capacity(initialCapacity) {
-        Data = new T[initialCapacity];
+        Data = static_cast<T*>(::operator new[](initialCapacity * sizeof(T)));
     }
 
     ~DynamicStack() {
-        delete[] Data;
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            for (Address i = 0; i < Count; ++i) Data[i].~T();
+        ::operator delete[](Data);
     }
 
     #pragma region Methods
@@ -38,6 +40,8 @@ public:
     bool can_push<T>(const size_t count = 1) const noexcept {
         return Size + count <= Capacity;
     }
+
+    #pragma region Getters
 
     Address capacity() const {
         return Capacity;
@@ -59,19 +63,47 @@ public:
         return Data[Size--];
     }
 
-    void push(T& value) {
+    #pragma endregion
+
+
+    #pragma region Setters
+
+    template <typename... Args>
+    void emplace(Args&&... args) {
+        if (Size == Capacity) unsafe_grow(Capacity * 2);
+        unsafe_emplace(std::forward<Args>(args)...);
+    }
+
+    void push(const T& value) {
         if (Size == Capacity) unsafe_grow(Capacity * 2);
         unsafe_push(value);
     }
 
-    void unsafe_push(T& value) {
+    void push(T&& value) {
+        if (Size == Capacity) unsafe_grow(Capacity * 2);
+        unsafe_push(value);
+    }
+
+    template <typename... Args>
+    void unsafe_emplace(Args&&... args) {
+        Data[Size++] = T(std::forward<Args>(args)...);
+    }
+
+    void unsafe_push(const T& value) {
         Data[Size++] = value;
     }
 
+    void unsafe_push(T&& value) {
+        Data[Size++] = std::move(value);
+    }
+
+    #pragma endregion
+
+
+    #pragma region Memory Management
+
     void reserve(Address newCapacity) {
-        if (newCapacity > Capacity) {
-            unsafe_grow(newCapacity);
-        }
+        if (newCapacity > Capacity) unsafe_grow(newCapacity);
     }
 
     void shrink_to_fit() {
@@ -79,26 +111,41 @@ public:
     }
 
     void unsafe_grow(Address newCapacity) {
-        T* newData = new T[newCapacity];
-        std::memcpy(newData, Data, Capacity * sizeof(T));
+        T* newData = static_cast<T*>(::operator new[](newCapacity * sizeof(T)));
+        if constexpr (std::is_trivially_copyable_v<T>)
+            std::memcpy(newData, Data, Capacity * sizeof(T));
+        else {
+            for (Address index = 0; index < Capacity; index++) {
+                ::new (static_cast<void*>(&newData[index])) T(std::move(Data[index]));
+                Data[index].~T();
+            }
+        }
       
-        delete[] Data;
-      
+        ::operator delete[](Data);
         Data = newData;
       
         Capacity = newCapacity;
     }
 
     void unsafe_shrink(Address newCapacity) {
-        T* newData = new T[newCapacity];
-        std::memcpy(newData, Data, newCapacity * sizeof(T));
+        T* newData = static_cast<T*>(::operator new[](newCapacity * sizeof(T)));
+        if constexpr (std::is_trivially_copyable_v<T>)
+            std::memcpy(newData, Data, newCapacity * sizeof(T));
+        else {
+            for (Address index = 0; index < newCapacity; index++) {
+                ::new (static_cast<void*>(&newData[index])) T(std::move(Data[index]));
+                Data[index].~T();
+            }
+        }
       
-        delete[] Data;
-      
+        ::operator delete[](Data);
         Data = newData;
-      
+
         Capacity = newCapacity;
     }
+
+    #endregion
+
 
     T& operator[](const Address address) {
         return Data[address];
