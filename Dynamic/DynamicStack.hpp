@@ -39,6 +39,14 @@ public:
         return Size + count <= Capacity;
     }
 
+    Address capacity() const {
+        return Capacity;
+    }
+
+    Address size() const {
+        return Size;
+    }
+
     T& unsafe_peek() const {
         return Data[Size - 1];
     }
