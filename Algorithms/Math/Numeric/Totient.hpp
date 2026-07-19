@@ -7,11 +7,11 @@ namespace Math {
 
   namespace Numeric {
 
-    static std::vector<size_t> Phi = {0, 1};
-    static std::vector<bool> Composite;
-    static std::vector<size_t> Primes;
+    std::vector<size_t> Phi = {0, 1};
+    std::vector<bool> Composite;
+    std::vector<size_t> Primes;
 
-    static void build_euler_totient(size_t n) {
+    void build_euler_totient(size_t n) {
       if (n < Phi.size()) return;
 
       size_t old = Phi.size();
