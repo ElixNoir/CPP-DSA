@@ -2,102 +2,154 @@
 
 #pragma region Dependencies
 
-#include <concepts>
+#include "DefaultAllocator.hpp"
+#include "DSAConcepts.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 #pragma endregion
 
-template <std::unsigned_integral Address = size_t>
+template <std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
 class DynamicStackBuffer {
 protected:
 
+    [[no_unique_address]] A Alloc;
     uint8_t* Data;
-    Address Capacity;
-    Address Size = 0;
+    Index Size = 0;
+    Index Capacity;
 
 public:
 
-    DynamicStackBuffer(Address initialCapacity): Capacity(initialCapacity) {
-        Data = new uint8_t[initialCapacity];
+    DynamicStackBuffer(Index initialCapacity) : Capacity(initialCapacity) {
+        Data = static_cast<uint8_t*>(Alloc.allocate(initialCapacity));
     }
 
     ~DynamicStackBuffer() {
-        delete[] Data;
+        Alloc.deallocate(Data);
     }
 
-    #pragma region Methods
+#pragma region Methods
 
     template <typename T>
-    bool can_pop<T>(const size_t count = 1) const noexcept {
-        return Size - count * sizeof(T) >= 0;
+        requires (std::is_trivially_copyable_v<T>)
+    T operator[](Index index) {
+        T value;
+        std::memcpy(&value, Data + index - sizeof(T), sizeof(T));
+        return value;
     }
 
+#pragma region Getters
+
+    [[nodiscard]] constexpr Index capacity() const noexcept {
+        return Capacity;
+    }
+
+    [[nodiscard]] uint8_t* data() const noexcept {
+        return Data;
+    }
+
+    [[nodiscard]] constexpr Index size() const noexcept {
+        return Size;
+    }
+
+#pragma endregion
+
+#pragma region Memory Management
+
+    void double_capacity() {
+        reallocate(2 * Capacity);
+    }
+
+    void reallocate(const size_t newCapacity) {
+        Data = Alloc.reallocate(Data);
+        Capacity = newCapacity;
+    }
+
+    void shrink_to_fit() {
+        reallocate(Size);
+    }
+
+#pragma endregion
+
+#pragma region Discard
+
     template <typename T>
-    bool can_push<T>() const noexcept {
+    [[nodiscard]] constexpr bool can_discard(const size_t count = 1) const noexcept {
+        return Size >= count * sizeof(T);
+    }
+
+    template <typename T = uint8_t>
+    void discard(const Index count) {
+        Size -= count * sizeof(T);
+    }
+
+#pragma endregion
+
+#pragma region Peek
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_peek(const size_t count = 1) const noexcept {
         return Size + sizeof(T) <= Capacity;
     }
 
     template <typename T>
-    T& unsafe_peek<T>() const {
-        return *reinterpret_cast<T*>(Data + Size - sizeof(T));
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] T peek() {
+        T value;
+        std::memcpy(&value, Data + Size - sizeof(T), sizeof(T));
+        return value;
     }
 
     template <typename T>
-    T unsafe_pop<T>() {
+    T& peek_reference() {
+        return *reinterpret_cast<T*>(Data + Size - sizeof(T));;
+    }
+
+#pragma endregion
+
+#pragma region Pop
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_pop(const size_t count = 1) const noexcept {
+        return can_discard<T>(count);
+    }
+
+    template <typename T>
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] T pop() {
         Size -= sizeof(T);
-        return *reinterpret_cast<T*>(Data + Size);
+        T value;
+        std::memcpy(&value, Data + Size, sizeof(T));
+        return value;
     }
 
     template <typename T>
-    T& unsafe_pop_reference<T>() { // dangerous
+    T& pop_reference() {
         Size -= sizeof(T);
-        return *reinterpret_cast<T*>(Data + Size);
+        return *reinterpret_cast<T*>(Data.data() + Size);
+    }
+
+#pragma endregion
+
+#pragma region Push
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_push(const size_t count = 1) const noexcept {
+        return can_peek<T>(count);
     }
 
     template <typename T>
-    void push(T& value) {
-        if (!can_push<T>()) unsafe_grow(Capacity * 2);
-        unsafe_push(value);
-    }
-
-    template <typename T>
-    void unsafe_push(T& value) {
+        requires (std::is_trivially_copyable_v<T>)
+    void push(const T& value) {
         std::memcpy(Data + Size, &value, sizeof(T));
         Size += sizeof(T);
     }
 
-    void reserve(Address newCapacity) {
-        if (newCapacity > Capacity) unsafe_grow(newCapacity);
-    }
+#pragma endregion
 
-    void shrink_to_fit() {
-        unsafe_shrink(Size);
-    }
-
-    void unsafe_grow(const size_t newCapacity) {
-        uint8_t* newData = new uint8_t[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
-        std::memcpy(newData, Data, Capacity * sizeof(T));
-        
-        delete[] Data;
-      
-        Data = newData;
-
-        Capacity = newCapacity;
-    }
-
-    void unsafe_shrink(const size_t newCapacity) {
-        uint8_t* newData = new uint8_t[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
-        std::memcpy(newData, Data, newCapacity * sizeof(T));
-        
-        delete[] Data;
-      
-        Data = newData;
-
-        Capacity = newCapacity;
-    }
-
-    #pragma endregion
+#pragma endregion
 
 };
