@@ -2,68 +2,109 @@
 
 #pragma region Dependencies
 
+#include "TypeTraits.hpp"
+
 #include <array>
 #include <cstddef>
-#include <cstdint>
-#include <type_traits>
 
 #pragma endregion
 
-template <size_t Capacity = 0x100>
+template <size_t Capacity>
 class StaticStackBuffer {
 protected:
 
-    using Address = std::conditional_t<
-        Capacity <= 0x100, uint8_t,
-        std::conditional_t<
-            Capacity <= 0x10000, uint16_t,
-            std::conditional_t<
-                Capacity <= 0x100000000ULL, uint32_t,
-                uint64_t
-            >
-        >
-    >;
+    using Address = smallest_uint_t<Capacity>;
 
-    std::array<uint8_t, Capacity> Data;
     Address Size = 0;
+    std::array<uint8_t, Capacity> Data;
 
 public:
 
-    #pragma region Methods
+#pragma region Methods
 
-    template <typename T>
-    bool can_pop<T>(const size_t count = 1) const noexcept {
-        return Size - count * sizeof(T) >= 0;
+    template <typename T> requires (std::is_trivially_copyable_v<T>)
+    T operator[](Address index) {
+        T value;
+        std::memcpy(&value, Data.data() + index - sizeof(T), sizeof(T));
+        return value;
     }
 
+#pragma region Discard
+
     template <typename T>
-    bool can_push<T>() const noexcept {
+    [[nodiscard]] constexpr bool can_discard(const size_t count = 1) const noexcept {
+        return Size >= count * sizeof(T);
+    }
+
+    template <typename T = uint8_t>
+    void discard(const Address count) {
+        Size -= count * sizeof(T);
+    }
+
+#pragma endregion
+
+#pragma region Peek
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_peek(const size_t count = 1) const noexcept {
         return Size + sizeof(T) <= Capacity;
     }
 
     template <typename T>
-    T& unsafe_peek<T>() const {
-        return *reinterpret_cast<T*>(Data.data() + Size - sizeof(T));
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] T peek() {
+        T value;
+        std::memcpy(&value, Data.data() + Size - sizeof(T), sizeof(T));
+        return value;
     }
 
     template <typename T>
-    T unsafe_pop<T>() {
+    T& peek_reference() {
+        return *reinterpret_cast<T*>(Data.data() + Size - sizeof(T));;
+    }
+
+#pragma endregion
+
+#pragma region Pop
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_pop(const size_t count = 1) const noexcept {
+        return can_discard<T>(count);
+    }
+
+    template <typename T>
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] T pop() {
+        Size -= sizeof(T);
+        T value;
+        std::memcpy(&value, Data.data() + Size, sizeof(T));
+        return value;
+    }
+
+    template <typename T>
+    T& pop_reference() {
         Size -= sizeof(T);
         return *reinterpret_cast<T*>(Data.data() + Size);
     }
 
+#pragma endregion
+
+#pragma region Push
+
     template <typename T>
-    T& unsafe_pop_reference<T>() {
-        Size -= sizeof(T);
-        return *reinterpret_cast<T*>(Data.data() + Size);
+    [[nodiscard]] constexpr bool can_push(const size_t count = 1) const noexcept {
+        return can_peek<T>(count);
     }
 
     template <typename T>
-    void unsafe_push(T& value) {
+        requires (std::is_trivially_copyable_v<T>)
+    void push(const T& value) {
         std::memcpy(Data.data() + Size, &value, sizeof(T));
         Size += sizeof(T);
     }
 
-    #pragma endregion
+#pragma endregion
+
+#pragma endregion
 
 };
