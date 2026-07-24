@@ -31,15 +31,15 @@ public:
 
 #pragma region Getters
 
-    constexpr Index capacity() const noexcept {
+    [[nodiscard]] constexpr Index capacity() const noexcept {
         return Capacity;
     }
 
-    uint8_t* data() const noexcept {
+    [[nodiscard]] uint8_t* data() const noexcept {
         return Data;
     }
 
-    constexpr Index size() const noexcept {
+    [[nodiscard]] constexpr Index size() const noexcept {
         return Size;
     }
 
