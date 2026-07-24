@@ -13,9 +13,9 @@ template <size_t Capacity>
 class StaticStackBuffer {
 protected:
 
-    using Address = smallest_uint_t<Capacity>;
+    using Index = smallest_uint_t<Capacity>;
 
-    Address Size = 0;
+    Index Size = 0;
     std::array<uint8_t, Capacity> Data;
 
 public:
@@ -23,11 +23,27 @@ public:
 #pragma region Methods
 
     template <typename T> requires (std::is_trivially_copyable_v<T>)
-    T operator[](Address index) {
+    T operator[](Index index) {
         T value;
         std::memcpy(&value, Data.data() + index - sizeof(T), sizeof(T));
         return value;
     }
+
+#pragma region Getters
+
+    constexpr Index capacity() const noexcept {
+        return Capacity;
+    }
+
+    uint8_t* data() const noexcept {
+        return Data;
+    }
+
+    constexpr Index size() const noexcept {
+        return Size;
+    }
+
+#pragma endregion
 
 #pragma region Discard
 
@@ -37,7 +53,7 @@ public:
     }
 
     template <typename T = uint8_t>
-    void discard(const Address count) {
+    void discard(const Index count) {
         Size -= count * sizeof(T);
     }
 
