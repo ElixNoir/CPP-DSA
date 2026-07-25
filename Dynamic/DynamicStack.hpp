@@ -2,6 +2,9 @@
 
 #pragma region Dependencies
 
+#include "DefaultAllocator.hpp"
+#include "DSAConcepts.hpp"
+
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -9,148 +12,168 @@
 
 #pragma endregion
 
-template <typename T, std::unsigned_integral Address = size_t>
+template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
 class DynamicStack {
 protected:
 
+    [[no_unique_address]] A Alloc;
+
     T* Data;
-    Address Capacity;
-    Address Size = 0;
+    Index Size = 0;
+    Index Capacity;
 
 public:
 
-    DynamicStack(Address initialCapacity = 16): Capacity(initialCapacity) {
-        Data = static_cast<T*>(::operator new[](initialCapacity * sizeof(T)));
+    DynamicStack(Index initialCapacity) : Capacity(initialCapacity) {
+        Data = static_cast<T*>(Alloc.allocate(Capacity * sizeof(T)));
     }
 
     ~DynamicStack() {
         if constexpr (!std::is_trivially_destructible_v<T>)
-            for (Address i = 0; i < Count; ++i) Data[i].~T();
-        ::operator delete[](Data);
+            for (Index i = 0; i < Size; ++i)
+                Data[i].~T();
+        Alloc.deallocate(Data);
     }
 
-    #pragma region Methods
+#pragma region Methods
 
-    template <typename T>
-    bool can_pop<T>(const size_t count = 1) const noexcept {
-        return Size >= count;
-    }
-
-    template <typename T>
-    bool can_push<T>(const size_t count = 1) const noexcept {
-        return Size + count <= Capacity;
-    }
-
-    #pragma region Getters
-
-    Address capacity() const {
-        return Capacity;
-    }
-
-    Address size() const {
-        return Size;
-    }
-
-    T& unsafe_peek() const {
-        return Data[Size - 1];
-    }
-
-    T unsafe_pop() {
-        return Data[Size--];
-    }
-
-    T& unsafe_pop_reference() { // dangerous
-        return Data[Size--];
-    }
-
-    #pragma endregion
-
-
-    #pragma region Setters
-
-    template <typename... Args>
-    void emplace(Args&&... args) {
-        if (Size == Capacity) unsafe_grow(Capacity * 2);
-        unsafe_emplace(std::forward<Args>(args)...);
-    }
-
-    void push(const T& value) {
-        if (Size == Capacity) unsafe_grow(Capacity * 2);
-        unsafe_push(value);
-    }
-
-    void push(T&& value) {
-        if (Size == Capacity) unsafe_grow(Capacity * 2);
-        unsafe_push(value);
-    }
-
-    template <typename... Args>
-    void unsafe_emplace(Args&&... args) {
-        Data[Size++] = T(std::forward<Args>(args)...);
-    }
-
-    void unsafe_push(const T& value) {
-        Data[Size++] = value;
-    }
-
-    void unsafe_push(T&& value) {
-        Data[Size++] = std::move(value);
-    }
-
-    #pragma endregion
-
-
-    #pragma region Memory Management
-
-    void reserve(Address newCapacity) {
-        if (newCapacity > Capacity) unsafe_grow(newCapacity);
-    }
-
-    void shrink_to_fit() {
-        unsafe_shrink(Size);
-    }
-
-    void unsafe_grow(Address newCapacity) {
-        T* newData = static_cast<T*>(::operator new[](newCapacity * sizeof(T)));
-        if constexpr (std::is_trivially_copyable_v<T>)
-            std::memcpy(newData, Data, Capacity * sizeof(T));
-        else {
-            for (Address index = 0; index < Capacity; index++) {
-                ::new (static_cast<void*>(&newData[index])) T(std::move(Data[index]));
-                Data[index].~T();
-            }
-        }
-      
-        ::operator delete[](Data);
-        Data = newData;
-      
-        Capacity = newCapacity;
-    }
-
-    void unsafe_shrink(Address newCapacity) {
-        T* newData = static_cast<T*>(::operator new[](newCapacity * sizeof(T)));
-        if constexpr (std::is_trivially_copyable_v<T>)
-            std::memcpy(newData, Data, newCapacity * sizeof(T));
-        else {
-            for (Address index = 0; index < newCapacity; index++) {
-                ::new (static_cast<void*>(&newData[index])) T(std::move(Data[index]));
-                Data[index].~T();
-            }
-        }
-      
-        ::operator delete[](Data);
-        Data = newData;
-
-        Capacity = newCapacity;
-    }
-
-    #endregion
-
-
-    T& operator[](const Address address) {
+    T& operator[](const Index address) {
         return Data[address];
     }
 
-    #pragma endregion
+    template <typename T>
+    bool can_push(const size_t count = 1) const noexcept {
+        return Size + count <= Capacity;
+    }
+
+#pragma region Getters
+
+    [[nodiscard]] constexpr Index capacity() const noexcept {
+        return Capacity;
+    }
+
+    [[nodiscard]] constexpr T* data() const noexcept {
+        return Data;
+    }
+
+    [[nodiscard]] constexpr Index size() const noexcept {
+        return Size;
+    }
+
+#pragma endregion
+
+#pragma region Memory Management
+
+    void double_capacity() {
+        resize(2 * Capacity);
+    }
+
+    void reserve(Index newCapacity)
+    {
+        if (newCapacity > Capacity) resize(newCapacity);
+    }
+
+    void resize(Index newCapacity)
+    {
+        if (newCapacity == Capacity) return;
+
+        if constexpr (ReallocatableAllocator<A> && std::is_trivially_copyable_v<T>)
+            Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
+        else {
+            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
+
+            if (newCapacity < Size) Size = newCapacity;
+
+            for (Index index= 0; index < Size; ++i)
+            {
+                ::new (&newData[index]) T(std::move(Data[index]));
+                if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
+            }
+
+            Alloc.deallocate(Data);
+            Data = newData;
+        }
+        
+        Capacity = newCapacity;
+    }
+
+    void shrink_to_fit() {
+        resize(Size);
+    }
+
+#pragma endregion
+
+#pragma region Discard
+
+    [[nodiscard]] constexpr bool can_discard(const size_t count = 1) const noexcept {
+        return Size >= count;
+    }
+
+    void discard(const Index count = 1) {
+        Size -= count;
+    }
+
+#pragma endregion
+
+#pragma region Peek
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_peek(const Index count = 1) const noexcept {
+        return can_discard<T>(count);
+    }
+
+    T peek() const {
+        return Data[Size - 1];
+    }
+
+    T& peek_reference() const {
+        return Data[Size - 1];
+    }
+
+#pragma endregion
+
+#pragma region Pop
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_pop(const Index count = 1) const noexcept {
+        return can_discard<T>(count);
+    }
+
+    T pop() {
+        return Data[Size--];
+    }
+
+    T& pop_reference() {
+        return Data[Size--];
+    }
+
+#pragma endregion
+
+#pragma region Push
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_push(const Index count = 1) const noexcept {
+        return Size + count <= Capacity;
+    }
+
+    template <typename... Args>
+    void emplace(Args&&... args)
+    {
+        ::new (&Data[Size++]) T(std::forward<Args>(args)...);
+    }
+
+    void push(const T& value)
+    {
+        ::new (&Data[Size++]) T(value);
+    }
+
+    void push(T&& value)
+    {
+        ::new (&Data[Size++]) T(std::move(value));
+    }
+
+#pragma endregion
+
+#pragma endregion
 
 };
