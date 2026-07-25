@@ -5,7 +5,6 @@
 #include "DefaultAllocator.hpp"
 #include "DSAConcepts.hpp"
 
-#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -34,7 +33,7 @@ protected:
             T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
             Index* newFreeList = static_cast<Index*>(Alloc.allocate(newCapacity * sizeof(T)));
             std::memcpy(newData, Data, Top * sizeof(T));
-            std::memcpy(newData, Data, FreeTop * sizeof(T));
+            std::memcpy(newFreeList, Data, FreeTop * sizeof(T));
             Alloc.deallocate(Data);
             Alloc.deallocate(FreeList);
             Data = newData;
