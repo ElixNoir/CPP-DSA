@@ -2,101 +2,110 @@
 
 #pragma region Dependencies
 
-#include <concepts>
+#include "DefaultAllocator.hpp"
+#include "DSAConcepts.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 
 #pragma endregion
 
-template <std::unsigned_integral Address = size_t>
+template <std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
 class DynamicBumpAllocator {
 protected:
 
     uint8_t* Data;
-    Address Capacity;
-    Address Size = 0;
+    Index Size = 0;
+    Index Capacity;
 
-public:
-
-    DynamicBumpAllocator(Address initialCapacity = 0x100): Capacity(initialCapacity) {
-        Data = new uint8_t[initialCapacity];
-    }
-
-    ~DynamicBumpAllocator() {
-        delete[] Data;
-    }
-
-    #pragma region Methods
-
-    template <typename T>
-    bool can_allocate<T>(size_t count = 1) const {
-        return Size + sizeof(T) * count <= Capacity;
-    }
-
-    Address capacity() const {
-        return Capacity;
-    }
-
-    Address size() const {
-        return Size;
-    }
-
-    template <typename T>
-    Address allocate<T>(size_t count = 1) {
-        if (!can_allocate<T>(count)) reserve((Capacity + sizeof(T) * count) * 2);
-        return unsafe_allocate<T>(count);
-    }
-
-    template <typename T>
-    Address unsafe_allocate<T>(size_t count = 1) {
-        Address address = Size;
-        Size += sizeof(T) * count;
-        return address;
-    }
-
-    void reserve(Address newCapacity) {
-        if (newCapacity > Capacity) {
-            unsafe_grow(newCapacity);
+    void internal_resize(Index newCapacity) {
+        if constexpr (ReallocatableAllocator<T>)
+            Data = static_cast<uint8_t*>(Alloc.reallocate(Data, newCapacity));
+        else {
+            uint8_t* newData = static_cast<uint8_t*>(Alloc.allocate(newCapacity));
+            std::memcpy(newData, Data, Capacity);
+        
+            Alloc.deallocate(Data);
+        
+            Capacity = newCapacity;
+            Data = newData;
         }
     }
 
+public:
+
+    DynamicBumpAllocator(Index initialCapacity = 0x100): Capacity(initialCapacity) {
+        Data = static_cast<uint8_t*>(Alloc.allocate(initialCapacity));
+    }
+
+    ~DynamicBumpAllocator() {
+        Alloc.deallocate(Data);
+    }
+
+#pragma region Methods
+
+    template <typename T>
+    T& operator[](Index index) {
+        return *reinterpret_cast<T*>(Data + index);
+    }
+
+#pragma region Getters
+
+    [[nodiscard]] constexpr Index capacity() const noexcept {
+        return Capacity;
+    }
+
+    [[nodiscard]] constexpr Index size() const noexcept {
+        return Size;
+    }
+
+#pragma endregion
+
+#pragma region Memory Management
+
+    void double_capacity() {
+        internal_resize(2 * Capacity);
+    }
+
+    void reserve(Index newCapacity) {
+        if (newCapacity > Capacity) internal_resize(newCapacity);
+    }
+
+    void resize(Index newCapacity) {
+        if (newCapacity < Size) Size = newCapacity;
+        internal_resize(newCapacity);
+    }
+
     void shrink_to_fit() {
-        unsafe_shrink(Size);
+        internal_resize(Size);
     }
 
-    void unsafe_grow(Address newCapacity) {
-        uint8_t* newData = new uint8_t[newCapacity];
-        std::memcpy(newData, Data, Capacity);
-      
-        delete[] Data;
-      
-        Data = newData;
-      
-        Capacity = newCapacity;
-    }
+#pragma endregion
 
-    void unsafe_shrink(Address newCapacity) {
-        uint8_t* newData = new uint8_t[newCapacity];
-        std::memcpy(newData, Data, newCapacity);
-      
-        delete[] Data;
-      
-        Data = newData;
-      
-        Capacity = newCapacity;
+#pragma Allocation
+
+    template <typename T>
+    [[nodiscard]] constexpr bool can_allocate<T>(size_t count = 1) const noexcept {
+        return Size + sizeof(T) * count <= Capacity;
     }
 
     template <typename T>
-    T& operator[](const Address address) {
-        return *reinterpret_cast<T*>(Data + address); // possible overflow
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] Index allocate<T>(size_t count = 1) {
+        Index index = Size;
+        Size += sizeof(T) * count;
+        return index;
     }
 
-    template <typename T>
-    const T& operator[](const Address address) {
-        return *reinterpret_cast<T*>(Data + address); // possible overflow
+    [[nodiscard]] void* allocate(size_t size) {
+        Index index = Size;
+        Size += size;
+        return static_cast<void*>(Data + index);
     }
 
-    #pragma endregion
+#pragma endregion
+
+#pragma endregion
 
 };
