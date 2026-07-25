@@ -1,43 +1,47 @@
 #pragma once
 
-#include <array>
+#pragma region Dependencies
 
 #include "Dynamic/DynamicStack.hpp"
+
+#include <array>
+
+#pragma endregion
 
 template <typename T, std::unsigned_integral Address = uint16_t, unsigned char MinimumCharacter = ' ', unsigned char MaximumCharacter = '~'>
 class DFA {
 public:
 
-  using State = std::array<Node, AlphabetSize>;
+	using State = std::array<Node, AlphabetSize>;
 
 protected:
 
-  constexpr static uint8_t AlphabetSize = MaximumCharacter - MinimumCharacter + 1;
+	constexpr static uint8_t AlphabetSize = MaximumCharacter - MinimumCharacter + 1;
 
-  DynamicStack<State, Address> States;
+	DynamicStack<State, Address> States;
 
 public:
 
-  DFA(Address initialCapacity = 5) : States(initialCapacity) {}
+	DFA(Address initialCapacity = 5) : States(initialCapacity) {}
 
-  Node* ensurePath(const unsigned char* key, size_t length) {
+	Node* ensurePath(const unsigned char* key, size_t length) {
 		if (length == 0) return nullptr;
-
+		
 		unsigned char character = key[0] - MinimumCharacter;
 		if (character >= AlphabetSize) return nullptr;
-
+		
 		Address currentState = 0;
 		Node* node = &States[currentState][character];
-
+		
 		for (size_t index = 1; index < length; ++index) {
 			character = key[index] - MinimumCharacter;
 			if (character >= AlphabetSize) return nullptr;
-
+		
 			Address nextState = node->nextState();
-
+		
 			if (nextState == 0) {
 				nextState = static_cast<Address>(States.size() + 1);
-        States.emplace();
+				States.emplace();
 
 				node = &States[currentState][key[index - 1] - MinimumCharacter]; // reacquire node after potential reallocation
 				node->setNextState(nextState);
@@ -50,14 +54,14 @@ public:
 		return node;
 	}
 
-  Node* ensurePath(const char* key, size_t length) {
+	Node* ensurePath(const char* key, size_t length) {
 		return ensurePath(reinterpret_cast<const unsigned char*>(key), length);
 	}
 
-  const Node* find(const unsigned char* key, size_t length) const {
+	const Node* find(const unsigned char* key, size_t length) const {
 		if (length == 0) return nullptr;
 
-    unsigned char character = key[index] - MinimumCharacter;
+    	unsigned char character = key[index] - MinimumCharacter;
 		if (character >= AlphabetSize) return nullptr;
     
 		const Node* node = &States[0][character];
@@ -75,11 +79,11 @@ public:
 		return node;
 	}
 
-  const Node* find(const char* key, size_t length) const {
+	const Node* find(const char* key, size_t length) const {
 		return find(reinterpret_cast<const unsigned char*>(key), length);
 	}
 
-  bool get(const unsigned char* key, size_t length, Element& value) const {
+	bool get(const unsigned char* key, size_t length, Element& value) const {
 		const Node* node = find(key, length);
 		if (!node) return false;
 
@@ -91,11 +95,11 @@ public:
 		return false;
 	}
 
-  bool get(const char* key, size_t length, Element& value) const {
+	bool get(const char* key, size_t length, Element& value) const {
 		return get(reinterpret_cast<const unsigned char*>(key), length, value);
 	}
 
-  bool set(const unsigned char* key, size_t length, const Element& value) {
+	bool set(const unsigned char* key, size_t length, const Element& value) {
 		Node* node = ensurePath(key, length);
 		if (!node) return false;
 
