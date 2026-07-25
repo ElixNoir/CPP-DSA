@@ -30,14 +30,14 @@ public:
 
     ~DynamicStack() {
         if constexpr (!std::is_trivially_destructible_v<T>)
-            for (Index i = 0; i < Size; ++i)
-                Data[i].~T();
+            for (Index index = 0; index < Size; index++)
+                Data[index].~T();
         Alloc.deallocate(Data);
     }
 
 #pragma region Methods
 
-    T& operator[](const Index address) {
+    [[nodiscard]] T& operator[](const Index address) {
         return Data[address];
     }
 
@@ -117,11 +117,7 @@ public:
         return can_discard<T>(count);
     }
 
-    [[nodiscard]] T peek() const {
-        return Data[Size - 1];
-    }
-
-    [[nodiscard]] T& peek_reference() const {
+    [[nodiscard]] T& peek() const {
         return Data[Size - 1];
     }
 
@@ -135,7 +131,9 @@ public:
     }
 
     [[nodiscard]] T pop() {
-        return Data[Size--];
+        T value = std::move(Data[--Size]);
+        if constexpr (!std::is_trivially_destructible_v<T>) Data[Size].~T();
+        return value;
     }
 
     [[nodiscard]] T& pop_reference() {
