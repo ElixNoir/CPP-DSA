@@ -41,11 +41,6 @@ public:
         return Data[address];
     }
 
-    template <typename T>
-    bool can_push(const size_t count = 1) const noexcept {
-        return Size + count <= Capacity;
-    }
-
 #pragma region Getters
 
     [[nodiscard]] constexpr Index capacity() const noexcept {
@@ -122,11 +117,11 @@ public:
         return can_discard<T>(count);
     }
 
-    T peek() const {
+    [[nodiscard]] T peek() const {
         return Data[Size - 1];
     }
 
-    T& peek_reference() const {
+    [[nodiscard]] T& peek_reference() const {
         return Data[Size - 1];
     }
 
@@ -139,11 +134,11 @@ public:
         return can_discard<T>(count);
     }
 
-    T pop() {
+    [[nodiscard]] T pop() {
         return Data[Size--];
     }
 
-    T& pop_reference() {
+    [[nodiscard]] T& pop_reference() {
         return Data[Size--];
     }
 
