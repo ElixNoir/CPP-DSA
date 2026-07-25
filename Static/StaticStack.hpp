@@ -29,8 +29,8 @@ public:
 
 #pragma region Methods
 
-    [[nodiscard]] T& operator[](const Index address) {
-        return Data[address];
+    [[nodiscard]] T& operator[](const Index index) {
+        return Data[index];
     }
 
 #pragma region Getters
@@ -55,7 +55,15 @@ public:
         return Size >= count;
     }
 
-    void discard(const Index count = 1) {
+    void discard() {
+        Size--;
+        if constexpr (!std::is_trivially_destructible_v<T>) Data[Size].~T();
+    }
+
+    void discard(const Index count) {
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            for (Index index = Size - count; index < Size; index++)
+                Data[Size + index].~T();
         Size -= count;
     }
 
@@ -65,10 +73,10 @@ public:
 
     template <typename T>
     [[nodiscard]] constexpr bool can_peek(const Index count = 1) const noexcept {
-        return can_discard<T>(count);
+        return can_discard(count);
     }
 
-    [[nodiscard]] T& peek() const {
+    [[nodiscard]] T& peek() {
         return Data[Size - 1];
     }
 
@@ -78,7 +86,7 @@ public:
 
     template <typename T>
     [[nodiscard]] constexpr bool can_pop(const Index count = 1) const noexcept {
-        return can_discard<T>(count);
+        return can_discard(count);
     }
 
     [[nodiscard]] T pop() {
