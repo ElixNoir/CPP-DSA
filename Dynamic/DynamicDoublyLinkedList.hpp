@@ -63,6 +63,18 @@ public:
 
 #pragma endregion
 
+#pragma region Memory Management
+
+  void double_capacity() {
+    Nodes.double_capacity();
+  }
+
+  void reserve(Index newCapacity) {
+    Nodes.reserve(newCapacity);
+  }
+
+#pragma endregion
+
 #pragma region Discard
 
   [[nodiscard]] constexpr bool can_discard() const noexcept {
