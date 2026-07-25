@@ -22,6 +22,30 @@ protected:
     Index Size = 0;
     Index Capacity;
 
+    void internal_resize(Index newCapacity) {
+        if constexpr (std::is_trivially_copyable_v<T>) {
+            if constexpr (ReallocatableAllocator<A>)
+                Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
+            else {
+                T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
+                std::memcpy(newData, Data, newCapacity * sizeof(T));
+                Data = newData;
+            }
+        } else {
+            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
+
+            for (Index index = 0; index < Size; index++) {
+                ::new (&newData[index]) T(std::move(Data[index]));
+                if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
+            }
+
+            Alloc.deallocate(Data);
+            Data = newData;
+        }
+        
+        Capacity = newCapacity;
+    }
+
 public:
 
     DynamicStack(Index initialCapacity) : Capacity(initialCapacity) {
@@ -60,40 +84,23 @@ public:
 #pragma region Memory Management
 
     void double_capacity() {
-        resize(2 * Capacity);
+        internal_resize(2 * Capacity);
     }
 
     void reserve(Index newCapacity)
     {
-        if (newCapacity > Capacity) resize(newCapacity);
+        if (newCapacity > Capacity) internal_resize(newCapacity);
     }
 
-    void resize(Index newCapacity)
-    {
+    void resize(Index newCapacity) {
         if (newCapacity == Capacity) return;
-
         if (newCapacity < Size) Size = newCapacity;
-
-        if constexpr (ReallocatableAllocator<A> && std::is_trivially_copyable_v<T>)
-            Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
-        else {
-            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
-
-            for (Index index= 0; index < Size; index++)
-            {
-                ::new (&newData[index]) T(std::move(Data[index]));
-                if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
-            }
-
-            Alloc.deallocate(Data);
-            Data = newData;
-        }
-        
-        Capacity = newCapacity;
+        internal_resize(newCapacity);
     }
 
     void shrink_to_fit() {
-        resize(Size);
+        if (Capacity == Size) return;
+        internal_resize(Size);
     }
 
 #pragma endregion
