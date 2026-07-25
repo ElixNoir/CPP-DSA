@@ -47,14 +47,43 @@ public:
     return Head;
   }
 
-#pragma endregion
-
-  void discard_front() {
-    Nodes.deallocate(Head);
-    Head = Nodes[Head].Next;
+  [[nodiscard]] constexpr Index size() const noexcept {
+    return Nodes.size();
   }
 
+#pragma endregion
+
+#pragma region Memory Management
+
+    void double_capacity() {
+        Nodes.double_capacity();
+    }
+
+    void reserve(Index newCapacity) {
+        Nodes.reserve(newCapacity);
+    }
+
+#pragma endregion
+
+#pragma region Discard
+
+  [[nodiscard]] constexpr bool can_discard() const noexcept {
+    return size() != 0;
+  }
+
+  void discard_front() {
+    Index next = Nodes[Head].Next;
+    Nodes.deallocate(Head);
+    Head = next;
+  }
+
+#pragma endregion
+
 #pragma region Prepend
+
+  [[nodiscard]] constexpr bool can_prepend() const noexcept {
+    return Nodes.can_allocate();
+  }
 
   [[nodiscard]] Index prepend() {
     Index index = Nodes.allocate();
@@ -76,30 +105,32 @@ public:
 
 #pragma region Removal
 
+  [[nodiscard]] constexpr bool can_remove() const noexcept {
+    return can_discard();
+  }
+
   [[nodiscard]] T remove_next_of(Index index) {
-    Index next = Nodes[index].Next;
-    Nodes[index].Next = Nodes[next].Next;
-    Nodes.deallocate(next);
-    return Nodes[next].Data;
+    return remove_next_of_reference(index);
   }
 
   [[nodiscard]] T& remove_next_of_reference(Index index) {
     Index next = Nodes[index].Next;
+    T& data = Nodes[next].Data;
     Nodes[index].Next = Nodes[next].Next;
     Nodes.deallocate(next);
-    return Nodes[next].Data;
+    return data;
   }
 
   [[nodiscard]] T remove_front() {
-    Nodes.deallocate(Head);
-    Head = Nodes[Head].Next;
-    return Nodes[Head].Data;
+    return remove_front_reference();
   }
 
   [[nodiscard]] T& remove_front_reference() {
+    T& data = Nodes[Head].Data;
+    Index next = Nodes[Head].Next;
     Nodes.deallocate(Head);
-    Head = Nodes[Head].Next;
-    return Nodes[Head].Data;
+    Head = next;
+    return data;
   }
 
 #pragma endregion
