@@ -28,11 +28,8 @@ public:
 #pragma region Methods
 
     template <typename T>
-        requires (std::is_trivially_copyable_v<T>)
-    T operator[](Index index) {
-        T value;
-        std::memcpy(&value, Data.data() + index - sizeof(T), sizeof(T));
-        return value;
+    [[nodiscard]] T& operator[](Index index) {
+        return *reinterpret_cast<T*>(Data + index);
     }
 
 #pragma region Getters
@@ -81,8 +78,8 @@ public:
     }
 
     template <typename T>
-    T& peek_reference() {
-        return *reinterpret_cast<T*>(Data.data() + Size - sizeof(T));;
+    [[nodiscard]] T& peek_reference() {
+        return *reinterpret_cast<T*>(Data.data() + Size - sizeof(T));
     }
 
 #pragma endregion
@@ -104,7 +101,7 @@ public:
     }
 
     template <typename T>
-    T& pop_reference() {
+    [[nodiscard]] T& pop_reference() {
         Size -= sizeof(T);
         return *reinterpret_cast<T*>(Data.data() + Size);
     }
