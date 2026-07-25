@@ -1,4 +1,9 @@
+#pragma once
+
 #pragma region Dependencies
+
+#include "DefaultAllocator.hpp"
+#include "DSAConcepts.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -6,132 +11,116 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <type_traits>
 
 #pragma endregion
 
-template <typename T>
+template <typename T, Allocator A = DefaultAllocator>
+    requires std::is_trivially_copyable_v<T>
 class DynamicBitmappedPool {
 protected:
 
+    [[no_unique_address]] A Alloc;
+
     T* Data;
-    size_t* FreeMasks;
+    uint64_t* FreeMasks;
     size_t Capacity;
     size_t Size = 0;
     size_t Top = 0;
-    
-    static constexpr unsigned int Bits = 8 * sizeof(size_t);
+
+    static constexpr unsigned int Bits = 8 * sizeof(uint64_t);
     static constexpr unsigned int BitShift = std::bit_width(Bits) - 1;
+
+    void grow(const size_t newCapacity) {
+        size_t newFreeMasksSize = ((newCapacity + Bits - 1) >> BitShift) * sizeof(uint64_t);
+
+        if constexpr (ReallocatableAllocator<A>) {
+            Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
+            FreeMasks = static_cast<uint64_t*>(Alloc.reallocate(FreeMasks, newFreeMasksSize));
+        }
+        else {
+            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
+            uint64_t* newFreeMasks = static_cast<uint64_t*>(Alloc.allocate(newCapacity * sizeof(T)));
+            std::memcpy(newData, Data, Top * sizeof(T));
+            std::memcpy(newFreeMasks, FreeMasks, newFreeMasksSize);
+            Alloc.deallocate(Data);
+            Alloc.deallocate(FreeMasks);
+            Data = newData;
+            FreeMasks = newFreeMasks;
+        }
+
+        Capacity = newCapacity;
+    }
 
 public:
 
-    DynamicBitmappedPool(size_t initialCapacity = Bits): Capacity(initialCapacity) {
-        Data = new T[initialCapacity];
-        size_t freeMaskCount = (initialCapacity + Bits - 1) >> BitShift;
-        FreeMasks = new size_t[freeMaskCount]{};
+    DynamicBitmappedPool(size_t initialCapacity = Bits) : Capacity(initialCapacity) {
+        Data = static_cast<T*>(Alloc.allocate(initialCapacity));
+        FreeMasks = static_cast<uint64_t*>(Alloc.allocate((initialCapacity + Bits - 1) >> BitShift));
     }
 
     ~DynamicBitmappedPool() {
-        delete[] Data;
-        delete[] FreeMasks;
-    }
-    
-    #pragma region Methods
-
-    bool can_allocate(const size_t count = 1) const noexcept {
-        return Top + count <= Capacity;
+        Alloc.deallocate(Data);
+        Alloc.deallocate(FreeMasks);
     }
 
-    /*bool can_deallocate(const size_t count = 1) const noexcept {
-        return Size >= count;
-    }*/
-    
-    size_t capacity() const noexcept {
+#pragma region Methods
+
+    [[nodiscard]] T& operator[](size_t index) {
+        return Data[index];
+    }
+
+#pragma region Getters
+
+    [[nodiscard]] constexpr size_t capacity() const noexcept {
         return Capacity;
     }
 
-    /*
-    size_t size() const noexcept {
-        return Size;
-    }
-    */
+#pragma endregion
 
-    size_t top() const noexcept {
-        return Top;
+#pragma region Memory Management
+
+    void double_capacity() {
+        grow(2 * Capacity);
     }
 
     void reserve(size_t newCapacity) {
-        if (newCapacity > Capacity) unsafe_grow(newCapacity);
+        if (newCapacity > Capacity) grow(newCapacity);
     }
 
-    void shrink_to_fit() {
-        unsafe_shrink(Size);
-        if (Size > Capacity) Size = Capacity;
+#pragma endregion
+
+#pragma region Allocation and Deallocation
+
+    [[nodiscard]] constexpr bool can_allocate(const size_t count = 1) const noexcept {
+        return Top + count <= Capacity;
     }
 
-    void unsafe_grow(const size_t newCapacity) {
-        size_t newFreeMaskCount = (newCapacity + Bits - 1) >> BitShift;
-        
-        T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
-        size_t* newFreeMasks = new size_t[newFreeMaskCount]{};
-        
-        std::memcpy(newData, Data, Capacity * sizeof(T));
-        std::memcpy(newFreeMasks, FreeMasks, ((Capacity + Bits - 1) >> BitShift) * sizeof(size_t));
-        
-        delete[] Data;
-        delete[] FreeMasks;
-      
-        Data = newData;
-        FreeMasks = newFreeMasks;
-
-        Capacity = newCapacity;
-    }
-
-    void unsafe_shrink(const size_t newCapacity) {
-        size_t newFreeMaskCount = (newCapacity + Bits - 1) >> BitShift;
-        
-        T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
-        size_t* newFreeMasks = new size_t[newFreeMaskCount];
-        std::memcpy(newData, Data, newCapacity * sizeof(T));
-        std::memcpy(newFreeMasks, FreeMasks, ((newCapacity + Bits - 1) >> BitShift) * sizeof(size_t));
-        
-        delete[] Data;
-        delete[] FreeMasks;
-      
-        Data = newData;
-        FreeMasks = newFreeMasks;
-
-        Capacity = newCapacity;
-    }
-
-    size_t allocate() {
+    [[nodiscard]] size_t allocate() {
         size_t freeMaskCount = (Capacity + Bits - 1) >> BitShift;
 
         Size++;
 
         for (size_t index = 0; index < freeMaskCount; index++) {
-            size_t mask = FreeMasks[index];
-            if (mask != std::numeric_limits<size_t>::max()) {
+            uint64_t mask = FreeMasks[index];
+            if (mask != std::numeric_limits<uint64_t>::max()) {
                 size_t bit = std::countr_one(mask);
-                FreeMasks[index] |= size_t(1) << bit;
+                FreeMasks[index] |= uint64_t(1) << bit;
                 return (index << BitShift) | bit;
             }
         }
-    
-        unsafe_grow(Capacity * 2);
-    
+
         FreeMasks[freeMaskCount] = 1;
-    
+
         return freeMaskCount << BitShift;
     }
 
-    void deallocate(const size_t address) {
-        FreeMasks[address >> BitShift] &= ~(size_t(1) << (address & (Bits - 1)));
+    void deallocate(const size_t index) {
+        FreeMasks[index >> BitShift] &= ~(uint64_t(1) << (index & (Bits - 1)));
     }
 
-    T& operator[](const size_t address) {
-        return Data[address];
-    }
-    
-    #pragma endregion
+#pragma endregion
+
+#pragma endregion
 
 };
