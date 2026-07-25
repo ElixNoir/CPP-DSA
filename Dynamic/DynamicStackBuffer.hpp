@@ -12,11 +12,18 @@
 
 #pragma endregion
 
+/// <summary>
+/// A static stack of bytes representable as any trivially copyable type.
+/// Does not do any runtime alignment or padding.
+/// </summary>
+/// <typeparam name="Index">The internal index type, exposed for size tuning.</typeparam>
+/// <typeparam name="A">The allocator to use when allocating, deallocating, or reallocating.</typeparam>
 template <std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
 class DynamicStackBuffer {
 protected:
 
     [[no_unique_address]] A Alloc;
+
     uint8_t* Data;
     Index Size = 0;
     Index Capacity;
@@ -47,7 +54,7 @@ public:
         return Capacity;
     }
 
-    [[nodiscard]] uint8_t* data() const noexcept {
+    [[nodiscard]] constexpr uint8_t* data() const noexcept {
         return Data;
     }
 
@@ -60,16 +67,28 @@ public:
 #pragma region Memory Management
 
     void double_capacity() {
-        reallocate(2 * Capacity);
+        Capacity *= 2;
+        Data = Alloc.reallocate(Data, Capacity);
     }
 
-    void reallocate(const size_t newCapacity) {
-        Data = Alloc.reallocate(Data);
+    void resize(Index newCapacity) {
+        if (Capacity == Size) return;
+        Data = Alloc.reallocate(Data, newCapacity);
+        if (newCapacity < Capacity) Size = newCapacity;
         Capacity = newCapacity;
     }
 
+    void reserve(Index newCapacity) {
+        if (newCapacity > Capacity) {
+            Capacity = newCapacity;
+            Data = Alloc.reallocate(Data, Capacity);
+        }
+    }
+
     void shrink_to_fit() {
-        reallocate(Size);
+        if (Capacity == Size) return;
+        Capacity = Size;
+        Data = Alloc.reallocate(Data, Capacity);
     }
 
 #pragma endregion
@@ -77,12 +96,12 @@ public:
 #pragma region Discard
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_discard(const size_t count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_discard(const Index count = 1) const noexcept {
         return Size >= count * sizeof(T);
     }
 
     template <typename T = uint8_t>
-    void discard(const Index count) {
+    void discard(const Index count = 1) {
         Size -= count * sizeof(T);
     }
 
@@ -91,8 +110,8 @@ public:
 #pragma region Peek
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_peek(const size_t count = 1) const noexcept {
-        return Size + sizeof(T) <= Capacity;
+    [[nodiscard]] constexpr bool can_peek(const Index count = 1) const noexcept {
+        return can_discard<T>(count);
     }
 
     template <typename T>
@@ -113,7 +132,7 @@ public:
 #pragma region Pop
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_pop(const size_t count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_pop(const Index count = 1) const noexcept {
         return can_discard<T>(count);
     }
 
@@ -137,8 +156,8 @@ public:
 #pragma region Push
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_push(const size_t count = 1) const noexcept {
-        return can_peek<T>(count);
+    [[nodiscard]] constexpr bool can_push(const Index count = 1) const noexcept {
+        return Size + count * sizeof(T) <= Capacity;
     }
 
     template <typename T>
