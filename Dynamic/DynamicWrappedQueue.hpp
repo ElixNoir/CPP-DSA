@@ -2,61 +2,136 @@
 
 #pragma region Dependencies
 
-#include <concepts>
+#include "DefaultAllocator.hpp"
+#include "DSAConcepts.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 
 #pragma endregion
 
-template <typename T, std::unsigned_integral Address = size_t>
+template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
 class DynamicWrappedQueue {
 protected:
 
+    [[no_unique_address]] A Alloc;
+
     T* Data;
-    Address Capacity;
-    Address Size = 0;
-    Address Back = 0;
-    Address Front = 0;
+    Index Capacity;
+    Index Size = 0;
+    Index Back = 0;
+    Index Front = 0;
+
+    void grow(Index newCapacity) {
+        if constexpr (ReallocatableAllocator<A> && std::is_trivially_copyable_v<T>)
+            Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
+        else if constexpr (std::is_trivially_copyable_v<T>) {
+            if (Back > Front) std::memcpy(newData, Data + Front, Size * sizeof(T));
+            else if (Size) {
+                Index truncation = Capacity - Front;
+                std::memcpy(newData, Data + Front, truncation * sizeof(T));
+                std::memcpy(newData + truncation, Data, Back * sizeof(T));
+            }
+        } else {
+            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
+
+            if (Back > Front) {
+                for (Index index = Front; index < Back; index++) {
+                    ::new (&newData[index]) T(std::move(Data[index]));
+                    if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
+                }
+            } else if (Size != 0) {
+                for (Index index = Front; index < Capacity - Front; index++) {
+                    ::new (&newData[index]) T(std::move(Data[index]));
+                    if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
+                }
+    
+                for (Index index = Capacity; index < Back; index++) {
+                    ::new (&newData[index]) T(std::move(Data[index]));
+                    if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
+                }
+            }
+
+            Alloc.deallocate(Data);
+            Data = newData;
+        }
+
+        Capacity = newCapacity;
+
+        Back = Size;
+        Front = 0;
+    }
 
 public:
 
-    DynamicWrappedQueue(Address initialCapacity = 16) {
-        Data = new T[initialCapacity];
+    DynamicWrappedQueue(Index initialCapacity = 16) {
+        Data = static_cast<T*>(Alloc.allocate(initialCapacity * sizeof(T)));
     }
 
     ~DynamicWrappedQueue() {
-        delete[] Data;
+        if constexpr (!std::is_trivially_destructible_v<T>)
+            for (Index index = 0; index < Size; index++)
+                Data[index].~T();
+        
+        Alloc.deallocate(Data);
     }
 
-    #pragma region Methods
+#pragma region Methods
 
-    bool can_dequeue() const noexcept {
-        return Size != 0;
-    }
+#pragma region Getters
 
-    bool can_enqueue() const noexcept {
-        return Size < Capacity;
-    }
-
-    Address back() const noexcept {
+    [[nodiscard]] constexpr Index back() const noexcept {
         return Back;
     }
 
-    Address front() const noexcept {
+    [[nodiscard]] constexpr Index front() const noexcept {
         return Front;
     }
 
-    Address size() const noexcept {
+    [[nodiscard]] constexpr Index size() const noexcept {
         return Size;
     }
 
-    T dequeue() {
-        if (!can_dequeue()) unsafe_grow(2 * Capacity);
-        return unsafe_dequeue(value);
+#pragma endregion
+
+#pragma region Memory Management
+
+    void double_capacity() {
+        grow(2 * newCapacity);
     }
 
-    T unsafe_dequeue() {
+    void reserve(Index newCapacity) {
+        if (newCapacity > Capacity) grow(newCapacity);
+    }
+
+#pragma endregion
+
+#pragma region Discard
+
+    [[nodiscard]] constexpr bool can_discard(Index count = 1) const noexcept {
+        return Size >= count;
+    }
+
+    void discard() {
+        Front = (Front + 1) % Capacity;
+        Size--;
+    }
+
+    void discard(Index count) {
+        Front = (Front + count) % Capacity;
+        Size -= count;
+    }
+
+#pragma endregion
+
+#pragma region Dequeue and Enqueue
+
+    [[nodiscard]] constexpr bool can_dequeue(Index count = 1) const noexcept {
+        return can_discard(count);
+    }
+
+    [[nodiscard]] T dequeue() {
         T& value = Data[Front];
       
         Front = (Front + 1) % Capacity;
@@ -65,43 +140,19 @@ public:
         return value;
     }
 
-    void enqueue(const T& value) {
-        if (!can_enqueue()) unsafe_grow(2 * Capacity);
-        unsafe_enqueue(value);
+    [[nodiscard]] constexpr bool can_enqueue(Index count = 1) const noexcept {
+        return Size + count <= Capacity;
     }
 
-    void unsafe_enqueue(const T& value) {
+    void enqueue(const T& value) {
         Data[Back] = value;
     
         Back = (Back + 1) % Capacity;
         Size++;
     }
 
-    void reserve(Address newCapacity) {
-        if (newCapacity > Capacity) unsafe_grow(newCapacity);
-    }
+#pragma endregion
 
-    void unsafe_grow(Address newCapacity) {
-        T* newData = new T[newCapacity];
-
-        if constexpr (std::is_trivially_copyable_v<T>) {
-            if (Back > Front) std::memcpy(newData, Data + Front, Size * sizeof(T));
-            else if (Size) {
-                Address truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(T));
-                std::memcpy(newData + truncation, Data, Back * sizeof(T));
-            }
-        } else for (Address i = 0; i < Size; ++i) newData[i] = Data[(Front + i) % Capacity];
-    
-        delete[] Data;
-    
-        Data = newData;
-        Capacity = newCapacity;
-    
-        Front = 0;
-        Back = Size;
-    }
-
-    #pragma endregion
+#pragma endregion
 
 };
