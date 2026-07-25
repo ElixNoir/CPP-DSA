@@ -72,14 +72,14 @@ public:
     {
         if (newCapacity == Capacity) return;
 
+        if (newCapacity < Size) Size = newCapacity;
+
         if constexpr (ReallocatableAllocator<A> && std::is_trivially_copyable_v<T>)
             Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
         else {
             T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
 
-            if (newCapacity < Size) Size = newCapacity;
-
-            for (Index index= 0; index < Size; ++i)
+            for (Index index= 0; index < Size; index++)
             {
                 ::new (&newData[index]) T(std::move(Data[index]));
                 if constexpr (!std::is_trivially_destructible_v<T>) Data[index].~T();
