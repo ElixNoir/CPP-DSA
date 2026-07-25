@@ -1,113 +1,111 @@
+#pragma once
+
 #pragma region Dependencies
+
+#include "DefaultAllocator.hpp"
+#include "DSAConcepts.hpp"
 
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 #pragma endregion
 
-template <typename T, std::unsigned_integral Address = size_t>
+template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
+    requires std::is_trivially_copyable_v<T>
 class DynamicPool {
 protected:
 
+    [[no_unique_address]] A Alloc;
+
     T* Data;
-    Address* FreeList;
-    Address Capacity;
-    Address Size = 0;
-    Address Top = 0;
-    Address FreeTop = 0;
+    Index* FreeList;
+    Index Top = 0;
+    Index FreeTop = 0;
+    Index Capacity;
+
+    void grow(Index newCapacity) {
+        if constexpr (ReallocatableAllocator<A>) {
+            Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
+            FreeList = static_cast<Index*>(Alloc.reallocate(FreeList, newCapacity * sizeof(T)));
+        } else {
+            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
+            Index* newFreeList = static_cast<Index*>(Alloc.allocate(newCapacity * sizeof(T)));
+            std::memcpy(newData, Data, Top * sizeof(T));
+            std::memcpy(newData, Data, FreeTop * sizeof(T));
+            Alloc.deallocate(Data);
+            Alloc.deallocate(FreeList);
+            Data = newData;
+            FreeList = newFreeList;
+        }
+
+        Capacity = newCapacity;
+    }
 
 public:
 
-    DynamicPool(Address initialCapacity = 16): Capacity(initialCapacity) {
-        Data = new T[initialCapacity];
-        FreeMasks = new Address[initialCapacity];
+    DynamicPool(Index initialCapacity) : Capacity(initialCapacity) {
+        Data = static_cast<T*>(Alloc.allocate(Capacity * sizeof(T)));
+        FreeList = static_cast<Index*>(Alloc.allocate(Capacity * sizeof(Index)));
     }
 
     ~DynamicPool() {
-        delete[] Data;
-        delete[] FreeMasks;
+        Alloc.deallocate(Data);
+        Alloc.deallocate(FreeList);
     }
-    
-    #pragma region Methods
 
-    bool can_allocate(const Address count = 1) const noexcept {
-        return FreeTop != 0 || Top + count <= Capacity;
+#pragma region Methods
+
+    [[nodiscard]] T& operator[](Index index) {
+        return Data[index];
     }
-    
-    Address capacity() const noexcept {
+
+#pragma region Getters
+
+    [[nodiscard]] constexpr Index capacity() const noexcept {
         return Capacity;
     }
 
-    Address size() const noexcept {
-        return Size;
+    [[nodiscard]] constexpr Index size() const noexcept {
+        return Top - FreeTop;
     }
 
-    Address top() const noexcept {
+    [[nodiscard]] constexpr Index top() const noexcept {
         return Top;
     }
 
-    Address allocate() {
-        if (!can_allocate()) resize(2 * Capacity);
-        return unsafe_allocate();
+#pragma endregion
+
+#pragma region Memory Management
+
+    void double_capacity() {
+        grow(2 * Capacity);
     }
 
-    Address unsafe_allocate() {
-        Size++;
+    void reserve(Index newCapacity) {
+        if (newCapacity > Capacity) grow(newCapacity);
+    }
+
+#pragma endregion
+
+#pragma region Allocation and Deallocation
+
+    [[nodiscard]] constexpr bool can_allocate(const Index count = 1) const noexcept {
+        return FreeTop != 0 || Top + count <= Capacity;
+    }
+
+    [[nodiscard]] const Index allocate() {
         return FreeTop != 0 ? FreeList[--FreeTop] : Top++;
     }
 
-    void unsafe_deallocate(const Address address) {
-        Size--;
-        FreeList[FreeTop++] = address;
+    void deallocate(Index index) {
+        FreeList[FreeTop++] = index;
     }
 
-    void reserve(const Address newCapacity) {
-        if (newCapacity > Capacity) unsafe_grow(newCapacity);
-    }
+#pragma endregion
 
-    void shrink_to_fit() {
-        unsafe_shrink(Size);
-        if (Size > Capacity) Size = Capacity;
-    }
-
-    void unsafe_grow(const Address newCapacity) {
-        T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
-        Address* newFreeMasks = new Address[newCapacity]{};
-        
-        std::memcpy(newData, Data, Capacity * sizeof(T));
-        std::memcpy(newFreeMasks, FreeMasks, Capacity * sizeof(Address));
-        
-        delete[] Data;
-        delete[] FreeMasks;
-      
-        Data = newData;
-        FreeMasks = newFreeMasks;
-
-        Capacity = newCapacity;
-    }
-
-    void unsafe_shrink(const Address newCapacity) {
-        T* newData = new T[newCapacity]; // May consider a method of reallocation in the future so expansion and shrinking in-place is available
-        Address* newFreeMasks = new Address[newCapacity]{};
-        
-        std::memcpy(newData, Data, newCapacity * sizeof(T));
-        std::memcpy(newFreeMasks, FreeMasks, newCapacity * sizeof(Address));
-        
-        delete[] Data;
-        delete[] FreeMasks;
-      
-        Data = newData;
-        FreeMasks = newFreeMasks;
-
-        Capacity = newCapacity;
-    }
-
-    T& operator[](const Address address) {
-        return Data[address];
-    }
-    
-    #pragma endregion
+#pragma endregion
 
 };
