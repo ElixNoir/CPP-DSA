@@ -9,6 +9,11 @@
 
 #pragma endregion
 
+/// <summary>
+/// A static stack of bytes representable as any trivially copyable type.
+/// Does not do any runtime alignment or padding.
+/// </summary>
+/// <typeparam name="Capacity">The number of bytes to statically allocate.</typeparam>
 template <size_t Capacity>
 class StaticStackBuffer {
 protected:
@@ -22,7 +27,8 @@ public:
 
 #pragma region Methods
 
-    template <typename T> requires (std::is_trivially_copyable_v<T>)
+    template <typename T>
+        requires (std::is_trivially_copyable_v<T>)
     T operator[](Index index) {
         T value;
         std::memcpy(&value, Data.data() + index - sizeof(T), sizeof(T));
@@ -35,7 +41,7 @@ public:
         return Capacity;
     }
 
-    [[nodiscard]] uint8_t* data() const noexcept {
+    [[nodiscard]] constexpr uint8_t* data() const noexcept {
         return Data;
     }
 
@@ -48,12 +54,12 @@ public:
 #pragma region Discard
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_discard(const size_t count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_discard(const Index count = 1) const noexcept {
         return Size >= count * sizeof(T);
     }
 
     template <typename T = uint8_t>
-    void discard(const Index count) {
+    void discard(const Index count = 1) {
         Size -= count * sizeof(T);
     }
 
@@ -62,8 +68,8 @@ public:
 #pragma region Peek
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_peek(const size_t count = 1) const noexcept {
-        return Size + sizeof(T) <= Capacity;
+    [[nodiscard]] constexpr bool can_peek(const Index count = 1) const noexcept {
+        return can_discard<T>(count);
     }
 
     template <typename T>
@@ -84,7 +90,7 @@ public:
 #pragma region Pop
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_pop(const size_t count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_pop(const Index count = 1) const noexcept {
         return can_discard<T>(count);
     }
 
@@ -108,8 +114,8 @@ public:
 #pragma region Push
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_push(const size_t count = 1) const noexcept {
-        return can_peek<T>(count);
+    [[nodiscard]] constexpr bool can_push(const Index count = 1) const noexcept {
+        return Size + count * sizeof(T) <= Capacity;
     }
 
     template <typename T>
