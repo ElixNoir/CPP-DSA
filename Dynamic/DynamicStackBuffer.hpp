@@ -112,16 +112,16 @@ public:
     }
 
     template <typename T>
-        requires (std::is_trivially_copyable_v<T>)
-    [[nodiscard]] T peek() {
-        T value;
-        std::memcpy(&value, Data + Size - sizeof(T), sizeof(T));
-        return value;
+    [[nodiscard]] T& peek() {
+        return *reinterpret_cast<T*>(Data + Size - sizeof(T));
     }
 
     template <typename T>
-    T& peek_reference() {
-        return *reinterpret_cast<T*>(Data + Size - sizeof(T));
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] T peek_copy() {
+        T value;
+        std::memcpy(&value, Data + Size - sizeof(T), sizeof(T));
+        return value;
     }
 
 #pragma endregion
