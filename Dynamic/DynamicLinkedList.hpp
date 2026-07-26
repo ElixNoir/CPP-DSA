@@ -71,15 +71,19 @@ public:
         return size() != 0;
     }
 
+    [[nodiscard]] constexpr bool can_discard_next_of(Index current) const noexcept {
+        return can_discard() && current != 0;
+    }
+
     void discard_front() {
         Head = Nodes[Head - 1].Next;
         Nodes.deallocate(Head - 1);
     }
 
-    void discard_next_of(Index index) {
-        Index next = Nodes[index - 1].Next;
+    void discard_next_of(Index current) {
+        Index next = Nodes[current - 1].Next;
         if (next == 0) return;
-        Nodes[index - 1].Next = Nodes[next - 1].Next;
+        Nodes[current - 1].Next = Nodes[next - 1].Next;
     }
 
 #pragma endregion
@@ -90,9 +94,20 @@ public:
         return Nodes.can_allocate();
     }
 
+    [[nodiscard]] constexpr bool can_insert_after(Index current) const noexcept {
+        return can_insert() && current != 0;
+    }
+
     [[nodiscard]] Index insert_after(Index current) {
         Index index = Nodes.allocate() + 1;
         Nodes[index - 1].Next = Nodes[current - 1].Next;
+        Nodes[current - 1].Next = index;
+        return index;
+    }
+
+    [[nodiscard]] Index insert_after(Index current, T& data) {
+        Index index = Nodes.allocate() + 1;
+        Nodes[index - 1] = { Nodes[current - 1].Next, data };
         Nodes[current - 1].Next = index;
         return index;
     }
@@ -129,9 +144,13 @@ public:
         return can_discard();
     }
 
-    [[nodiscard]] T remove_next_of(Index index) {
-        T data = Nodes[index - 1].Data;
-        discard_next_of(index);
+    [[nodiscard]] constexpr bool can_remove_next_of() const noexcept {
+        return can_remove() && current != 0;
+    }
+
+    [[nodiscard]] T remove_next_of(Index current) {
+        T data = Nodes[current - 1].Data;
+        discard_next_of(current);
         return data;
     }
 
