@@ -55,13 +55,13 @@ public:
 
 #pragma region Memory Management
 
-        void double_capacity() {
-                Nodes.double_capacity();
-        }
+    void double_capacity() {
+        Nodes.double_capacity();
+    }
 
-        void reserve(Index newCapacity) {
-                Nodes.reserve(newCapacity);
-        }
+    void reserve(Index newCapacity) {
+        Nodes.reserve(newCapacity);
+    }
 
 #pragma endregion
 
@@ -77,15 +77,24 @@ public:
     }
 
     void discard_next_of(Index index) {
-        // IndexNodes[index - 1].Next
+        Index next = Nodes[index - 1].Next;
+        if (next == 0) return;
+        Nodes[index - 1].Next = Nodes[next - 1].Next;
     }
 
 #pragma endregion
 
 #pragma region
 
-    [[nodiscard]] Index insert_after() {
+    [[nodiscard]] constexpr bool can_insert() const noexcept {
+        return Nodes.can_allocate();
+    }
 
+    [[nodiscard]] Index insert_after(Index current) {
+        Index index = Nodes.allocate() + 1;
+        Nodes[index - 1].Next = Nodes[current - 1].Next;
+        Nodes[current - 1].Next = index;
+        return index;
     }
 
 #pragma endregion
