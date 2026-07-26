@@ -8,7 +8,7 @@
 
 template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
     requires std::is_trivially_copyable_v<T>
-class DynamicLinkedList {
+class DynamicDoublyLinkedList {
 public:
 
     struct Node {
@@ -27,7 +27,7 @@ protected:
 
 public:
 
-    DynamicLinkedList(initialCapacity) : Nodes(initialCapacity) {}
+    DynamicDoublyLinkedList(initialCapacity) : Nodes(initialCapacity) {}
 
 #pragma region Methods
 
@@ -81,11 +81,13 @@ public:
         return size() != 0;
     }
 
-    void discard(Index index) {
-        index--;
-        
-        Index next = Nodes[index].Next;
-        Index previous = Nodes[index].Previous;
+    [[nodiscard]] constexpr bool can_discard(Index current) const noexcept {
+        return can_discard() && current != 0;
+    }
+
+    void discard(Index current) {
+        Index next = Nodes[current - 1].Next;
+        Index previous = Nodes[current - 1].Previous;
 
         if (next != 0) Nodes[next - 1].Previous = previous;
         else Tail = previous;
@@ -93,7 +95,7 @@ public:
         if (previous != 0) Nodes[previous - 1].Next = next;
         else Head = next;
     
-        Nodes.deallocate(index);
+        Nodes.deallocate(current - 1);
     }
 
     void discard_back() {
@@ -104,6 +106,7 @@ public:
 
         Index back = Tail;
         Tail = previous;
+        
         Nodes.deallocate(back - 1);
     }
 
@@ -115,6 +118,7 @@ public:
 
         Index front = Head;
         Head = next;
+        
         Nodes.deallocate(front - 1);
     }
 
@@ -156,6 +160,10 @@ public:
 
     [[nodiscard]] constexpr bool can_insert() const noexcept {
         return Nodes.can_allocate();
+    }
+
+    [[nodiscard]] constexpr bool can_insert_about(Index current) const noexcept {
+        return can_insert() && current != 0;
     }
 
     [[nodiscard]] Index insert_after(Index current) {
@@ -248,6 +256,10 @@ public:
 
     [[nodiscard]] constexpr bool can_remove() const noexcept {
         return can_discard();
+    }
+
+    [[nodiscard]] constexpr bool can_remove(Index current) const noexcept {
+        return can_discard(current);
     }
 
     [[nodiscard]] T remove(Index index) {
