@@ -56,8 +56,8 @@ protected:
       Queue* newQueues = static_cast<Queue*>(Alloc.allocate(newCapacity * sizeof(Queue)));
 
       for (size_t index = 0; index < Capacity; index++) {
-        ::new (&newData[index]) Queue(std::move(Data[index]));
-        if constexpr (!std::is_trivially_destructible_v<Queue>) Data[index].~Queue();
+        ::new (&newQueues[index]) Queue(std::move(Queues[index]));
+        if constexpr (!std::is_trivially_destructible_v<Queue>) Queues[index].~Queue();
       }
 
       Alloc.deallocate(Data);
@@ -99,8 +99,16 @@ public:
     internal_resize(2 * Capacity);
   }
 
+  void double_capacity_in_subqueue(size_t priority) {
+    Queues[priority].double_capacity();
+  }
+
   void reserve(size_t newCapacity) {
     if (newCapacity > Capacity) internal_resize(newCapacity);
+  }
+
+  void reserve_in_subqueue(size_t priority, Index newCapacity) {
+    Queues[priority].reserve(newCapacity);
   }
 
   /*void resize(size_t newCapacity) {
@@ -121,6 +129,10 @@ public:
 
   [[nodiscard]] constexpr bool can_discard() const noexcept {
     return Size != 0;
+  }
+
+  [[nodiscard]] constexpr bool can_discard(size_t priority) const noexcept {
+    return Queues[priority].can_discard();
   }
 
   void discard() {
@@ -154,6 +166,10 @@ public:
     return can_discard();
   }
 
+  [[nodiscard]] constexpr bool can_dequeue(size_t priority) const noexcept {
+    return can_discard(priority);
+  }
+
   [[nodiscard]] T dequeue() {
     const size_t bitMasksCount = bit_masks_count();
     for (size_t index = 0; index < bitMasksCount; index++) {
@@ -184,7 +200,7 @@ public:
 #pragma region Enqueue
 
   [[nodiscard]] constexpr bool can_enqueue(size_t priority) const noexcept {
-    return priority < Capacity;
+    return priority < Capacity && Queues[priority].can_enqueue();
   }
 
   void enqueue(size_t priority, T& value) {
