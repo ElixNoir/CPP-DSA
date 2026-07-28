@@ -29,8 +29,8 @@ protected:
     return (Capacity + 63) >> 6;
   }
 
-  [[nodiscard]] constexpr size_t bit_masks_count(size_t newCapacity) const noexcept {
-    return (newCapacity + 63) >> 6;
+  [[nodiscard]] constexpr size_t bit_masks_count(size_t maximumPriority) const noexcept {
+    return (maximumPriority + 63) >> 6;
   }
 
   void internal_resize() {
@@ -88,7 +88,7 @@ public:
   }
 
   [[nodiscard]] constexpr size_t size() const noexcept {
-    return Capacity;
+    return Size;
   }
 
 #pragma endregion
@@ -132,12 +132,26 @@ public:
   }
 
   [[nodiscard]] constexpr bool can_discard(size_t priority) const noexcept {
-    return Queues[priority].can_discard();
+    return priority < Capacity && Queues[priority].can_discard();
+  }
+
+  [[nodiscard]] constexpr bool can_discard(size_t minimumPriority, size_t maximumPriority) const noexcept {
+    return can_discard() && minimumPriority < maximumPriority && maximumPriority < Capacity;
   }
 
   void discard() {
-    const size_t bitMasksCount = bit_masks_count();
-    for (size_t index = 0; index < bitMasksCount; index++) {
+    discard(0, bit_masks_count());
+  }
+
+  void discard(size_t priority) {
+    Queue& queue = Queues[priority];
+    queue.discard();
+    if (queue.is_empty()) bitArray.reset(priority);
+    Size--;
+  }
+
+  void discard(size_t minimumPriority, size_t maximumPriority) {
+    for (size_t index = minimumPriority; index < maximumPriority; index++) {
       BitArray& bitArray = Bitmasks[index];
       size_t priority = bitArray.count_leading_zeros();
       if (priority != 0) {
@@ -149,13 +163,6 @@ public:
         return;
       }
     }
-  }
-
-  void discard(size_t priority) {
-    Queue& queue = Queues[priority];
-    queue.discard();
-    if (queue.is_empty()) bitArray.reset(priority);
-    Size--;
   }
 
 #pragma endregion
@@ -171,8 +178,7 @@ public:
   }
 
   [[nodiscard]] T dequeue() {
-    const size_t bitMasksCount = bit_masks_count();
-    for (size_t index = 0; index < bitMasksCount; index++) {
+    for (size_t index = 0; index < bit_masks_count(); index++) {
       BitArray& bitArray = Bitmasks[index];
       size_t priority = bitArray.count_leading_zeros();
       if (priority != 0) {
@@ -222,8 +228,7 @@ public:
   }
 
   T& peek() {
-    const size_t bitMasksCount = bit_masks_count();
-    for (size_t index = 0; index < bitMasksCount; index++) {
+    for (size_t index = 0; index < bit_masks_count(); index++) {
       BitArray& bitArray = Bitmasks[index];
       size_t priority = bitArray.count_leading_zeros();
       if (priority != 0) {
