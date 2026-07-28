@@ -115,7 +115,12 @@ public:
         return freeMaskCount << BitShift;
     }
 
+    [[nodiscard]] constexpr bool can_deallocate(const size_t count = 1) const noexcept {
+        return Size >= count;
+    }
+
     void deallocate(const size_t index) {
+        Size--;
         FreeMasks[index >> BitShift] &= ~(uint64_t(1) << (index & (Bits - 1)));
     }
 
