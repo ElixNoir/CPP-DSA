@@ -5,15 +5,20 @@
 #include "DefaultAllocator.hpp"
 #include "DSAConcepts.hpp"
 
+#include <cstddef>
+#include <cstring>
+#include <type_traits>
+
 #pragma endregion
 
-template <typename T, std::unsigned_integral Index, Allocator A>
+template <typename T, std::unsigned_integral Index = size_t, Allocator A>
 class DynamicArray {
 protected:
 
   [[no_unique_address]] A Alloc;
 
   T* Data;
+  // insert DynamicBitArray, DynamicBitmappedPool, or linked list for identifying active entries (?)
   Index Capacity;
 
 public:
