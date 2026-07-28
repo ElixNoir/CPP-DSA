@@ -3,9 +3,11 @@
 #include <bit>
 #include <cstdint>
 
-struct BitArray {
+struct StaticBitArray {
 
   uint64_t Data;
+
+#pragma region Methods
 
   void flip(uint8_t index) {
     Data ^= 1 << index;
@@ -27,7 +29,7 @@ struct BitArray {
     return Data & (mask << start);
   }
 
-  uint64_t get(uint8_t start, uint8_t length) const {
+  uint64_t get_length(uint8_t start, uint8_t length) const {
     return Data & ((1 << length - 1) << start);
   }
 
@@ -36,11 +38,11 @@ struct BitArray {
   }
 
   void keep(uint8_t start, uint64_t mask) {
-    Data &= mask << index;
+    Data &= mask << start;
   }
 
   void keep_length(uint8_t start, uint8_t length) {
-    Data &= (1 << length - 1) << index;
+    Data &= (1 << length - 1) << start;
   }
 
   void reset(uint8_t index) {
@@ -48,11 +50,11 @@ struct BitArray {
   }
 
   void reset(uint8_t start, uint64_t mask) {
-    Data &= ~(mask << index);
+    Data &= ~(mask << start);
   }
 
   void reset_length(uint8_t start, uint8_t length) {
-    Data &= ~((1 << length - 1) << index);
+    Data &= ~((1 << length - 1) << start);
   }
 
   void set(uint8_t index) {
@@ -60,19 +62,19 @@ struct BitArray {
   }
 
   void set(uint8_t start, uint64_t mask) {
-    Data |= mask << index;
+    Data |= mask << start;
   }
 
   void set_length(uint8_t start, uint8_t length) {
-    Data |= (1 << length - 1) << index;
+    Data |= (1 << length - 1) << start;
   }
 
   uint8_t count_leading_ones() const {
-    return std::countl_one();
+    return std::countl_one(Data);
   }
 
   uint8_t count_leading_zeros() const {
-    return std::countl_zero();
+    return std::countl_zero(Data);
   }
 
   uint8_t count_ones() const {
@@ -84,11 +86,13 @@ struct BitArray {
   }
 
   uint8_t count_trailing_ones() const {
-    return std::countr_one();
+    return std::countr_one(Data);
   }
 
   uint8_t count_trailing_zeros() const {
-    return std::countr_zero();
+    return std::countr_zero(Data);
   }
+
+#pragma endregion
 
 }
