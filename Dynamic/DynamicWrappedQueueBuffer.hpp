@@ -6,7 +6,6 @@
 #include "DSAConcepts.hpp"
 #include "TypeTraits.hpp"
 
-#include <cstddef>
 #include <cstring>
 
 #pragma endregion
@@ -23,7 +22,7 @@ protected:
 
     [[no_unique_address]] A Alloc;
 
-    uint8_t* Data;
+    std::byte* Data;
     Index Capacity;
     Index Size = 0;
     Index Back = 0;
@@ -32,7 +31,7 @@ protected:
 public:
 
     DynamicQueueBuffer(Index initialCapacity) : Capacity(initialCapacity) {
-        Data = static_cast<uint8_t*>(Alloc.allocate(initialCapacity));
+        Data = static_cast<std::byte*>(Alloc.allocate(initialCapacity));
     }
 
     ~DynamicQueueBuffer() {
@@ -56,7 +55,7 @@ public:
         return Capacity;
     }
 
-    [[nodiscard]] constexpr uint8_t* data() const noexcept {
+    [[nodiscard]] constexpr std::byte* data() const noexcept {
         return Data;
     }
 
@@ -83,28 +82,28 @@ public:
     void grow(size_t newCapacity) {
         if constexpr (ReallocatableAllocator<A>) {
             if (Back > Front) {
-                std::memcpy(Data, Data + Front, Size * sizeof(uint8_t));
+                std::memcpy(Data, Data + Front, Size * sizeof(std::byte));
                 Back -= Front;
                 Front = 0;
             } else if (Back < Front) {
                 Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(uint8_t));
-                std::memcpy(newData + truncation, Data, Back * sizeof(uint8_t));
+                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
+                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
                 Back += truncation;
                 Front = 0;
             }
           
-            Data = static_cast<uint8_t*>(Alloc.reallocate(Data, Size * sizeof(uint8_t)));
+            Data = static_cast<std::byte*>(Alloc.reallocate(Data, Size * sizeof(std::byte)));
         } else {
-            uint8_t* newData = static_cast<uint8_t*>(Alloc.allocate(newCapacity * sizeof(uint8_t)));
+            std::byte* newData = static_cast<std::byte*>(Alloc.allocate(newCapacity * sizeof(std::byte)));
             if (Back > Front) {
-                std::memcpy(newData, Data + Front, Size * sizeof(uint8_t));
+                std::memcpy(newData, Data + Front, Size * sizeof(std::byte));
                 Back -= Front;
                 Front = 0;
             } else if (Back < Front) {
                 Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(uint8_t));
-                std::memcpy(newData + truncation, Data, Back * sizeof(uint8_t));
+                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
+                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
                 Back += truncation;
                 Front = 0;
             }
@@ -122,30 +121,30 @@ public:
     void shrink_to_fit() {
         if constexpr (ReallocatableAllocator<A>) {
             if (Back > Front) {
-                std::memcpy(Data, Data + Front, Size * sizeof(uint8_t));
+                std::memcpy(Data, Data + Front, Size * sizeof(std::byte));
                 Back -= Front;
                 Front = 0;
             } else if (Back < Front) {
                 Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(uint8_t));
-                std::memcpy(newData + truncation, Data, Back * sizeof(uint8_t));
+                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
+                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
                 Back += truncation;
                 Front = 0;
             }
           
-            Data = static_cast<uint8_t*>(Alloc.reallocate(Data, Size * sizeof(uint8_t)));
+            Data = static_cast<std::byte*>(Alloc.reallocate(Data, Size * sizeof(std::byte)));
         } else {
-            uint8_t* newData;
+            std::byte* newData;
             if (Back > Front) {
-                newData = static_cast<uint8_t*>(Alloc.allocate(Size * sizeof(uint8_t)));
-                std::memcpy(Data, Data + Front, newCapacity * sizeof(uint8_t));
+                newData = static_cast<std::byte*>(Alloc.allocate(Size * sizeof(std::byte)));
+                std::memcpy(Data, Data + Front, newCapacity * sizeof(std::byte));
                 Back -= Front;
                 Front = 0;
             } else if (Back < Front) {
-                newData = static_cast<uint8_t*>(Alloc.allocate(Size * sizeof(uint8_t)));
+                newData = static_cast<std::byte*>(Alloc.allocate(Size * sizeof(std::byte)));
                 Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(uint8_t));
-                std::memcpy(newData + truncation, Data, Back * sizeof(uint8_t));
+                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
+                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
                 Back += truncation;
                 Front = 0;
             }
@@ -154,7 +153,7 @@ public:
             Data = newData;
         }
   
-        Capacity = Size * sizeof(uint8_t);
+        Capacity = Size * sizeof(std::byte);
     }
 
 #pragma endregion
@@ -162,22 +161,21 @@ public:
 #pragma region Discard
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_discard(Index count) const noexcept {
+    [[nodiscard]] constexpr bool can_discard(const Index count = 1) const noexcept {
         return Size >= count * sizeof(T);
     }
 
-    template <typename T = uint8_t>
+    template <typename T = std::byte>
     void discard_back(const Index count = 1) {
-        if (count * sizeof(T) <= Back) Back -= count * sizeof(T);
+        if (Back >= count * sizeof(T)) Back -= count * sizeof(T);
         else Back += Capacity - count * sizeof(T);
         Size -= sizeof(T);
     }
 
-    template <typename T = uint8_t>
+    template <typename T = std::byte>
     void discard_front(const Index count = 1) {
-        sum_t<Index, Index> newFront = Front + count * sizeof(T);
-        if (newFront >= Capacity) Front = newFront - Capacity;
-        else Front = newFront;
+        if (Front <= Capacity - count * sizeof(T)) Front += count * sizeof(T);
+        else Front -= Capacity;
         Size -= sizeof(T);
     }
 
@@ -202,7 +200,7 @@ public:
 
 #pragma endregion
 
-#pragma region Pop
+#pragma region Dequeue
 
     template <typename T>
     [[nodiscard]] constexpr bool can_dequeue(const Index count = 1) const noexcept {
@@ -212,24 +210,44 @@ public:
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     [[nodiscard]] T dequeue_back() {
-        discard_back<T>();
+        Size -= sizeof(T);
+        
         T value;
-        std::memcpy(&value, Data + Back, sizeof(T));
+        if (Back >= count * sizeof(T)) {
+            Back -= count * sizeof(T);
+            std::memcpy(&value, Data + Back, sizeof(T));
+        } else {
+            Index truncation = Capacity - Back;
+            Back += Capacity - count * sizeof(T);
+            std::memcpy(&value, Data + Back, truncation);
+            std::memcpy(reinterpret_cast<std::byte*>(value) + truncation, Data, sizeof(T) - truncation);
+        }
+        
         return value;
     }
 
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     [[nodiscard]] T dequeue_front() {
+        Size -= sizeof(T);
+        
         T value;
-        std::memcpy(&value, Data + Front, sizeof(T));
-        discard_front<T>();
-        return value;
+        if (Front <= Capacity - sizeof(T)) {
+            std::memcpy(&value, Data + Front, sizeof(T));
+            Front += sizeof(T);
+        } else {
+            Index truncation = Capacity - Front;
+            std::memcpy(*value, Data + Back, truncation);
+            Front = sizeof(T) - truncation;
+            std::memcpy(reinterpret_cast<std::byte*>(value) + truncation, Data, Front);
+        }
+        
+        return reinterpret_cast<T>(value);
     }
 
 #pragma endregion
 
-#pragma region Push
+#pragma region Enqueue
 
     template <typename T>
     [[nodiscard]] constexpr bool can_enqueue(const Index count = 1) const noexcept {
@@ -239,20 +257,35 @@ public:
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     void enqueue_back(const T& value) {
-        std::memcpy(Data + Back, &value, sizeof(T));
         Size += sizeof(T);
-        sum_t<Index, Index> newBack = Back + count * sizeof(T);
-        if (newBack >= Capacity) Back = newBack - Capacity;
-        else Back = newFront;
+        
+        const auto* source = reinterpret_cast<const std::byte*>(&value);
+        if (Back <= Capacity - sizeof(T)) {
+            std::memcpy(Data + Back, &value, sizeof(T));
+            Back += sizeof(T);
+        } else {
+            Index truncation = Capacity - Back;
+            std::memcpy(Data + Back, source, truncation);
+            Back = sizeof(T) - truncation;
+            std::memcpy(Data, source + truncation, Back);
+        }
     }
 
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     void enqueue_front(const T& value) {
-        if (sizeof(T) <= Front) Front -= sizeof(T);
-        else Front += Capacity - sizeof(T);
         Size += sizeof(T);
-        std::memcpy(Data + Back, &value, sizeof(T));
+
+        const auto* source = reinterpret_cast<const std::byte*>(&value);
+        if (sizeof(T) <= Front) {
+            Front -= sizeof(T);
+            std::memcpy(Data + Front, source, sizeof(T));
+        } else {
+            Index truncation = sizeof(T) - Front;
+            Front += Capacity - sizeof(T);
+            std::memcpy(Data + Front, source, truncation);
+            std::memcpy(Data, source + truncation, sizeof(T) - truncation);
+        }
     }
 
 #pragma endregion
