@@ -80,38 +80,21 @@ public:
     }
 
     void grow(size_t newCapacity) {
-        if constexpr (ReallocatableAllocator<A>) {
-            if (Back > Front) {
-                std::memcpy(Data, Data + Front, Size * sizeof(std::byte));
-                Back -= Front;
-                Front = 0;
-            } else if (Back < Front) {
-                Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
-                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
-                Back += truncation;
-                Front = 0;
-            }
-          
-            Data = static_cast<std::byte*>(Alloc.reallocate(Data, Size * sizeof(std::byte)));
-        } else {
-            std::byte* newData = static_cast<std::byte*>(Alloc.allocate(newCapacity * sizeof(std::byte)));
-            if (Back > Front) {
-                std::memcpy(newData, Data + Front, Size * sizeof(std::byte));
-                Back -= Front;
-                Front = 0;
-            } else if (Back < Front) {
-                Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
-                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
-                Back += truncation;
-                Front = 0;
-            }
-            Alloc.deallocate(Data);
-            Data = newData;
+        std::byte* newData = static_cast<std::byte*>(Alloc.allocate(newCapacity));
+        if (Back > Front) {
+            std::memcpy(newData, Data + Front, Size);
+            Back -= Front;
+        } else if (Back < Front) {
+            Index truncation = Capacity - Front;
+            std::memcpy(newData, Data + Front, truncation);
+            std::memcpy(newData + truncation, Data, Back);
+            Back += truncation;
         }
-  
+        
+        Alloc.deallocate(Data);
         Capacity = newCapacity;
+        Data = newData;
+        Front = 0;
     }
 
     void reserve(Index newCapacity) {
@@ -119,41 +102,23 @@ public:
     }
 
     void shrink_to_fit() {
-        if constexpr (ReallocatableAllocator<A>) {
-            if (Back > Front) {
-                std::memcpy(Data, Data + Front, Size * sizeof(std::byte));
-                Back -= Front;
-                Front = 0;
-            } else if (Back < Front) {
-                Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
-                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
-                Back += truncation;
-                Front = 0;
-            }
-          
-            Data = static_cast<std::byte*>(Alloc.reallocate(Data, Size * sizeof(std::byte)));
-        } else {
-            std::byte* newData;
-            if (Back > Front) {
-                newData = static_cast<std::byte*>(Alloc.allocate(Size * sizeof(std::byte)));
-                std::memcpy(Data, Data + Front, newCapacity * sizeof(std::byte));
-                Back -= Front;
-                Front = 0;
-            } else if (Back < Front) {
-                newData = static_cast<std::byte*>(Alloc.allocate(Size * sizeof(std::byte)));
-                Index truncation = Capacity - Front;
-                std::memcpy(newData, Data + Front, truncation * sizeof(std::byte));
-                std::memcpy(newData + truncation, Data, Back * sizeof(std::byte));
-                Back += truncation;
-                Front = 0;
-            }
-          
-            Alloc.deallocate(Data);
-            Data = newData;
+        std::byte* newData;
+        if (Back > Front) {
+            newData = static_cast<std::byte*>(Alloc.allocate(Size));
+            std::memcpy(Data, Data + Front, Size);
+            Back -= Front;
+        } else if (Back < Front) {
+            newData = static_cast<std::byte*>(Alloc.allocate(Size));
+            Index truncation = Capacity - Front;
+            std::memcpy(newData, Data + Front, truncation);
+            std::memcpy(newData + truncation, Data, Back);
+            Back += truncation;
         }
-  
-        Capacity = Size * sizeof(std::byte);
+      
+        Alloc.deallocate(Data);
+        Capacity = Size;
+        Data = newData;
+        Front = 0;
     }
 
 #pragma endregion
