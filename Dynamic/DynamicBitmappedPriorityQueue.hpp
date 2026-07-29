@@ -2,9 +2,9 @@
 
 #pragma Dependencies
 
-#include "BitArray.hpp"
 #include "DefaultAllocator.hpp"
 #include "DSAConcepts.hpp"
+#include "StaticBitArray.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -22,25 +22,29 @@ protected:
   [[no_unique_address]] A Alloc;
   size_t Capacity;
   size_t Size = 0;
-  BitArray* Bitmasks;
+  StaticBitArray* Bitmasks;
   Queue* Queues;
 
+  [[nodiscard]] constexpr size_t BitmaskBits = 8 * sizeof(StaticBitArray);
+
+  [[nodiscard]] constexpr size_t BitShift = std::bit_width(8 * sizeof(StaticBitArray) - 1);
+
   [[nodiscard]] constexpr size_t bit_masks_count() const noexcept {
-    return (Capacity + 63) >> 6;
+    return (Capacity + BitmaskBits - 1) >> BitShift;
   }
 
   [[nodiscard]] constexpr size_t bit_masks_count(size_t maximumPriority) const noexcept {
-    return (maximumPriority + 63) >> 6;
+    return (maximumPriority + BitmaskBits - 1) >> BitShift;
   }
 
   void internal_resize() {
-    const newBitMasksCount = bit_masks_count(newCapacity);
+    const newBitmasksCount = bit_masks_count(newCapacity);
     
     if constexpr (ReallocatableAllocator<A>) {
-      Bitmasks = static_cast<BitArray*>(Alloc.reallocate(Bitmasks, newBitMasksCount * sizeof(BitArray)));
+      Bitmasks = static_cast<StaticBitArray*>(Alloc.reallocate(Bitmasks, newBitmasksCount * sizeof(StaticBitArray)));
     } else {
-      BitArray* newBitmasks = static_cast<BitArray*>(Alloc.allocate(newBitMasksCount * sizeof(BitArray)));
-      std::memcpy(newBitmasks, Bitmasks, bit_masks_count() * sizeof(BitArray));
+      StaticBitArray* newBitmasks = static_cast<StaticBitArray*>(Alloc.allocate(newBitmasksCount * sizeof(StaticBitArray)));
+      std::memcpy(newBitmasks, Bitmasks, bit_masks_count() * sizeof(StaticBitArray));
       Bitmasks = newBitmasks;
     }
     
@@ -71,7 +75,7 @@ public:
 
   DynamicBitmappedPriorityQueue(Index initialCapacity) : Capacity(initialCapacity) {
     const size_t bitMasksCount = bit_masks_count();
-    Bitmasks = static_cast<BitArray*>(Alloc.allocate(bitMasksCount * sizeof(BitArray)));
+    Bitmasks = static_cast<StaticBitArray*>(Alloc.allocate(bitMasksCount * sizeof(StaticBitArray)));
     Queues = static_cast<Queue*>(Alloc.allocate(initialCapacity * sizeof(Queue)));
     std::fill(Bitmasks, Bitmasks + bitMasksCount, 0);
   }
@@ -146,20 +150,20 @@ public:
   void discard(size_t priority) {
     Queue& queue = Queues[priority];
     queue.discard();
-    if (queue.is_empty()) bitArray.reset(priority);
+    if (queue.is_empty()) StaticBitArray.reset(priority);
     Size--;
   }
 
   void discard(size_t minimumPriority, size_t maximumPriority) {
     for (size_t index = minimumPriority; index < maximumPriority; index++) {
-      BitArray& bitArray = Bitmasks[index];
-      size_t priority = bitArray.count_leading_zeros();
+      StaticBitArray& StaticBitArray = Bitmasks[index];
+      size_t priority = StaticBitArray.count_leading_zeros();
       if (priority != 0) {
-        priority += 64 * index - 1;
+        priority += 8 * sizeof(StaticBitArray) * index - 1;
         Queue& queue = Queues[priority];
         queue.discard();
         Size--;
-        if (queue.is_empty()) bitArray.reset(priority);
+        if (queue.is_empty()) StaticBitArray.reset(priority);
         return;
       }
     }
@@ -179,13 +183,13 @@ public:
 
   [[nodiscard]] T dequeue() {
     for (size_t index = 0; index < bit_masks_count(); index++) {
-      BitArray& bitArray = Bitmasks[index];
-      size_t priority = bitArray.count_leading_zeros();
+      StaticBitArray& StaticBitArray = Bitmasks[index];
+      size_t priority = StaticBitArray.count_leading_zeros();
       if (priority != 0) {
-        priority += 64 * index - 1;
+        priority += BitmaskBits * index - 1;
         Queue& queue = Queues[priority];
         T value = queue.dequeue();
-        if (queue.is_empty()) bitArray.reset(priority);
+        if (queue.is_empty()) StaticBitArray.reset(priority);
         Size--;
         return value;
       }
@@ -196,7 +200,7 @@ public:
   [[nodiscard]] T dequeue(size_t priority) {
     Queue& queue = Queues[priority];
     T value = queue.dequeue();
-    if (queue.is_empty()) bitArray.reset(priority);
+    if (queue.is_empty()) StaticBitArray.reset(priority);
     Size--;
     return value;
   }
@@ -211,7 +215,7 @@ public:
 
   void enqueue(size_t priority, T& value) {
     Queues[priority].enqueue(value);
-    bitArray.set(priority);
+    StaticBitArray.set(priority);
     Size++;
   }
 
@@ -229,10 +233,10 @@ public:
 
   T& peek() {
     for (size_t index = 0; index < bit_masks_count(); index++) {
-      BitArray& bitArray = Bitmasks[index];
-      size_t priority = bitArray.count_leading_zeros();
+      StaticBitArray& StaticBitArray = Bitmasks[index];
+      size_t priority = StaticBitArray.count_leading_zeros();
       if (priority != 0) {
-        priority += 64 * index - 1;
+        priority += BitmaskBits * index - 1;
         return Queues[priority].peek();
       }
     }
