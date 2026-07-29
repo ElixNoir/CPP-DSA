@@ -17,6 +17,12 @@ protected:
   StaticBitArray* Data;
   size_t Capacity;
 
+  [[nodiscard]] constexpr StaticBitArray bit_array_at(size_t index) const noexcept {
+    return Data[index >> std::bit_width(8 * sizeof(size_t) - 1)];
+  }
+
+  [[nodiscard]] constexpr size_t IndexBitMask = 8 * sizeof(size_t) - 1;
+
 public:
 
   DynamicBitArray(size_t initialCapacity) {
@@ -84,90 +90,110 @@ public:
 
 #pragma endregion
 
-#pragma region Access
+#pragma region Flip
 
   void flip(size_t index) {
-    Data[index >> 6].flip(index & size_t(63));
+    bit_array_at(index).flip(index & IndexBitMask);
   }
 
-  void flip(size_t start, uint64_t mask) {
-    Data[start >> 6].flip(start & size_t(63), mask);
+  void flip(size_t start, uintmax_t mask) {
+    bit_array_at(start).flip(start & IndexBitMask, mask);
   }
 
   void flip_length(size_t start, size_t length) {
-    Data[start >> 6].flip_length(start & size_t(63), length);
+    bit_array_at(start).flip_length(start & IndexBitMask, length);
   }
+
+#pragma endregion
+
+#pragma region Get
 
   bool get(size_t index) const {
-    return Data[index >> 6].get(index & size_t(63));
+    return bit_array_at(index).get(index & IndexBitMask);
   }
 
-  uint64_t get(size_t start, uint64_t mask) const {
-    return Data[start >> 6].get(start & size_t(63), mask);
+  uintmax_t get(size_t start, uintmax_t mask) const {
+    return bit_array_at(start).get(start & IndexBitMask, mask);
   }
 
-  uint64_t get_length(size_t start, size_t length) const {
-    return Data[start >> 6].get_length(start & size_t(63), length);
+  uintmax_t get_length(size_t start, size_t length) const {
+    return bit_array_at(start).get_length(start & IndexBitMask, length);
   }
+
+#pragma endregion
+
+#pragma region Keep
 
   void keep(size_t index) {
-    Data[index >> 6].keep(index & size_t(63));
+    bit_array_at(index).keep(index & IndexBitMask);
   }
 
-  void keep(size_t start, uint64_t mask) {
-    Data[start >> 6].keep(start & size_t(63), mask);
+  void keep(size_t start, uintmax_t mask) {
+    bit_array_at(start).keep(start & IndexBitMask, mask);
   }
 
   void keep_length(size_t start, size_t length) {
-    Data[start >> 6].keep_length(start & size_t(63), length);
+    bit_array_at(start).keep_length(start & IndexBitMask, length);
   }
+
+#pragma endregion
+
+#pragma region Reset
 
   void reset(size_t index) {
-    Data[index >> 6].reset(index & size_t(63));
+    bit_array_at(index).reset(index & IndexBitMask);
   }
 
-  void reset(size_t start, uint64_t mask) {
-    Data[start >> 6].reset(start & size_t(63), mask);
+  void reset(size_t start, uintmax_t mask) {
+    bit_array_at(start).reset(start & IndexBitMask, mask);
   }
 
   void reset_length(size_t start, size_t length) {
-    Data[start >> 6].reset_length(start & size_t(63), length);
+    bit_array_at(start).reset_length(start & IndexBitMask, length);
   }
+
+#pragma endregion
+
+#pragma region Set
 
   void set(size_t index) {
-    Data[index >> 6].set(index & size_t(63));
+    bit_array_at(index).set(index & IndexBitMask);
   }
 
-  void set(size_t start, uint64_t mask) {
-    Data[start >> 6].set(start & size_t(63), mask);
+  void set(size_t start, uintmax_t mask) {
+    bit_array_at(start).set(start & IndexBitMask, mask);
   }
 
   void set_length(size_t start, size_t length) {
-    Data[start >> 6].set_length(start & size_t(63), length);
+    bit_array_at(start).set_length(start & IndexBitMask, length);
   }
 
+#pragma endregion
+
+#pragma region Counting
+
   size_t count_leading_ones(size_t index) const {
-    return Data[index >> 6].count_leading_ones();
+    return bit_array_at(index).count_leading_ones();
   }
 
   size_t count_leading_zeros(size_t index) const {
-    return Data[index >> 6].count_leading_zeros();
+    return bit_array_at(index).count_leading_zeros();
   }
 
   size_t count_ones(size_t index) const {
-    return Data[index >> 6].count_ones();
-  }
-
-  size_t count_zeros(size_t index) const {
-    return Data[index >> 6].count_zeros();
+    return bit_array_at(index).count_ones();
   }
 
   size_t count_trailing_ones(size_t index) const {
-    return Data[index >> 6].count_trailing_ones();
+    return bit_array_at(index).count_trailing_ones();
   }
 
   size_t count_trailing_zeros(size_t index) const {
-    return Data[index >> 6].count_trailing_zeros();
+    return bit_array_at(index).count_trailing_zeros();
+  }
+
+  size_t count_zeros(size_t index) const {
+    return bit_array_at(index).count_zeros();
   }
 
 #pragma endregion
