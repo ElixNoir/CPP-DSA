@@ -5,69 +5,91 @@
 
 struct StaticBitArray {
 
-  uint64_t Data;
+  uintmax_t Data;
 
 #pragma region Methods
 
+#pragma region Flip
+
   void flip(uint8_t index) {
-    Data ^= 1 << index;
+    Data ^= uintmax_t{1} << index;
   }
 
-  void flip(uint8_t start, uint64_t mask) {
+  void flip(uint8_t start, uintmax_t mask) {
     Data ^= mask << start;
   }
 
   void flip_length(uint8_t start, uint8_t length) {
-    Data ^= (1 << length - 1) << start;
+    Data ^= (uintmax_t{1} << length - 1) << start;
   }
+
+#pragma endregion
+
+#pragma region Get
 
   bool get(uint8_t index) const {
-    return Data & (1 << index);
+    return Data & (uintmax_t{1} << index);
   }
 
-  uint64_t get(uint8_t start, uint64_t mask) const {
+  uintmax_t get(uint8_t start, uintmax_t mask) const {
     return Data & (mask << start);
   }
 
-  uint64_t get_length(uint8_t start, uint8_t length) const {
-    return Data & ((1 << length - 1) << start);
+  uintmax_t get_length(uint8_t start, uint8_t length) const {
+    return Data & ((uintmax_t{1} << length - 1) << start);
   }
+
+#pragma endregion
+
+#pragma region Keep
 
   void keep(uint8_t index) {
-    Data &= 1 << index;
+    Data &= uintmax_t{1} << index;
   }
 
-  void keep(uint8_t start, uint64_t mask) {
+  void keep(uint8_t start, uintmax_t mask) {
     Data &= mask << start;
   }
 
   void keep_length(uint8_t start, uint8_t length) {
-    Data &= (1 << length - 1) << start;
+    Data &= (uintmax_t{1} << length - 1) << start;
   }
+
+#pragma endregion
+
+#pragma region Reset
 
   void reset(uint8_t index) {
-    Data &= ~(1 << index);
+    Data &= ~(uintmax_t{1} << index);
   }
 
-  void reset(uint8_t start, uint64_t mask) {
+  void reset(uint8_t start, uintmax_t mask) {
     Data &= ~(mask << start);
   }
 
   void reset_length(uint8_t start, uint8_t length) {
-    Data &= ~((1 << length - 1) << start);
+    Data &= ~((uintmax_t{1} << length - 1) << start);
   }
+
+#pragma endregion
+
+#pragma region Set
 
   void set(uint8_t index) {
-    Data |= 1 << index;
+    Data |= uintmax_t{1} << index;
   }
 
-  void set(uint8_t start, uint64_t mask) {
+  void set(uint8_t start, uintmax_t mask) {
     Data |= mask << start;
   }
 
   void set_length(uint8_t start, uint8_t length) {
-    Data |= (1 << length - 1) << start;
+    Data |= (uintmax_t{1} << length - 1) << start;
   }
+
+#pragma endregion
+
+#pragma region Counting
 
   uint8_t count_leading_ones() const {
     return std::countl_one(Data);
@@ -81,10 +103,6 @@ struct StaticBitArray {
     return std::popcount(Data);
   }
 
-  uint8_t count_zeros() const {
-    return 8 * sizeof(Data) - std::popcount(Data);
-  }
-
   uint8_t count_trailing_ones() const {
     return std::countr_one(Data);
   }
@@ -92,6 +110,12 @@ struct StaticBitArray {
   uint8_t count_trailing_zeros() const {
     return std::countr_zero(Data);
   }
+
+  uint8_t count_zeros() const {
+    return 8 * sizeof(Data) - std::popcount(Data);
+  }
+
+#pragma endregion
 
 #pragma endregion
 
