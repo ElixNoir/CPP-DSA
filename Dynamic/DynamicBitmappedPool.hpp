@@ -23,24 +23,24 @@ protected:
     [[no_unique_address]] A Alloc;
 
     T* Data;
-    uint64_t* FreeMasks;
+    uintmax_t* FreeMasks;
     size_t Capacity;
     size_t Size = 0;
     size_t Top = 0;
 
-    static constexpr unsigned int Bits = 8 * sizeof(uint64_t);
+    static constexpr unsigned int Bits = 8 * sizeof(uintmax_t);
     static constexpr unsigned int BitShift = std::bit_width(Bits) - 1;
 
-    void grow(const size_t newCapacity) {
-        size_t newFreeMasksSize = ((newCapacity + Bits - 1) >> BitShift) * sizeof(uint64_t);
+    void grow(size_t newCapacity) {
+        size_t newFreeMasksSize = ((newCapacity + Bits - 1) >> BitShift) * sizeof(uintmax_t);
 
         if constexpr (ReallocatableAllocator<A>) {
             Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
-            FreeMasks = static_cast<uint64_t*>(Alloc.reallocate(FreeMasks, newFreeMasksSize));
+            FreeMasks = static_cast<uintmax_t*>(Alloc.reallocate(FreeMasks, newFreeMasksSize));
         }
         else {
             T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
-            uint64_t* newFreeMasks = static_cast<uint64_t*>(Alloc.allocate(newCapacity * sizeof(T)));
+            uintmax_t* newFreeMasks = static_cast<uintmax_t*>(Alloc.allocate(newCapacity * sizeof(T)));
             std::memcpy(newData, Data, Top * sizeof(T));
             std::memcpy(newFreeMasks, FreeMasks, newFreeMasksSize);
             Alloc.deallocate(Data);
@@ -56,7 +56,7 @@ public:
 
     DynamicBitmappedPool(size_t initialCapacity = Bits) : Capacity(initialCapacity) {
         Data = static_cast<T*>(Alloc.allocate(initialCapacity));
-        FreeMasks = static_cast<uint64_t*>(Alloc.allocate((initialCapacity + Bits - 1) >> BitShift));
+        FreeMasks = static_cast<uintmax_t*>(Alloc.allocate((initialCapacity + Bits - 1) >> BitShift));
     }
 
     ~DynamicBitmappedPool() {
@@ -92,7 +92,7 @@ public:
 
 #pragma region Allocation and Deallocation
 
-    [[nodiscard]] constexpr bool can_allocate(const size_t count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_allocate(size_t count = 1) const noexcept {
         return Top + count <= Capacity;
     }
 
@@ -102,10 +102,10 @@ public:
         Size++;
 
         for (size_t index = 0; index < freeMaskCount; index++) {
-            uint64_t mask = FreeMasks[index];
-            if (mask != std::numeric_limits<uint64_t>::max()) {
+            uintmax_t mask = FreeMasks[index];
+            if (mask != std::numeric_limits<uintmax_t>::max()) {
                 size_t bit = std::countr_one(mask);
-                FreeMasks[index] |= uint64_t(1) << bit;
+                FreeMasks[index] |= uintmax_t{1} << bit;
                 return (index << BitShift) | bit;
             }
         }
@@ -115,13 +115,13 @@ public:
         return freeMaskCount << BitShift;
     }
 
-    [[nodiscard]] constexpr bool can_deallocate(const size_t count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_deallocate(size_t count = 1) const noexcept {
         return Size >= count;
     }
 
-    void deallocate(const size_t index) {
+    void deallocate(size_t index) {
         Size--;
-        FreeMasks[index >> BitShift] &= ~(uint64_t(1) << (index & (Bits - 1)));
+        FreeMasks[index >> BitShift] &= ~(uintmax_t{1} << (index & (Bits - 1)));
     }
 
 #pragma endregion
