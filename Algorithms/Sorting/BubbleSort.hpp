@@ -1,5 +1,11 @@
 #pragma once
 
+#pragma region Dependencies
+
+#include "Comparable.hpp"
+
+#pragma endregion
+
 template <Comparable T>
 void bubble_sort(T* data, size_t length) {
     bool swapped;
@@ -7,10 +13,9 @@ void bubble_sort(T* data, size_t length) {
         swapped = false;
         size_t jndex = 1;
         for (size_t index = 0; index < length; index++) {
-            T& a = data[index];
-            T& b = data[jndex];
-            if (a > b) {
-                data[index] = b;
+            if (data[index] > data[jndex]) {
+                T a = data[index];
+                data[index] = data[jndex];
                 data[jndex] = a;
                 swapped = true;
             }
