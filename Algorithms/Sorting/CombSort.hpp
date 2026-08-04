@@ -15,10 +15,10 @@ void comb_sort(T* data, size_t length) {
     if (gap < 1) gap = 1;
     swapped = false;
     for (size_t index = 0; index < length - gap; index++) {
-      T b = data[index + gap];
-      if (data[index] > b) {
-        data[index + gap] = data[index];
-        data[index] = b;
+      if (data[index] > data[index + gap]) {
+        T a = data[index];
+        data[index] = data[index + gap];
+        data[index + gap] = a;
         swapped = true
       }
     }
