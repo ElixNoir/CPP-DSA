@@ -4,15 +4,17 @@
 
 #include "Comparable.hpp"
 
+#include <concepts>
+
 #pragma endregion
 
-template <Comparable T>
-void bubble_sort(T* data, size_t length) {
+template <Comparable T, std::unsigned_integral Index = uint32_t>
+void bubble_sort(T* data, Index length) {
     bool swapped;
     do {
         swapped = false;
-        size_t jndex = 1;
-        for (size_t index = 0; index < length; index++) {
+        Index jndex = 1;
+        for (Index index = 0; index < length; index++) {
             if (data[index] > data[jndex]) {
                 T a = data[index];
                 data[index] = data[jndex];
