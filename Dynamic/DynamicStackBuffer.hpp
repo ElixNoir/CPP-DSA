@@ -6,7 +6,6 @@
 #include "DSAConcepts.hpp"
 
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <type_traits>
 
@@ -24,14 +23,14 @@ protected:
 
     [[no_unique_address]] A Alloc;
 
-    uint8_t* Data;
-    Index Size = 0;
+    std::byte* Data;
+    Index Position = 0;
     Index Capacity;
 
 public:
 
     DynamicStackBuffer(Index initialCapacity) : Capacity(initialCapacity) {
-        Data = static_cast<uint8_t*>(Alloc.allocate(initialCapacity));
+        Data = static_cast<std::byte*>(Alloc.allocate(initialCapacity));
     }
 
     ~DynamicStackBuffer() {
@@ -40,23 +39,18 @@ public:
 
 #pragma region Methods
 
-    template <typename T>
-    [[nodiscard]] T& operator[](Index index) {
-        return *reinterpret_cast<T*>(Data + index);
-    }
-
 #pragma region Getters
 
     [[nodiscard]] constexpr Index capacity() const noexcept {
         return Capacity;
     }
 
-    [[nodiscard]] constexpr uint8_t* data() const noexcept {
+    [[nodiscard]] constexpr std::byte* data() const noexcept {
         return Data;
     }
 
-    [[nodiscard]] constexpr Index size() const noexcept {
-        return Size;
+    [[nodiscard]] constexpr Index position() const noexcept {
+        return Position;
     }
 
 #pragma endregion
@@ -69,9 +63,9 @@ public:
     }
 
     void resize(Index newCapacity) {
-        if (Capacity == Size) return;
+        if (Capacity == Position) return;
         Data = Alloc.reallocate(Data, newCapacity);
-        if (newCapacity < Capacity) Size = newCapacity;
+        if (newCapacity < Capacity) Position = newCapacity;
         Capacity = newCapacity;
     }
 
@@ -83,8 +77,8 @@ public:
     }
 
     void shrink_to_fit() {
-        if (Capacity == Size) return;
-        Capacity = Size;
+        if (Capacity == Position) return;
+        Capacity = Position;
         Data = Alloc.reallocate(Data, Capacity);
     }
 
@@ -93,13 +87,13 @@ public:
 #pragma region Discard
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_discard(const Index count = 1) const noexcept {
-        return Size >= count * sizeof(T);
+    [[nodiscard]] constexpr bool can_discard(Index count = 1) const noexcept {
+        return Position >= count * sizeof(T);
     }
 
-    template <typename T = uint8_t>
+    template <typename T = std::byte>
     void discard(const Index count = 1) {
-        Size -= count * sizeof(T);
+        Position -= count * sizeof(T);
     }
 
 #pragma endregion
@@ -107,20 +101,33 @@ public:
 #pragma region Peek
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_peek(const Index count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_peek(Index count = 1) const noexcept {
         return can_discard<T>(count);
     }
 
     template <typename T>
     [[nodiscard]] T& peek() {
-        return *reinterpret_cast<T*>(Data + Size - sizeof(T));
+        return *reinterpret_cast<T*>(Data + Position - sizeof(T));
+    }
+
+    template <typename T>
+    [[nodiscard]] T& peek(Index position) {
+        return *reinterpret_cast<T*>(Data + position - sizeof(T));
     }
 
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     [[nodiscard]] T peek_copy() {
         T value;
-        std::memcpy(&value, Data + Size - sizeof(T), sizeof(T));
+        std::memcpy(&value, Data + Position - sizeof(T), sizeof(T));
+        return value;
+    }
+
+    template <typename T>
+        requires (std::is_trivially_copyable_v<T>)
+    [[nodiscard]] T peek_copy(Index position) {
+        T value;
+        std::memcpy(&value, Data + position - sizeof(T), sizeof(T));
         return value;
     }
 
@@ -129,23 +136,23 @@ public:
 #pragma region Pop
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_pop(const Index count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_pop(Index count = 1) const noexcept {
         return can_discard<T>(count);
     }
 
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     [[nodiscard]] T pop() {
-        Size -= sizeof(T);
+        Position -= sizeof(T);
         T value;
-        std::memcpy(&value, Data + Size, sizeof(T));
+        std::memcpy(&value, Data + Position, sizeof(T));
         return value;
     }
 
     template <typename T>
     T& pop_reference() {
-        Size -= sizeof(T);
-        return *reinterpret_cast<T*>(Data.data() + Size);
+        Position -= sizeof(T);
+        return *reinterpret_cast<T*>(Data.data() + Position);
     }
 
 #pragma endregion
@@ -153,15 +160,27 @@ public:
 #pragma region Push
 
     template <typename T>
-    [[nodiscard]] constexpr bool can_push(const Index count = 1) const noexcept {
-        return Size + count * sizeof(T) <= Capacity;
+    [[nodiscard]] constexpr bool can_push(Index count = 1) const noexcept {
+        return Position + count * sizeof(T) <= Capacity;
     }
 
     template <typename T>
         requires (std::is_trivially_copyable_v<T>)
     void push(const T& value) {
-        std::memcpy(Data + Size, &value, sizeof(T));
-        Size += sizeof(T);
+        std::memcpy(Data + Position, &value, sizeof(T));
+        Position += sizeof(T);
+    }
+
+#pragma endregion
+
+#pragma region Setters
+
+    [[nodiscard]] constexpr bool can_position(Index position) const {
+        return position < Capacity;
+    }
+
+    void position(Index index) {
+        Position = index;
     }
 
 #pragma endregion
