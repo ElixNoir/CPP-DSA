@@ -33,7 +33,7 @@ protected:
 public:
 
   DynamicBinaryTree(Index initialCapacity) : Capacity(initialCapacity) {
-    Data = static_cast<T*>(Alloc.allocate(initialCapacity * sizeof(Node)));
+    Data = static_cast<Node*>(Alloc.allocate(initialCapacity * sizeof(Node)));
   }
 
   ~DynamicBinaryTree() {
@@ -85,14 +85,14 @@ public:
 
   void grow(Index newCapacity) {
     if constexpr (ReallocatableAllocator<A>) {
-      Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
+      Data = static_cast<Node*>(Alloc.reallocate(Data, newCapacity * sizeof(Node)));
     } else {
-      T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
-      if constexpr (std::is_trivially_copyable_v<T>)
-        std::memcpy(newData, Data, Capacity * sizeof(T));
-      else {
+      Node* newData = static_cast<Node*>(Alloc.allocate(newCapacity * sizeof(Node)));
+      //if constexpr (std::is_trivially_copyable_v<Node>)
+      std::memcpy(newData, Data, Capacity * sizeof(Node));
+      //else {
         // traversal to call destructors
-      }
+      //}
       
       Alloc.deallocate(Data);
       Data = newData;
@@ -122,7 +122,7 @@ public:
     }
 
     while (true) {
-      T& currentKey = Data[currentIndex - 1].Key;
+      const T& currentKey = Data[currentIndex - 1].Key;
       if (current.Key == key) {
         Data[currentIndex - 1] = { 0, 0, key };
         return 0;
@@ -251,7 +251,7 @@ public:
     Index currentIndex = Root;
     Index candidate = currentIndex;
     while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex - 1].Key;
+      const T& currentKey = Data[currentIndex - 1].Key;
       if (currentKey == key) return currentIndex;
       else if (currentKey > key) {
         candidate = currentIndex;
@@ -264,9 +264,11 @@ public:
   [[nodiscard]] Index find(const T& key) const {
     Index currentIndex = Root;
     while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex - 1].Key;
+      const T& currentKey = Data[currentIndex - 1].Key;
       if (currentKey == key) return currentIndex;
-      currentIndex = (currentKey > key) ? Data[currentIndex - 1].Left : Data[currentIndex - 1].Right;
+      currentIndex = (currentKey > key)
+        ? Data[currentIndex - 1].Left
+        : Data[currentIndex - 1].Right;
     }
     return 0;
   }
@@ -275,7 +277,7 @@ public:
     Index currentIndex = Root;
     Index candidateIndex = currentIndex;
     while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex - 1].Key;
+      const T& currentKey = Data[currentIndex - 1].Key;
       if (currentKey == key) return currentIndex;
       else if (currentKey < key) {
         candidateIndex = currentIndex;
