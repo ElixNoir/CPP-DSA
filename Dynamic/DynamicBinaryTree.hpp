@@ -42,20 +42,16 @@ public:
 
 #pragma region Getters
 
-  [[nodiscard]] T& operator[](Index index) const {
-    return Data[index].Key;
-  }
-
-  [[nodiscard]] const T& operator[](const Index index) const {
-    return Data[index].Key;
+  [[nodiscard]] const T& operator[](Index index) const {
+    return Data[index - 1].Key;
   }
 
   [[nodiscard]] constexpr Index left_of(Index index) const {
-    return Data[index].Left;
+    return Data[index - 1].Left;
   }
 
   [[nodiscard]] constexpr Index right_of(Index index) const {
-    return Data[index].Right;
+    return Data[index - 1].Right;
   }
 
 #pragma endregion
@@ -68,7 +64,7 @@ public:
 
   [[nodiscard]] const Index allocate() {
     Index index = FreeRoot;
-    if (index != 0) address = Data[index].Right;
+    if (index != 0) address = Data[index - 1].Right;
     else index = ++Size;
     return index;
   }
@@ -78,7 +74,7 @@ public:
   }
 
   void deallocate(Index index) {
-    Data[index].Right = FreeRoot;
+    Data[index - 1].Right = FreeRoot;
     FreeRoot = index;
     Size--;
   }
@@ -121,31 +117,31 @@ public:
     Index currentIndex = Root;
     if (currentIndex == 0) {
       Root = allocate();
-      Data[Root] = { 0, 0, key };
+      Data[Root - 1] = { 0, 0, key };
       return Root;
     }
 
     while (true) {
-      T& currentKey = Data[currentIndex].Key;
+      T& currentKey = Data[currentIndex - 1].Key;
       if (current.Key == key) {
-        Data[currentIndex] = { 0, 0, key };
+        Data[currentIndex - 1] = { 0, 0, key };
         return 0;
       } else if (currentKey > key) {
-        Index leftIndex = Data[currentIndex].Left;
+        Index leftIndex = Data[currentIndex - 1].Left;
         if (leftIndex != 0) currentIndex = leftIndex;
         else {
           Index index = allocate();
-          Data[index] = { 0, 0, key };
-          Data[currentIndex].Left = index;
+          Data[index - 1] = { 0, 0, key };
+          Data[currentIndex - 1].Left = index;
           return index;
         }
       } else {
-        Index rightIndex = Data[currentIndex].Right;
+        Index rightIndex = Data[currentIndex - 1].Right;
         if (rightIndex != 0) currentIndex = rightIndex;
         else {
           Index index = allocate();
-          Data[index] = { 0, 0, key };
-          Data[currentIndex].Right = index;
+          Data[index - 1] = { 0, 0, key };
+          Data[currentIndex - 1].Right = index;
           return index;
         }
       }
@@ -161,28 +157,28 @@ public:
     if (currentIndex == 0) return 0;
     
     Index parentIndex = 0;
-    Index leftIndex = Data[currentIndex].Left;
-    Index rightIndex = Data[currentIndex].Right;
-    if (Data[currentIndex].Left == 0 || Data[currentIndex].Right == 0) {
+    Index leftIndex = Data[currentIndex - 1].Left;
+    Index rightIndex = Data[currentIndex - 1].Right;
+    if (Data[currentIndex - 1].Left == 0 || Data[currentIndex - 1].Right == 0) {
       Index replacementIndex = leftIndex != 0 ? leftIndex : rightIndex;
       if (parentIndex == 0) Root = replacementIndex;
-      else if (Data[parentIndex].Left == currentIndex) Data[parentIndex].Left = replacementIndex;
-      else Data[parentIndex].Right = replacementIndex;
+      else if (Data[parentIndex - 1].Left == currentIndex) Data[parentIndex - 1].Left = replacementIndex;
+      else Data[parentIndex - 1].Right = replacementIndex;
     }
 
     parentIndex = currentIndex;
-    leftIndex = Data[rightIndex].Left;
+    leftIndex = Data[rightIndex - 1].Left;
     while (leftIndex != 0) {
       parentIndex = rightIndex;
       rightIndex = leftIndex;
-      leftIndex = Data[rightIndex].Left;
+      leftIndex = Data[rightIndex - 1].Left;
     }
 
-    Data[currentIndex] = Data[rightIndex];
+    Data[currentIndex - 1] = Data[rightIndex - 1];
 
-    Index replacementIndex = Data[rightIndex].Right;
-    if (parentIndex == currentIndex) Data[parentIndex].Right = replacementIndex;
-    else Data[parentIndex].Left = replacementIndex;
+    Index replacementIndex = Data[rightIndex - 1].Right;
+    if (parentIndex == currentIndex) Data[parentIndex - 1].Right = replacementIndex;
+    else Data[parentIndex - 1].Left = replacementIndex;
 
     deallocate(rightIndex);
     
@@ -205,10 +201,10 @@ public:
     while (head <= top) {
       data[top++] = current;
 
-      Index left = Data[current].Left;
+      Index left = Data[current - 1].Left;
       if (left != 0) data[top++] = left;
 
-      Index right = Data[current].Right;
+      Index right = Data[current - 1].Right;
       if (right != 0) data[top++] = right;
 
       current = data[++head];
@@ -221,10 +217,10 @@ public:
     while (current != 0) {
       data[top++] = current;
       
-      Index left = Data[current].Left;
+      Index left = Data[current - 1].Left;
       if (left != 0) data[top++] = left;
 
-      Index right = Data[current].Right;
+      Index right = Data[current - 1].Right;
       if (right != 0) data[top++] = right;
   
       current = data[--top];
@@ -237,10 +233,10 @@ public:
     while (current != 0) {
       data[top++] = current;
 
-      Index right = Data[current].Right;
+      Index right = Data[current - 1].Right;
       if (right != 0) data[top++] = right;
       
-      Index left = Data[current].Left;
+      Index left = Data[current - 1].Left;
       if (left != 0) data[top++] = left;
 
       current = data[--top];
@@ -255,12 +251,12 @@ public:
     Index currentIndex = Root;
     Index candidate = currentIndex;
     while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex].Key;
+      T& currentKey = Data[currentIndex - 1].Key;
       if (currentKey == key) return currentIndex;
       else if (currentKey > key) {
         candidate = currentIndex;
-        currentIndex = Data[currentIndex].Left;
-      } else currentIndex = Data[currentIndex].Right;
+        currentIndex = Data[currentIndex - 1].Left;
+      } else currentIndex = Data[currentIndex - 1].Right;
     }
     return candidate;
   }
@@ -268,25 +264,25 @@ public:
   [[nodiscard]] Index find(const T& key) const {
     Index currentIndex = Root;
     while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex].Key;
+      T& currentKey = Data[currentIndex - 1].Key;
       if (currentKey == key) return currentIndex;
-      currentIndex = (currentKey > key) ? Data[current].Left : Data[current].Right;
+      currentIndex = (currentKey > key) ? Data[currentIndex - 1].Left : Data[currentIndex - 1].Right;
     }
     return 0;
   }
 
   [[nodiscard]] Index floor(const T& key) const {
     Index currentIndex = Root;
-    Index candidate = currentIndex;
+    Index candidateIndex = currentIndex;
     while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex].Key;
+      T& currentKey = Data[currentIndex - 1].Key;
       if (currentKey == key) return currentIndex;
       else if (currentKey < key) {
-        candidate = currentIndex;
-        currentIndex = Data[currentIndex].Right;
-      } else currentIndex = Data[currentIndex].Left;
+        candidateIndex = currentIndex;
+        currentIndex = Data[currentIndex - 1].Right;
+      } else currentIndex = Data[currentIndex - 1].Left;
     }
-    return candidate;
+    return candidateIndex;
   }
 
 #pragma endregion
