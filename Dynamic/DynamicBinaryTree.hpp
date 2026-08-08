@@ -4,6 +4,8 @@
 
 #include "DSAConcepts.hpp"
 
+#include <cstddef>
+
 #pragma endregion
 
 template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
@@ -44,6 +46,10 @@ public:
     return Data[index].Key;
   }
 
+  [[nodiscard]] const T& operator[](const Index index) const {
+    return Data[index].Key;
+  }
+
   [[nodiscard]] constexpr Index left_of(Index index) const {
     return Data[index].Left;
   }
@@ -56,7 +62,7 @@ public:
 
 #pragma region Memory Management
 
-  [[nodiscard]] constexpr bool can_allocate(Index count = 1) {
+  [[nodiscard]] constexpr bool can_allocate(Index count = 1) const noexcept {
     return Size + count <= Capacity;
   }
 
@@ -67,7 +73,7 @@ public:
     return index;
   }
 
-  [[nodiscard]] constexpr bool can_deallocate(Index count = 1) {
+  [[nodiscard]] constexpr bool can_deallocate(Index count = 1) const noexcept {
     return Size >= count;
   }
 
@@ -105,45 +111,13 @@ public:
 
 #pragma endregion
 
-  [[nodiscard]] Index ceiling(T& key) {
-    Index currentIndex = Root;
-    Index candidate = currentIndex;
-    while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex].Key;
-      if (currentKey == key) return currentIndex;
-      else if (currentKey > key) {
-        candidate = currentIndex;
-        currentIndex = self[currentIndex].Left;
-      } else currentIndex = self[currentIndex].Right;
-    }
-    return candidate;
+#pragma region Modification
+
+  [[nodiscard]] constexpr bool can_upsert() const noexcept {
+    return can_allocate();
   }
 
-  [[nodiscard]] Index find(T& key) {
-    Index currentIndex = Root;
-    while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex].Key;
-      if (currentKey == key) return currentIndex;
-      currentIndex = (currentKey > key) ? Data[current].Left : Data[current].Right;
-    }
-    return 0;
-  }
-
-  [[nodiscard]] Index floor(T& key) {
-    Index currentIndex = Root;
-    Index candidate = currentIndex;
-    while (currentIndex != 0) {
-      T& currentKey = Data[currentIndex].Key;
-      if (currentKey == key) return currentIndex;
-      else if (currentKey < key) {
-        candidate = currentIndex;
-        currentIndex = self[currentIndex].Right;
-      } else currentIndex = self[currentIndex].Left;
-    }
-    return candidate;
-  }
-
-  [[nodiscard]] Index upsert(T& key) {
+  [[nodiscard]] Index upsert(const T& key) {
     Index currentIndex = Root;
     if (currentIndex == 0) {
       Root = allocate();
@@ -178,7 +152,11 @@ public:
     }
   }
 
-  [[nodiscard]] Index remove(T& key) {
+  [[nodiscard]] constexpr bool can_remove() const noexcept {
+    return Size != 0;
+  }
+
+  [[nodiscard]] Index remove(const T& key) {
     Index currentIndex = find(key);
     if (currentIndex == 0) return 0;
     
@@ -210,5 +188,107 @@ public:
     
     return currentIndex;
   }
+
+#pragma endregion
+
+#pragma region Ordering
+
+  [[nodiscard]] constexpr bool can_copy_order() const noexcept {
+    return Root != 0;
+  }
+
+  void copy_level_order(Index* data) const {
+    Index current = Root;
+    Index head = 0;
+    Index top = 0;
+    
+    while (head <= top) {
+      data[top++] = current;
+
+      Index left = Data[current].Left;
+      if (left != 0) data[top++] = left;
+
+      Index right = Data[current].Right;
+      if (right != 0) data[top++] = right;
+
+      current = data[++head];
+    }
+  }
+
+  void copy_post_order(Index* data) const {
+    Index current = Root;
+    Index top = 0;
+    while (current != 0) {
+      data[top++] = current;
+      
+      Index left = Data[current].Left;
+      if (left != 0) data[top++] = left;
+
+      Index right = Data[current].Right;
+      if (right != 0) data[top++] = right;
+  
+      current = data[--top];
+    }
+  }
+
+  void copy_pre_order(Index* data) const {
+    Index current = Root;
+    Index top = 0;
+    while (current != 0) {
+      data[top++] = current;
+
+      Index right = Data[current].Right;
+      if (right != 0) data[top++] = right;
+      
+      Index left = Data[current].Left;
+      if (left != 0) data[top++] = left;
+
+      current = data[--top];
+    }
+  }
+
+#pragma endregion
+
+#pragma region Search
+
+  [[nodiscard]] Index ceiling(const T& key) {
+    Index currentIndex = Root;
+    Index candidate = currentIndex;
+    while (currentIndex != 0) {
+      T& currentKey = Data[currentIndex].Key;
+      if (currentKey == key) return currentIndex;
+      else if (currentKey > key) {
+        candidate = currentIndex;
+        currentIndex = Data[currentIndex].Left;
+      } else currentIndex = Data[currentIndex].Right;
+    }
+    return candidate;
+  }
+
+  [[nodiscard]] Index find(const T& key) const {
+    Index currentIndex = Root;
+    while (currentIndex != 0) {
+      T& currentKey = Data[currentIndex].Key;
+      if (currentKey == key) return currentIndex;
+      currentIndex = (currentKey > key) ? Data[current].Left : Data[current].Right;
+    }
+    return 0;
+  }
+
+  [[nodiscard]] Index floor(const T& key) const {
+    Index currentIndex = Root;
+    Index candidate = currentIndex;
+    while (currentIndex != 0) {
+      T& currentKey = Data[currentIndex].Key;
+      if (currentKey == key) return currentIndex;
+      else if (currentKey < key) {
+        candidate = currentIndex;
+        currentIndex = Data[currentIndex].Right;
+      } else currentIndex = Data[currentIndex].Left;
+    }
+    return candidate;
+  }
+
+#pragma endregion
 
 };
