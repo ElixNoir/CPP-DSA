@@ -7,20 +7,20 @@
 #pragma endregion
 
 template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
-class IncrementalAoSContainer : public AoSContainer<T, Index, A> {
+class IncrementalDynamicAoSContainer : public DynamicAoSContainer<T, Index, A> {
 protected:
 
     Index Size = 0;
 
 public:
 
-    using Base = AoSContainer<T, Index, A>;
+    using Base = DynamicAoSContainer<T, Index, A>;
 
-    IncrementalAoSContainer(Index initialCapacity) : Base(initialCapacity) {}
+    IncrementalDynamicAoSContainer(Index initialCapacity) : Base(initialCapacity) {}
 
-    IncrementalAoSContainer(IncrementalAoSContainer& other) : Base(other), Size(other.Size) {}
+    IncrementalDynamicAoSContainer(IncrementalDynamicAoSContainer& other) : Base(other), Size(other.Size) {}
 
-    IncrementalAoSContainer(IncrementalAoSContainer&& other) : Base(other), Size(other.Size) {}
+    IncrementalDynamicAoSContainer(IncrementalDynamicAoSContainer&& other) : Base(other), Size(other.Size) {}
 
 #pragma region Methods
 
