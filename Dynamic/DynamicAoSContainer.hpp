@@ -11,7 +11,7 @@
 #pragma endregion
 
 template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
-class AoSContainer : public StorageDescriptor<Index> {
+class DynamicAoSContainer {
 protected:
 
     [[no_unique_address]] A Alloc;
@@ -21,20 +21,20 @@ protected:
 
 public:
 
-    AoSContainer(Index initialCapacity) {
+    DynamicAoSContainer(Index initialCapacity) {
         Data = static_cast<T*>(Alloc.allocate(sizeof(T) * initialCapacity));
     }
 
-    AoSContainer(AoSContainer& other) noexcept : Capacity(other.Capacity), Size(other.Size) {
+    DynamicAoSContainer(DynamicAoSContainer& other) noexcept : Capacity(other.Capacity) {
         Data = static_cast<T*>(Alloc.allocate(sizeof(T) * initialCapacity));
         std::memcpy(Data, other.Data, sizeof(T) * other.Capacity);
     }
 
-    AoSContainer(AoSContainer&& other) noexcept : Data(other.Data), Capacity(other.Capacity), Size(other.Size) {
+    DynamicAoSContainer(DynamicAoSContainer&& other) noexcept : Data(other.Data), Capacity(other.Capacity) {
         other.Data = nullptr;
     }
 
-    ~AoSContainer() {
+    ~DynamicAoSContainer() {
         Alloc.deallocate(Data);
     }
 
