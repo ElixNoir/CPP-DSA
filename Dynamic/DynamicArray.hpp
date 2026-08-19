@@ -2,36 +2,25 @@
 
 #pragma region Dependencies
 
-#include "DefaultAllocator.hpp"
-#include "DSAConcepts.hpp"
-
-#include <cstddef>
-#include <cstring>
-#include <type_traits>
+#include "DynamicAoSContainer.hpp"
 
 #pragma endregion
 
 template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
-  requires (std::is_trivially_copyable_v<T>)
-class DynamicArray {
-protected:
-
-  [[no_unique_address]] A Alloc;
-
-  T* Data;
-  Index Capacity;
-
+class DynamicArray : public DynamicAoSContainer<T, Index, A> {
 public:
 
-  DynamicArray(Index initialCapacity) {
-    Data = static_cast<T*>(Alloc.allocate(initialCapacity * sizeof(T)));
-  }
+  using Base = DynamicAoSContainer<T, Index, A>;
 
-  ~DynamicArray() {
-    Alloc.deallocate(Data);
-  }
+  DynamicArray(Index initialCapacity) : Base(initialCapacity) {}
+
+  DynamicArray(DynamicArray& other) : Base(other) {}
+  
+  DynamicArray(DynamicArray&& other) : Base(other) {}
 
 #pragma region Methods
+
+#pragma region Operators
 
   [[nodiscard]] T& operator[](Index index) {
     return Data[index];
@@ -41,60 +30,9 @@ public:
     return Data[index];
   }
 
-#pragma region Getters
-
-  [[nodiscard]] constexpr Index capacity() const noexcept {
-    return Capacity;
-  }
-
-  [[nodiscard]] constexpr T* data() const noexcept {
-    return Data;
-  }
-
 #pragma endregion
 
-#pragma region Memory Management
-
-  void double_capacity() {
-    grow(2 * Capacity);
-  }
-
-  void grow(Index newCapacity) {
-    if constexpr (ReallocatableAllocator<A>)
-      Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity));
-    else {
-      T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
-      std::memcpy(newData, Data, Capacity * sizeof(T));
-      Alloc.deallocate(Data);
-      Data = newData;
-    }
-
-    Capacity = newCapacity;
-  }
-
-  void reserve(Index newCapacity) {
-    if (newCapacity > Capacity) grow(newCapacity);
-  }
-
-  void resize(Index newCapacity) {
-    if (newCapacity < Capacity) shrink(newCapacity);
-    else if (newCapacity > Capacity) grow(newCapacity);
-  }
-
-  void shrink(Index newCapacity) {
-    if constexpr (ReallocatableAllocator<A>)
-      Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity));
-    else {
-      T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
-      std::memcpy(newData, Data, newCapacity * sizeof(T));
-      Alloc.deallocate(Data);
-      Data = newData;
-    }
-
-    Capacity = newCapacity;
-  }
-
-#pragma endregion
+  // Iterators?  Etc?
 
 #pragma endregion
 
