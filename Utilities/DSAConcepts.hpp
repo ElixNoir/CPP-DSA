@@ -34,3 +34,80 @@ concept Comparable = requires(const T& t, const U& u) {
 };
 
 #pragma endregion
+
+#pragma region Structure
+
+template <std::unsigned_integral Index = size_t>
+class StorageDescriptor {
+protected:
+
+    Index Size = 0;
+    Index Capacity;
+
+public:
+
+#pragma region Methods
+
+#pragma region Getters
+
+    [[nodiscard]] constexpr capacity() const noexcept {
+        return Capacity;
+    }
+
+    [[nodiscard]] constexpr size() const noexcept {
+        return Size;
+    }
+
+#pragma endregion
+
+    [[nodiscard]] constexpr can_add(Index count = 1) const noexcept {
+        return count <= Capacity - Size;
+    }
+
+    [[nodiscard]] constexpr can_remove(Index count = 1) const noexcept {
+        return Size >= count;
+    }
+
+    [[nodiscard]] constexpr is_empty() const noexcept {
+        return Size == 0;
+    }
+
+    [[nodiscard]] constexpr is_full() const noexcept {
+        return Size == Capacity;
+    }
+
+#pragma endregion
+
+};
+
+template <typename T, std::unsigned_integral Index = size_t>
+class AoSContainer : public StorageDescriptor<Index> {
+protected:
+
+    T* Data;
+
+public:
+
+#pragma region Methods
+
+#pragma region Getters
+
+    [[nodiscard]] constexpr data() const noexcept {
+        return Data;
+    }
+
+#pragma endregion
+
+#pragma endregion
+
+};
+
+/*template <typename T, std::unsigned_integral Index = size_t>
+class SoAContainer : public StorageDescriptor<Index> {
+protected:
+
+public:
+
+};*/
+
+#pragma endregion
