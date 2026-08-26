@@ -26,7 +26,7 @@ public:
     }
 
     DynamicAoSContainer(DynamicAoSContainer& other) noexcept : Capacity(other.Capacity) {
-        Data = static_cast<T*>(Alloc.allocate(sizeof(T) * initialCapacity));
+        Data = static_cast<T*>(Alloc.allocate(sizeof(T) * other.Capacity));
         std::memcpy(Data, other.Data, sizeof(T) * other.Capacity);
     }
 
@@ -42,11 +42,11 @@ public:
 
 #pragma region Getters
 
-    [[nodiscard]] constexpr capacity() const noexcept {
+    [[nodiscard]] constexpr Index capacity() const noexcept {
         return Capacity;
     }
 
-    [[nodiscard]] constexpr data() const noexcept {
+    [[nodiscard]] constexpr T* data() const noexcept {
         return Data;
     }
 
