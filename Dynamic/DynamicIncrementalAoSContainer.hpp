@@ -26,19 +26,19 @@ public:
 
 #pragma region Helpers
 
-    [[nodiscard]] constexpr can_add(Index count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_add(Index count = 1) const noexcept {
         return count <= Capacity - Size;
     }
 
-    [[nodiscard]] constexpr can_remove(Index count = 1) const noexcept {
+    [[nodiscard]] constexpr bool can_remove(Index count = 1) const noexcept {
         return Size >= count;
     }
 
-    [[nodiscard]] constexpr is_empty() const noexcept {
+    [[nodiscard]] constexpr bool is_empty() const noexcept {
         return Size == 0;
     }
 
-    [[nodiscard]] constexpr is_full() const noexcept {
+    [[nodiscard]] constexpr bool is_full() const noexcept {
         return Size == Capacity;
     }
 
@@ -46,7 +46,7 @@ public:
 
 #pragma region Getters
 
-    [[nodiscard]] constexpr size() const noexcept {
+    [[nodiscard]] constexpr Index size() const noexcept {
         return Size;
     }
 
