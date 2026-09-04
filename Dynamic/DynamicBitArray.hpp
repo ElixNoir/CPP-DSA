@@ -198,6 +198,42 @@ public:
 
 #pragma endregion
 
+#pragma region Indexing
+
+  size_t index_of_next_one(size_t index) const {
+    return (index << 6) + index_of_next_one_in(index);
+  }
+
+  size_t index_of_next_one(size_t index, size_t bitIndex) const {
+    return (index << 6) + index_of_next_one_in(index, bitIndex);
+  }
+
+  size_t index_of_next_one_in(size_t index) const {
+    return bit_array_at(index).index_of_next_one();
+  }
+
+  size_t index_of_next_one_in(size_t index, size_t bitIndex) const {
+    return bit_array_at(index).index_of_next_one(bitIndex);
+  }
+
+  size_t index_of_next_one(size_t index) const {
+    return (index << 6) + index_of_next_zoro_in(index);
+  }
+
+  size_t index_of_next_zero(size_t index, size_t bitIndex) const {
+    return (index << 6) + index_of_next_zero_in(index, bitIndex);
+  }
+
+  size_t index_of_next_zero_in(size_t index) const {
+    return bit_array_at(index).index_of_next_zero();
+  }
+
+  size_t index_of_next_zero_in(size_t index, size_t bitIndex) const {
+    return bit_array_at(index).index_of_next_zero(bitIndex);
+  }
+
+#pragma endregion
+
 #pragma endregion
 
 };
