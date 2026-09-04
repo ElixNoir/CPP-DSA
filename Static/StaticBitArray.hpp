@@ -1,15 +1,45 @@
 #pragma once
 
+#pragma region Dependencies
+
 #include <bit>
+#include <concepts>
 #include <cstdint>
 
+#pragma endregion
+
+template <std::unsigned_integral T = uintmax_t>
 struct StaticBitArray {
 
-  uintmax_t Data;
-  constexpr uintmax_t Bits = 8 * sizeof(Data);
-  constexpr uintmax_t Maximum = ~(0);
+  T Data;
+  constexpr T Bits = 8 * sizeof(Data);
+  constexpr T Maximum = ~(0);
 
 #pragma region Methods
+
+#pragma region Mask
+
+  [[nodiscard]] constexpr static T mask(T index) const noexcept {
+    return T{1} << index;
+  }
+
+  [[nodiscard]] constexpr static T mask(T start, T mask) const noexcept {
+    return mask << start;
+  }
+
+  [[nodiscard]] constexpr static T mask_length(T start, T length) const noexcept {
+    return ((T{1} << length) - T{1}) << start;
+  }
+
+  [[nodiscard]] constexpr static T mask_range(T start, T end) const noexcept {
+    return mask_length(start, end - start);
+  }
+
+  [[nodiscard]] constexpr static T mask_range_inclusive(T start, T end) const noexcept {
+    return ((T{1} << (end - start + 1)) - T{1}) << start;
+  }
+
+#pragma endregion
 
 #pragma region Flip
 
@@ -17,51 +47,55 @@ struct StaticBitArray {
     Data ^= Maximum;
   }
 
-  void flip(uintmax_t index) noexcept {
-    Data ^= uintmax_t{1} << index;
+  void flip(T index) noexcept {
+    Data ^= mask(index);
   }
 
-  void flip(uintmax_t start, uintmax_t mask) noexcept {
-    Data ^= mask << start;
+  void flip(T start, T mask) noexcept {
+    Data ^= this->mask(start, mask);
   }
 
-  void flip_length(uintmax_t start, uintmax_t length) noexcept {
-    Data ^= ((uintmax_t{1} << length) - uintmax_t{1}) << start;
+  void flip_length(T start, T length) noexcept {
+    Data ^= mask_length(start, length);
   }
 
-  void flip_range(uintmax_t start, uintmax_t end) noexcept {
+  void flip_range(T start, T end) noexcept {
     flip_length(start, end - start);
   }
 
-  void flip_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
-    Data ^= ((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start;
+  void flip_range_inclusive(T start, T end) noexcept {
+    Data ^= mask_range_inclusive(start, end);
+  }
+
+  void flip_rightmost() noexcept {
+    Data ^= get_rightmost();
   }
 
 #pragma endregion
 
 #pragma region Get
 
-  [[nodiscard]] constexpr bool get(uintmax_t index) const noexcept {
-    return Data & (uintmax_t{1} << index);
+  [[nodiscard]] constexpr bool get(T index) const noexcept {
+    return Data & mask(index);
   }
 
-  [[nodiscard]] constexpr uintmax_t get(uintmax_t start, uintmax_t mask) const noexcept {
-    return Data & (mask << start);
+  [[nodiscard]] constexpr T get(T start, T mask) const noexcept {
+    return Data & this->mask(start, mask);
   }
 
-  [[nodiscard]] constexpr uintmax_t get_length(uintmax_t start, uintmax_t length) const noexcept {
-    return Data & (((uintmax_t{1} << length) - uintmax_t{1}) << start);
+  [[nodiscard]] constexpr T get_length(T start, T length) const noexcept {
+    return Data & mask_length(start, length);
   }
 
-  [[nodiscard]] constexpr uintmax_t get_range(uintmax_t start, uintmax_t end) const noexcept {
+  [[nodiscard]] constexpr T get_range(T start, T end) const noexcept {
     return get_length(start, end - start);
   }
 
-  [[nodiscard]] constexpr uintmax_t get_range_inclusive(uintmax_t start, uintmax_t end) const noexcept {
-    return Data & (((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start);
+  [[nodiscard]] constexpr T get_range_inclusive(T start, T end) const noexcept {
+    return Data & mask_range_inclusive(start, end);
   }
 
-  [[nodiscard]] constexpr uintmax_t get_rightmost() {
+  [[nodiscard]] constexpr T get_rightmost() {
     return Data & -Data;
   }
 
@@ -69,48 +103,52 @@ struct StaticBitArray {
 
 #pragma region Keep
 
-  void keep(uintmax_t index) noexcept {
-    Data &= uintmax_t{1} << index;
+  void keep(T index) noexcept {
+    Data = get(index);
   }
 
-  void keep(uintmax_t start, uintmax_t mask) noexcept {
-    Data &= mask << start;
+  void keep(T start, T mask) noexcept {
+    Data = get(start, mask);
   }
 
-  void keep_length(uintmax_t start, uintmax_t length) noexcept {
-    Data &= ((uintmax_t{1} << length) - uintmax_t{1}) << start;
+  void keep_length(T start, T length) noexcept {
+    Data = get_length(start, length);
   }
 
-  void keep_range(uintmax_t start, uintmax_t end) noexcept {
+  void keep_range(T start, T end) noexcept {
     keep_length(start, end - start);
   }
 
-  void keep_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
-    Data &= ((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start;
+  void keep_range_inclusive(T start, T end) noexcept {
+    Data = get_range_inclusive(start, end);
+  }
+
+  void keep_rightmost() noexcept {
+    Data = get_rightmost();
   }
 
 #pragma endregion
 
 #pragma region Reset
 
-  void reset(uintmax_t index) noexcept {
-    Data &= ~(uintmax_t{1} << index);
+  void reset(T index) noexcept {
+    Data &= ~(mask(index));
   }
 
-  void reset(uintmax_t start, uintmax_t mask) noexcept {
-    Data &= ~(mask << start);
+  void reset(T start, T mask) noexcept {
+    Data &= ~(this->mask(start, mask));
   }
 
-  void reset_length(uintmax_t start, uintmax_t length) noexcept {
-    Data &= ~(((uintmax_t{1} << length) - uintmax_t{1}) << start);
+  void reset_length(T start, T length) noexcept {
+    Data &= ~(mask_length(start, length));
   }
 
-  void reset_range(uintmax_t start, uintmax_t end) noexcept {
+  void reset_range(T start, T end) noexcept {
     reset_length(start, end - start);
   }
 
-  void reset_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
-    Data &= ~(((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start);
+  void reset_range_inclusive(T start, T end) noexcept {
+    Data &= ~(mask_range_inclusive(start, end));
   }
 
   void reset_rightmost() noexcept {
@@ -125,24 +163,28 @@ struct StaticBitArray {
     Data = Maximum;
   }
 
-  void set(uintmax_t index) noexcept {
-    Data |= uintmax_t{1} << index;
+  void set(T index) noexcept {
+    Data |= mask(index);
   }
 
-  void set(uintmax_t start, uintmax_t mask) noexcept {
-    Data |= mask << start;
+  void set(T start, T mask) noexcept {
+    Data |= this->mask(start, mask);
   }
 
-  void set_length(uintmax_t start, uintmax_t length) noexcept {
-    Data |= ((uintmax_t{1} << length) - uintmax_t{1}) << start;
+  void set_length(T start, T length) noexcept {
+    Data |= mask_length(start, length);
   }
 
-  void set_range(uintmax_t start, uintmax_t end) noexcept {
+  void set_range(T start, T end) noexcept {
     set_length(start, end - start);
   }
 
-  void set_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
-    Data |= ((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start;
+  void set_range_inclusive(T start, T end) noexcept {
+    Data |= mask_range_inclusive(start, end);
+  }
+
+  void set_rightmost() noexcept {
+    Data |= Data + 1;
   }
 
 #pragma endregion
@@ -181,7 +223,7 @@ struct StaticBitArray {
     return Bits - count_leading_zeros();
   }
 
-  [[nodiscard]] constexpr int index_of_leading_one(uintmax_t bitIndex) const noexcept {
+  [[nodiscard]] constexpr int index_of_leading_one(T bitIndex) const noexcept {
     return Bits - std::countl_zero(Data & (Maximum >> bitIndex));
   }
 
@@ -189,7 +231,7 @@ struct StaticBitArray {
     return Bits - count_leading_ones();
   }
 
-  [[nodiscard]] constexpr int index_of_leading_zero(uintmax_t bitIndex) const noexcept {
+  [[nodiscard]] constexpr int index_of_leading_zero(T bitIndex) const noexcept {
     return Bits - std::countl_zero(~Data & (Maximum >> bitIndex));
   }
 
@@ -197,7 +239,7 @@ struct StaticBitArray {
     return count_trailing_zeros();
   }
 
-  [[nodiscard]] constexpr int index_of_trailing_one(uintmax_t bitIndex) const noexcept {
+  [[nodiscard]] constexpr int index_of_trailing_one(T bitIndex) const noexcept {
     return std::countr_zero(Data & (Maximum << bitIndex));
   }
 
@@ -205,7 +247,7 @@ struct StaticBitArray {
     return count_trailing_ones();
   }
 
-  [[nodiscard]] constexpr int index_of_trailing_zero(uintmax_t bitIndex) const noexcept {
+  [[nodiscard]] constexpr int index_of_trailing_zero(T bitIndex) const noexcept {
     return std::countr_zero(~Data & (Maximum << bitIndex));
   }
 
