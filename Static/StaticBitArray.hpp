@@ -13,80 +13,136 @@ struct StaticBitArray {
 
 #pragma region Flip
 
-  void flip(uintmax_t index) {
+  void flip() noexcept {
+    Data ^= Maximum;
+  }
+
+  void flip(uintmax_t index) noexcept {
     Data ^= uintmax_t{1} << index;
   }
 
-  void flip(uintmax_t start, uintmax_t mask) {
+  void flip(uintmax_t start, uintmax_t mask) noexcept {
     Data ^= mask << start;
   }
 
-  void flip_length(uintmax_t start, uintmax_t length) {
-    Data ^= (uintmax_t{1} << length - uintmax_t{1}) << start;
+  void flip_length(uintmax_t start, uintmax_t length) noexcept {
+    Data ^= ((uintmax_t{1} << length) - uintmax_t{1}) << start;
+  }
+
+  void flip_range(uintmax_t start, uintmax_t end) noexcept {
+    flip_length(start, end - start);
+  }
+
+  void flip_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
+    Data ^= ((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start;
   }
 
 #pragma endregion
 
 #pragma region Get
 
-  bool get(uintmax_t index) const {
+  [[nodiscard]] constexpr bool get(uintmax_t index) const noexcept {
     return Data & (uintmax_t{1} << index);
   }
 
-  uintmax_t get(uintmax_t start, uintmax_t mask) const {
+  [[nodiscard]] constexpr uintmax_t get(uintmax_t start, uintmax_t mask) const noexcept {
     return Data & (mask << start);
   }
 
-  uintmax_t get_length(uintmax_t start, uintmax_t length) const {
-    return Data & ((uintmax_t{1} << length - uintmax_t{1}) << start);
+  [[nodiscard]] constexpr uintmax_t get_length(uintmax_t start, uintmax_t length) const noexcept {
+    return Data & (((uintmax_t{1} << length) - uintmax_t{1}) << start);
+  }
+
+  [[nodiscard]] constexpr uintmax_t get_range(uintmax_t start, uintmax_t end) const noexcept {
+    return get_length(start, end - start);
+  }
+
+  [[nodiscard]] constexpr uintmax_t get_range_inclusive(uintmax_t start, uintmax_t end) const noexcept {
+    return Data & (((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start);
+  }
+
+  [[nodiscard]] constexpr uintmax_t get_rightmost() {
+    return Data & -Data;
   }
 
 #pragma endregion
 
 #pragma region Keep
 
-  void keep(uintmax_t index) {
+  void keep(uintmax_t index) noexcept {
     Data &= uintmax_t{1} << index;
   }
 
-  void keep(uintmax_t start, uintmax_t mask) {
+  void keep(uintmax_t start, uintmax_t mask) noexcept {
     Data &= mask << start;
   }
 
-  void keep_length(uintmax_t start, uintmax_t length) {
-    Data &= (uintmax_t{1} << length - uintmax_t{1}) << start;
+  void keep_length(uintmax_t start, uintmax_t length) noexcept {
+    Data &= ((uintmax_t{1} << length) - uintmax_t{1}) << start;
+  }
+
+  void keep_range(uintmax_t start, uintmax_t end) noexcept {
+    keep_length(start, end - start);
+  }
+
+  void keep_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
+    Data &= ((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start;
   }
 
 #pragma endregion
 
 #pragma region Reset
 
-  void reset(uintmax_t index) {
+  void reset(uintmax_t index) noexcept {
     Data &= ~(uintmax_t{1} << index);
   }
 
-  void reset(uintmax_t start, uintmax_t mask) {
+  void reset(uintmax_t start, uintmax_t mask) noexcept {
     Data &= ~(mask << start);
   }
 
-  void reset_length(uintmax_t start, uintmax_t length) {
-    Data &= ~((uintmax_t{1} << length - uintmax_t{1}) << start);
+  void reset_length(uintmax_t start, uintmax_t length) noexcept {
+    Data &= ~(((uintmax_t{1} << length) - uintmax_t{1}) << start);
+  }
+
+  void reset_range(uintmax_t start, uintmax_t end) noexcept {
+    reset_length(start, end - start);
+  }
+
+  void reset_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
+    Data &= ~(((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start);
+  }
+
+  void reset_rightmost() noexcept {
+    Data &= Data - 1;
   }
 
 #pragma endregion
 
 #pragma region Set
 
-  void set(uintmax_t index) {
+  void set() noexcept {
+    Data = Maximum;
+  }
+
+  void set(uintmax_t index) noexcept {
     Data |= uintmax_t{1} << index;
   }
 
-  void set(uintmax_t start, uintmax_t mask) {
+  void set(uintmax_t start, uintmax_t mask) noexcept {
     Data |= mask << start;
   }
 
-  void set_length(uintmax_t start, uintmax_t length) {
-    Data |= (uintmax_t{1} << length - uintmax_t{1}) << start;
+  void set_length(uintmax_t start, uintmax_t length) noexcept {
+    Data |= ((uintmax_t{1} << length) - uintmax_t{1}) << start;
+  }
+
+  void set_range(uintmax_t start, uintmax_t end) noexcept {
+    set_length(start, end - start);
+  }
+
+  void set_range_inclusive(uintmax_t start, uintmax_t end) noexcept {
+    Data |= ((uintmax_t{1} << (end - start + 1)) - uintmax_t{1}) << start;
   }
 
 #pragma endregion
@@ -151,6 +207,22 @@ struct StaticBitArray {
 
   [[nodiscard]] constexpr int index_of_trailing_zero(uintmax_t bitIndex) const noexcept {
     return std::countr_zero(~Data & (Maximum << bitIndex));
+  }
+
+#pragma endregion
+
+#pragma region Miscellaneous
+
+  [[nodiscard]] constexpr bool is_maximum() const noexcept {
+    return Data == Maximum;
+  }
+
+  [[nodiscard]] constexpr bool is_minimum() const noexcept {
+    return Data == 0;
+  }
+
+  [[nodiscard]] constexpr bool is_power_of_two() const noexcept {
+    return count_ones();
   }
 
 #pragma endregion
