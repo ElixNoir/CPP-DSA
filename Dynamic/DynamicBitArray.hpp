@@ -92,15 +92,15 @@ public:
 
 #pragma region Flip
 
-  void flip(size_t index) {
+  void flip(size_t index) noexcept {
     bit_array_at(index).flip(index & IndexBitMask);
   }
 
-  void flip(size_t start, uintmax_t mask) {
+  void flip(size_t start, uintmax_t mask) noexcept {
     bit_array_at(start).flip(start & IndexBitMask, mask);
   }
 
-  void flip_length(size_t start, size_t length) {
+  void flip_length(size_t start, size_t length) noexcept {
     bit_array_at(start).flip_length(start & IndexBitMask, length);
   }
 
@@ -108,15 +108,15 @@ public:
 
 #pragma region Get
 
-  bool get(size_t index) const {
+  bool get(size_t index) const noexcept {
     return bit_array_at(index).get(index & IndexBitMask);
   }
 
-  uintmax_t get(size_t start, uintmax_t mask) const {
+  uintmax_t get(size_t start, uintmax_t mask) const noexcept {
     return bit_array_at(start).get(start & IndexBitMask, mask);
   }
 
-  uintmax_t get_length(size_t start, size_t length) const {
+  uintmax_t get_length(size_t start, size_t length) const noexcept {
     return bit_array_at(start).get_length(start & IndexBitMask, length);
   }
 
@@ -124,15 +124,15 @@ public:
 
 #pragma region Keep
 
-  void keep(size_t index) {
+  void keep(size_t index) noexcept {
     bit_array_at(index).keep(index & IndexBitMask);
   }
 
-  void keep(size_t start, uintmax_t mask) {
+  void keep(size_t start, uintmax_t mask) noexcept {
     bit_array_at(start).keep(start & IndexBitMask, mask);
   }
 
-  void keep_length(size_t start, size_t length) {
+  void keep_length(size_t start, size_t length) noexcept {
     bit_array_at(start).keep_length(start & IndexBitMask, length);
   }
 
@@ -140,15 +140,15 @@ public:
 
 #pragma region Reset
 
-  void reset(size_t index) {
+  void reset(size_t index) noexcept {
     bit_array_at(index).reset(index & IndexBitMask);
   }
 
-  void reset(size_t start, uintmax_t mask) {
+  void reset(size_t start, uintmax_t mask) noexcept {
     bit_array_at(start).reset(start & IndexBitMask, mask);
   }
 
-  void reset_length(size_t start, size_t length) {
+  void reset_length(size_t start, size_t length) noexcept {
     bit_array_at(start).reset_length(start & IndexBitMask, length);
   }
 
@@ -156,15 +156,15 @@ public:
 
 #pragma region Set
 
-  void set(size_t index) {
+  void set(size_t index) noexcept {
     bit_array_at(index).set(index & IndexBitMask);
   }
 
-  void set(size_t start, uintmax_t mask) {
+  void set(size_t start, uintmax_t mask) noexcept {
     bit_array_at(start).set(start & IndexBitMask, mask);
   }
 
-  void set_length(size_t start, size_t length) {
+  void set_length(size_t start, size_t length) noexcept {
     bit_array_at(start).set_length(start & IndexBitMask, length);
   }
 
@@ -172,27 +172,27 @@ public:
 
 #pragma region Counting
 
-  size_t count_leading_ones(size_t index) const {
+  [[nodiscard]] constexpr int count_leading_ones(size_t index) const noexcept {
     return bit_array_at(index).count_leading_ones();
   }
 
-  size_t count_leading_zeros(size_t index) const {
+  [[nodiscard]] constexpr int count_leading_zeros(size_t index) const noexcept {
     return bit_array_at(index).count_leading_zeros();
   }
 
-  size_t count_ones(size_t index) const {
+  [[nodiscard]] constexpr int count_ones(size_t index) const noexcept {
     return bit_array_at(index).count_ones();
   }
 
-  size_t count_trailing_ones(size_t index) const {
+  [[nodiscard]] constexpr int count_trailing_ones(size_t index) const noexcept {
     return bit_array_at(index).count_trailing_ones();
   }
 
-  size_t count_trailing_zeros(size_t index) const {
+  [[nodiscard]] constexpr int count_trailing_zeros(size_t index) const noexcept {
     return bit_array_at(index).count_trailing_zeros();
   }
 
-  size_t count_zeros(size_t index) const {
+  [[nodiscard]] constexpr int count_zeros(size_t index) const noexcept {
     return bit_array_at(index).count_zeros();
   }
 
@@ -200,36 +200,68 @@ public:
 
 #pragma region Indexing
 
-  size_t index_of_next_one(size_t index) const {
-    return (index << 6) + index_of_next_one_in(index);
+  [[nodiscard]] constexpr size_t index_of_leading_one(size_t index) const noexcept {
+    return (index << 6) + index_of_leading_one_in(index);
   }
 
-  size_t index_of_next_one(size_t index, size_t bitIndex) const {
-    return (index << 6) + index_of_next_one_in(index, bitIndex);
+  [[nodiscard]] constexpr size_t index_of_leading_one(size_t index, uintmax_t bitIndex) const noexcept {
+    return (index << 6) + index_of_leading_one_in(index, bitIndex);
   }
 
-  size_t index_of_next_one_in(size_t index) const {
-    return bit_array_at(index).index_of_next_one();
+  [[nodiscard]] constexpr int index_of_leading_one_in(size_t index) const noexcept {
+    return bit_array_at(index).index_of_leading_one();
   }
 
-  size_t index_of_next_one_in(size_t index, size_t bitIndex) const {
-    return bit_array_at(index).index_of_next_one(bitIndex);
+  [[nodiscard]] constexpr int index_of_leading_one_in(size_t index, uintmax_t bitIndex) const noexcept {
+    return bit_array_at(index).index_of_leading_one(bitIndex);
   }
 
-  size_t index_of_next_one(size_t index) const {
-    return (index << 6) + index_of_next_zoro_in(index);
+  [[nodiscard]] constexpr size_t index_of_leading_zero(size_t index) const noexcept {
+    return (index << 6) + index_of_leading_zero_in(index);
   }
 
-  size_t index_of_next_zero(size_t index, size_t bitIndex) const {
-    return (index << 6) + index_of_next_zero_in(index, bitIndex);
+  [[nodiscard]] constexpr size_t index_of_leading_zero(size_t index, uintmax_t bitIndex) const noexcept {
+    return (index << 6) + index_of_leading_zero_in(index, bitIndex);
   }
 
-  size_t index_of_next_zero_in(size_t index) const {
-    return bit_array_at(index).index_of_next_zero();
+  [[nodiscard]] constexpr int index_of_leading_zero_in(size_t index) const noexcept {
+    return bit_array_at(index).index_of_leading_zero();
   }
 
-  size_t index_of_next_zero_in(size_t index, size_t bitIndex) const {
-    return bit_array_at(index).index_of_next_zero(bitIndex);
+  [[nodiscard]] constexpr int index_of_leading_zero_in(size_t index, uintmax_t bitIndex) const noexcept {
+    return bit_array_at(index).index_of_leading_zero(bitIndex);
+  }
+
+  [[nodiscard]] constexpr size_t index_of_trailing_one(size_t index) const noexcept {
+    return (index << 6) + index_of_trailing_one_in(index);
+  }
+
+  [[nodiscard]] constexpr size_t index_of_trailing_one(size_t index, uintmax_t bitIndex) const noexcept {
+    return (index << 6) + index_of_trailing_one_in(index, bitIndex);
+  }
+
+  [[nodiscard]] constexpr int index_of_trailing_one_in(size_t index) const noexcept {
+    return bit_array_at(index).index_of_trailing_one();
+  }
+
+  [[nodiscard]] constexpr int index_of_trailing_one_in(size_t index, uintmax_t bitIndex) const noexcept {
+    return bit_array_at(index).index_of_trailing_one(bitIndex);
+  }
+
+  [[nodiscard]] constexpr size_t index_of_trailing_zero(size_t index) const noexcept {
+    return (index << 6) + index_of_trailing_zero_in(index);
+  }
+
+  [[nodiscard]] constexpr size_t index_of_trailing_zero(size_t index, uintmax_t bitIndex) const noexcept {
+    return (index << 6) + index_of_trailing_zero_in(index, bitIndex);
+  }
+
+  [[nodiscard]] constexpr int index_of_trailing_zero_in(size_t index) const noexcept {
+    return bit_array_at(index).index_of_trailing_zero();
+  }
+
+  [[nodiscard]] constexpr int index_of_trailing_zero_in(size_t index, uintmax_t bitIndex) const noexcept {
+    return bit_array_at(index).index_of_trailing_zero(bitIndex);
   }
 
 #pragma endregion
