@@ -8,11 +8,11 @@
 
 #pragma endregion
 
-template <typename Key, typename Value>
+template <typename K, typename V>
 struct KeyValuePair {
 
-  Key Key;
-  Value Value;
+  K Key;
+  V Value;
 
 };
 
@@ -31,7 +31,8 @@ protected:
 
 public:
 
-  using Base = DynamicIncrementalAoSContainer<KeyValuePair<Key, Value>>;
+  using Entry = KeyValuePair<Key, Value>;
+  using Base = DynamicIncrementalAoSContainer<Entry>;
 
   DynamicOAInsertionOnlyHashMap(Index initialCapacity) : Base(initialCapacity) {}
 
@@ -73,16 +74,11 @@ public:
 
 #pragma region Getters
 
-  //. If the key is changed, it is only legal to do so if the corresponding hash is not changed.
-  [[nodsicard]] constexpr Key& key_of(Index index) const {
-    return Data[index].Key;
-  }
-
-  [[nodsicard]] constexpr KeyValuePair& pair_of(Index index) const {
+  [[nodsicard]] constexpr const Entry& pair_of(Index index) const noexcept {
     return Data[index];
   }
 
-  [[nodsicard]] constexpr Key& value_of(Index index) const {
+  [[nodiscard]] Value& value_of(Index index) noexcept {
     return Data[index].Value;
   }
 
@@ -96,22 +92,38 @@ public:
   }
 
   void grow(Index newCapacity) {
-    if constexpr (ReallocatableAllocator<A>) {
+    // Reallocation would mean rehashing could corrupt existing data.
+    // Might be worth looking into caching it in a singleton, but probably not.
+    /*if constexpr (ReallocatableAllocator<A>) {
       Data = static_cast<T*>(Alloc.reallocate(Data, sizeof(T) * newCapacity));
       rehash();
-    } else {
-      T* newData = static_cast<T*>(Alloc.allocate(sizeof(T) * newCapacity));
-      rehash();
-      Alloc.deallocate(Data);
-      Data = newData;
-    }
+    } else {*/
+    T* oldData = Data;
+    Data = static_cast<T*>(Alloc.allocate(sizeof(T) * newCapacity));
+    rehash();
+    Alloc.deallocate(oldData);
+    //}
     
     Capacity = newCapacity;
   }
 
   void rehash() {
-    // iterate through pairs and re-insert them.
-    
+    if constexpr (DefaultKeyIsActive) {
+      for (Index stateIndex = 0; stateIndex < KeyStates.Capacity; stateIndex++) {
+        auto index = KeyStates.index_of_next_one();
+        while (index != 64) {
+          insert(pair_of(index));
+          index = KeyStates.index_of_next_one();
+        }
+      }
+    } else {
+      const Key inactiveKey = Key{};
+      for (Index index = 0; index < Capacity; index++) {
+        const Entry entry = pair_of(index);
+        if (inactiveKey != entry.Key)
+          insert(entry);
+      }
+    }
   }
 
 #pragma endregion
@@ -175,11 +187,16 @@ public:
 #pragma region Set
 
   // Requires that all keys from [original hash index, final index) are active.
+  void set(Entry& keyValuePair) {
+    set(keyValuePair.Key, keyValuePair.Value);
+  }
+
+  // Requires that all keys from [original hash index, final index) are active.
   void set(Key& key, Value& value) {
     set(find_existing(key), value);
   }
 
-  void set(Index index, Value& value) {
+  void set(Index index, Value& value) noexcept {
     value_of(index - 1) = value;
   }
 
@@ -187,8 +204,16 @@ public:
 
 #pragma region Upsert
 
+  void insert(Entry& keyValuePair) {
+    insert(keyValuePair.Key, keyValuePair.Value);
+  }
+
   void insert(Key& key, Value& value) {
     Data[find_inactive(key)] = { key, value };
+  }
+
+  void upsert(Entry& keyValuePair) {
+    upsert(keyValuePair.Key, keyValuePair.Value);
   }
 
   void upsert(Key& key, Value& value) {
