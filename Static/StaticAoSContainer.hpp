@@ -22,16 +22,16 @@ protected:
 
 public:
 
-    StaticAoSContainer() = default;
+    constexpr StaticAoSContainer() = default;
 
-    StaticAoSContainer(const StaticAoSContainer& other) {
+    constexpr StaticAoSContainer(const StaticAoSContainer& other) {
         std::copy(
             other.Data,
             other.Data + Capacity,
             Data);
     }
 
-    StaticAoSContainer(StaticAoSContainer&& other) : Data(other.Data) {
+    constexpr StaticAoSContainer(StaticAoSContainer&& other) {
         std::move(
             other.Data,
             other.Data + Capacity,
