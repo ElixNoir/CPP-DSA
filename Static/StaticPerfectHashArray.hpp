@@ -2,137 +2,139 @@
 
 #pragma region Dependencies
 
-#include <array>
-#include <cstdint>
+#include "DSAConcepts.hpp"
+#include "Hashes.hpp"
+#include "StaticAoSContainer.hpp"
+#include "StaticBitArray.hpp"
+
+#include <initializer_list>
 
 #pragma endregion
 
-template <typename V>
+template <Hashable K, typename V>
 struct KeyValuePair {
-    
-    const char* Key;
+
+    K Key;
     V Value;
-    
-};
-    
-template <>
-struct KeyValuePair<void> {
-    
-    const char* Key;
-    
+
 };
 
-template <size_t KeyCount, typename Value = void, size_t ArraySize = static_cast<size_t>(KeyCount * 1.5)>
-class StaticPerfectHashArray {
-    
-    static_assert(KeyCount <= ArraySize);
+template <Hashable K>
+struct KeyValuePair<K, void> {
+
+    K Key;
+
+};
+
+template <size_t KeyCount, Hashable Key, typename Value = void, size_t Capacity = static_cast<size_t>(KeyCount * 1.5)>
+class StaticPerfectHashArray : public StaticAoSContainer<KeyValuePair<Key, Value>, Capacity> {
+
+    static_assert(KeyCount <= Capacity);
 
 public:
 
-    using Entry = KeyValuePair<Value>;
+    using Base = StaticAoSContainer<KeyValuePair<Key, Value>, Capacity>;
+
+    using Entry = KeyValuePair<Key, Value>;
 
 protected:
 
-    [[nodiscard]] constexpr static size_t fnv1a_prime() const noexcept {
-        if constexpr (sizeof(size_t) == sizeof(uint32_t))
-            return static_cast<size_t>(0x01000193u);
-        else
-            return static_cast<size_t>(0x100000001b3ULL);
-    }
+    using Base::Data;
 
-    static constexpr size_t FNV1aPrime = fnv1a_prime();
+    constexpr static size_t BitmapCapacity = (Capacity + Bitmask<uintmax_t>::Bits - 1) >> std::bit_width(Bitmask<uintmax_t>::Bits - 1);
 
 #pragma region Properties
 
-    size_t Seed = 0;
-    std::array<Entry, ArraySize> Data{};
+    size_t Seed = FNV1aOffset;
 
 #pragma endregion
 
 public:
-    
-    consteval StaticPerfectHashArray(const std::initializer_list<Entry> list) {
+
+    constexpr StaticPerfectHashArray(const std::initializer_list<Entry> list) {
         while (true) {
-            std::array<bool, ArraySize> visited{};
-            
-            for (Entry entry : list) {
-                const size_t index = hash(entry.Key) % ArraySize;
-    
-                if (visited[index]) {
-                    Seed++;
-                    continue;
+            StaticBitArray<BitmapCapacity> visited{};
+            bool collision = false;
+
+            for (const Entry& entry : list) {
+                const size_t index = entry.Key.hash(Seed) % Capacity;
+
+                Bitmask<uintmax_t>& bitmask = visited.bitmask_at(index);
+
+                if (bitmask.get(index)) {
+                    collision = true;
+                    break;
                 }
-    
-                visited[index] = true;
+
+                bitmask.set(index);
             }
-            
-            break;
+
+            if (!collision)
+                break;
+
+            Seed++;
         }
-        
-        for (Entry entry : list)
-            Data[hash(entry.Key) % ArraySize] = { entry.Key, entry.Value };
+
+        for (const Entry& entry : list)
+            Data[entry.Key.hash(Seed) % Capacity] = entry;
     }
-    
-    consteval StaticPerfectHashArray(const std::initializer_list<const char*> list) requires std::is_void_v<Value> {
+
+    constexpr StaticPerfectHashArray(const std::initializer_list<Key> list) requires std::is_void_v<Value> {
         while (true) {
-            std::array<bool, ArraySize> visited{};
-            
-            for (const char* key : list) {
-                const size_t index = hash(key) % ArraySize;
-    
-                if (visited[index]) {
-                    Seed++;
-                    continue;
+            StaticBitArray<BitmapCapacity> visited{};
+            bool collision = false;
+
+            for (const Key& key : list) {
+                const size_t index = key.hash(Seed) % Capacity;
+
+                Bitmask<uintmax_t>& bitmask = visited.bitmask_at(index);
+
+                if (bitmask.get(index)) {
+                    collision = true;
+                    break;
                 }
-    
-                visited[index] = true;
+
+                bitmask.set(index);
             }
-            
-            break;
+
+            if (!collision)
+                break;
+
+            Seed++;
         }
-        
-        for (const char* key : list)
-            Data[hash(key) % ArraySize].Key = key;
+
+        for (const Key& key : list)
+            Data[key.hash(Seed) % Capacity].Key = key;
     }
-    
+
 #pragma region Methods
 
 #pragma region Getters
 
-    [[nodiscard]] constexpr std::array<const char*, ArraySize>& data() const noexcept {
-        return Data;
-    }
-    
-    [[nodiscard]] constexpr const Entry& pair_at(size_t index) const noexcept requires (!std::is_void_v<Value>) {
-        return Data[index];
-    }
-
     [[nodiscard]] constexpr size_t seed() const noexcept {
         return Seed;
     }
-    
+
 #pragma endregion
 
-    [[nodiscard]] constexpr bool contains(const char* key) const noexcept {
-        return key == Data[hash(key) % ArraySize].Key;
+#pragma region Access
+
+    [[nodiscard]] constexpr bool contains(Key& key) const noexcept {
+        return key == Data[key.hash(Seed) % Capacity].Key;
     }
 
-    [[nodiscard]] constexpr const Entry* find(const char* key) const noexcept {
-        const Entry* entry = &Data[hash(key) % ArraySize];
+    [[nodiscard]] constexpr Entry* find(Key& key) noexcept {
+        Entry* entry = &Data[key.hash(Seed) % Capacity];
         return key == entry->Key ? entry : nullptr;
     }
-  
-    [[nodiscard]] constexpr size_t hash(const char* key) const noexcept {
-        size_t hash = Seed;
 
-        for (size_t index = 0; key[index] != '\0'; ++index) {
-            hash ^= static_cast<size_t>(static_cast<unsigned char>(key[index]));
-            hash *= FNV1aPrime;
-        }
-
-        return hash;
+    [[nodiscard]] constexpr const Entry* find(Key key) const noexcept {
+        const Entry* entry = &Data[key.hash(Seed) % Capacity];
+        return key == entry->Key ? entry : nullptr;
     }
-    
+
 #pragma endregion
-    
+
+#pragma endregion
+
 };
