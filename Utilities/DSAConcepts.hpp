@@ -34,3 +34,10 @@ concept Comparable = requires(const T& t, const U& u) {
 };
 
 #pragma endregion
+
+#pragma region Representation
+
+template <typename T>
+concept Number = (std::integral<T> || std::floating_point<T>);
+
+#pragma endregion
