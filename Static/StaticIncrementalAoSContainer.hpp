@@ -11,19 +11,22 @@ class StaticIncrementalAoSContainer : public StaticAoSContainer<T, Capacity> {
 public:
 
     using Base = StaticAoSContainer<T, Capacity>;
+
     using Index = typename Base::Index;
 
 protected:
+
+    using Base::Data;
 
     Index Size = 0;
 
 public:
 
-    StaticIncrementalAoSContainer() = default;
+    constexpr StaticIncrementalAoSContainer() = default;
 
-    StaticIncrementalAoSContainer(const StaticIncrementalAoSContainer& other) : Base(other), Size(other.Size) {}
+    constexpr StaticIncrementalAoSContainer(const StaticIncrementalAoSContainer& other) : Base(other), Size(other.Size) {}
 
-    StaticIncrementalAoSContainer(StaticIncrementalAoSContainer&& other) : Base(std::move(other)), Size(other.Size) {}
+    constexpr StaticIncrementalAoSContainer(StaticIncrementalAoSContainer&& other) : Base(std::move(other)), Size(other.Size) {}
 
 #pragma region Methods
 
