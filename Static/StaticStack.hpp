@@ -13,8 +13,13 @@ class StaticStack : public StaticIncrementalAoSContainer<T, Capacity> {
 public:
 
     using Base = StaticIncrementalAoSContainer<T, Capacity>;
-    using Base::Base::Data;
+    
+protected:
+
+    using Base::Data;
     using Base::Size;
+
+public:
 
     using Index = typename Base::Index;
 
