@@ -27,10 +27,15 @@ template <typename T, typename U = T>
 concept Comparable = requires(const T& t, const U& u) {
     { t == u } -> std::same_as<bool>;
     { t != u } -> std::same_as<bool>;
-    { t <  u } -> std::same_as<bool>;
+    { t < u } -> std::same_as<bool>;
     { t <= u } -> std::same_as<bool>;
-    { t >  u } -> std::same_as<bool>;
+    { t > u } -> std::same_as<bool>;
     { t >= u } -> std::same_as<bool>;
+};
+
+template <typename Value>
+concept Hashable = requires(const Value& value, uintmax_t hash) {
+    { value.hash(hash) } -> std::unsigned_integral;
 };
 
 #pragma endregion
