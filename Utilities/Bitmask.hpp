@@ -19,8 +19,8 @@ struct Bitmask {
 
 #pragma region Helpers
 
-    constexpr T Bits = 8 * sizeof(Data);
-    constexpr T Maximum = ~(0);
+    constexpr static T Bits = 8 * sizeof(Data);
+    constexpr static T Maximum = ~(0);
 
 #pragma endregion
 
@@ -28,23 +28,23 @@ struct Bitmask {
 
 #pragma region Mask
 
-    [[nodiscard]] constexpr static T mask(T index) const noexcept {
+    [[nodiscard]] constexpr static T mask(T index) noexcept {
         return T{ 1 } << index;
     }
 
-    [[nodiscard]] constexpr static T mask(T start, T mask) const noexcept {
+    [[nodiscard]] constexpr static T mask(T start, T mask) noexcept {
         return mask << start;
     }
 
-    [[nodiscard]] constexpr static T mask_length(T start, T length) const noexcept {
+    [[nodiscard]] constexpr static T mask_length(T start, T length) noexcept {
         return ((T{ 1 } << length) - T{ 1 }) << start;
     }
 
-    [[nodiscard]] constexpr static T mask_range(T start, T end) const noexcept {
+    [[nodiscard]] constexpr static T mask_range(T start, T end) noexcept {
         return mask_length(start, end - start);
     }
 
-    [[nodiscard]] constexpr static T mask_range_inclusive(T start, T end) const noexcept {
+    [[nodiscard]] constexpr static T mask_range_inclusive(T start, T end) noexcept {
         return ((T{ 1 } << (end - start + 1)) - T{ 1 }) << start;
     }
 
@@ -83,6 +83,10 @@ struct Bitmask {
 #pragma endregion
 
 #pragma region Get
+
+    [[nodiscard]] constexpr T get() const noexcept {
+        return Data;
+    }
 
     [[nodiscard]] constexpr bool get(T index) const noexcept {
         return Data & mask(index);
@@ -280,4 +284,4 @@ struct Bitmask {
 
 #pragma endregion
 
-}
+};
