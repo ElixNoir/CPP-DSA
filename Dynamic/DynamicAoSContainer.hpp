@@ -5,6 +5,7 @@
 #include "AoSLinearIterator.hpp"
 #include "DefaultAllocator.hpp"
 #include "DSAConcepts.hpp"
+#include "Memory.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -22,24 +23,7 @@ protected:
 
 public:
 
-    DynamicAoSContainer(Index initialCapacity) {
-        Data = static_cast<T*>(Alloc.allocate(sizeof(T) * initialCapacity));
-    }
-
-    DynamicAoSContainer(DynamicAoSContainer& other) : Capacity(other.Capacity) {
-        Data = static_cast<T*>(Alloc.allocate(sizeof(T) * Capacity));
-        std::copy(
-            other.Data,
-            other.Data + Capacity,
-            Data);
-    }
-
-    DynamicAoSContainer(DynamicAoSContainer&& other) : Data(other.Data), Capacity(other.Capacity) {
-        std::move(
-            other.Data,
-            other.Data + Capacity,
-            Data);
-    }
+    DynamicAoSContainer(Index initialCapacity) : Data(static_cast<T*>(Alloc.allocate(sizeof(T)* initialCapacity))), Capacity(initialCapacity) {}
 
     ~DynamicAoSContainer() {
         Alloc.deallocate(Data);
@@ -77,55 +61,24 @@ public:
 
 #pragma region Memory Management
 
-#pragma region Grow
-
     void double_capacity() {
-        grow(2 * Capacity);
-    }
-
-    void grow(Index newCapacity) {
-        if constexpr (ReallocatableAllocator<A>)
-            Data = static_cast<T*>(Alloc.reallocate(Data, sizeof(T) * newCapacity));
-        else {
-            T* oldData = Data;
-            Data = static_cast<T*>(Alloc.allocate(sizeof(T) * newCapacity));
-            std::memcpy(Data, oldData, sizeof(T) * Capacity);
-            Alloc.deallocate(oldData);
-        }
-
-        Capacity = newCapacity;
+        resize(2 * Capacity);
     }
 
     void reserve(Index newCapacity) {
         if (newCapacity > Capacity)
-            grow(newCapacity);
+            resize(newCapacity);
     }
-
-#pragma endregion
-
-#pragma region Shrink
 
     void resize(Index newCapacity) {
-        if (newCapacity < Capacity)
-            shrink(newCapacity);
-        else if (newCapacity > Capacity)
-            grow(newCapacity);
-    }
-
-    void shrink(Index newCapacity) {
         if constexpr (ReallocatableAllocator<A>)
             Data = static_cast<T*>(Alloc.reallocate(Data, sizeof(T) * newCapacity));
         else {
             T* oldData = Data;
             Data = static_cast<T*>(Alloc.allocate(sizeof(T) * newCapacity));
-            std::memcpy(Data, oldData, sizeof(T) * newCapacity);
             Alloc.deallocate(oldData);
         }
-
-        Capacity = newCapacity;
     }
-
-#pragma endregion
 
 #pragma endregion
 
