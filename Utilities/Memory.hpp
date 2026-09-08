@@ -9,31 +9,34 @@
 #pragma endregion
 
 template <typename T, typename... Arguments>
-void construct(T* data, Arguments&&... arguments) {
-    std::construct_at(data, std::forward<Arguments>(arguments)...);
+constexpr void construct(T* data, Arguments&&... arguments) {
+    if constexpr (std::is_trivially_constructible_v<T>)
+        *data = T(std::forward<Arguments>(arguments)...);
+    else
+        std::construct_at(data, std::forward<Arguments>(arguments)...);
 }
 
 template <typename T, typename... Arguments>
-void construct(T* data, Arguments&&... arguments, size_t count) {
+constexpr void construct(T* data, Arguments&&... arguments, size_t count) {
     for (size_t index = 0; index < count; index++)
-        std::construct_at(data + index, std::forward<Arguments>(arguments)...);
+        construct(data + index, std::forward<Arguments>(arguments)...);
 }
 
 template <typename T>
-void destroy(T* data) {
+constexpr void destroy(T* data) {
     if constexpr (!std::is_trivially_destructible_v<T>)
         std::destroy_at(data);
 }
 
 template <typename T>
-void destroy(T* data, size_t count) {
+constexpr void destroy(T* data, size_t count) {
     if constexpr (!std::is_trivially_destructible_v<T>)
         for (size_t index = 0; index < count; index++)
             std::destroy_at(data + index);
 }
 
 template <typename T>
-void relocate(T* source, T* destination) {
+void relocate(const T* source, T* destination) {
     if constexpr (std::is_trivially_copyable_v<T>)
         std::memcpy(destination, source, sizeof(T));
     else {
@@ -51,7 +54,7 @@ void relocate(T* source, T* destination) {
 }
 
 template <typename T>
-void relocate(T* source, T* destination, size_t count) {
+void relocate(const T* source, T* destination, size_t count) {
     if constexpr (std::is_trivially_copyable_v<T>)
         std::memcpy(destination, source, sizeof(T) * count);
     else {
