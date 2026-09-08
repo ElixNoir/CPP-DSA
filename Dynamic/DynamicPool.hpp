@@ -2,77 +2,48 @@
 
 #pragma region Dependencies
 
-#include "DefaultAllocator.hpp"
-#include "DSAConcepts.hpp"
-
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <type_traits>
+#include "DynamicIncrementalAoSContainer.hpp"
 
 #pragma endregion
 
 template <typename T, std::unsigned_integral Index = size_t, Allocator A = DefaultAllocator>
     requires std::is_trivially_copyable_v<T>
-class DynamicPool {
+class DynamicPool : public DynamicIncrementalAoSContainer<T, Index, A> {
+public:
+
+    using Base = DynamicIncrementalAoSContainer<T, Index, A>;
+
 protected:
 
-    [[no_unique_address]] A Alloc;
+    using Base::Alloc;
+    using Base::Capacity;
+    using Base::Data;
 
-    T* Data;
+    using Base::Size;
+
     Index* FreeList;
-    Index Top = 0;
     Index FreeTop = 0;
-    Index Capacity;
-
-    void grow(Index newCapacity) {
-        if constexpr (ReallocatableAllocator<A>) {
-            Data = static_cast<T*>(Alloc.reallocate(Data, newCapacity * sizeof(T)));
-            FreeList = static_cast<Index*>(Alloc.reallocate(FreeList, newCapacity * sizeof(T)));
-        } else {
-            T* newData = static_cast<T*>(Alloc.allocate(newCapacity * sizeof(T)));
-            Index* newFreeList = static_cast<Index*>(Alloc.allocate(newCapacity * sizeof(T)));
-            std::memcpy(newData, Data, Top * sizeof(T));
-            std::memcpy(newFreeList, Data, FreeTop * sizeof(T));
-            Alloc.deallocate(Data);
-            Alloc.deallocate(FreeList);
-            Data = newData;
-            FreeList = newFreeList;
-        }
-
-        Capacity = newCapacity;
-    }
 
 public:
 
-    DynamicPool(Index initialCapacity) : Capacity(initialCapacity) {
-        Data = static_cast<T*>(Alloc.allocate(Capacity * sizeof(T)));
+    DynamicPool(Index initialCapacity) : Base(initialCapacity) {
         FreeList = static_cast<Index*>(Alloc.allocate(Capacity * sizeof(Index)));
     }
 
     ~DynamicPool() {
-        Alloc.deallocate(Data);
         Alloc.deallocate(FreeList);
     }
 
 #pragma region Methods
 
-    [[nodiscard]] T& operator[](Index index) {
-        return Data[index];
-    }
-
 #pragma region Getters
 
-    [[nodiscard]] constexpr Index capacity() const noexcept {
-        return Capacity;
-    }
-
     [[nodiscard]] constexpr Index size() const noexcept {
-        return Top - FreeTop;
+        return Size - FreeTop;
     }
 
     [[nodiscard]] constexpr Index top() const noexcept {
-        return Top;
+        return Size;
     }
 
 #pragma endregion
@@ -81,6 +52,26 @@ public:
 
     void double_capacity() {
         grow(2 * Capacity);
+    }
+
+    void grow(Index newCapacity) {
+        if constexpr (ReallocatableAllocator<A>) {
+            Data = static_cast<T*>(Alloc.reallocate(Data, sizeof(T) * newCapacity * sizeof(T)));
+            FreeList = static_cast<Index*>(Alloc.reallocate(FreeList, sizeof(Index) * newCapacity));
+        }
+        else {
+            T* oldData = Data;
+            Data = static_cast<T*>(Alloc.allocate(sizeof(T) * newCapacity));
+            relocate(oldData, Data, Size);
+            Alloc.deallocate(oldData);
+
+            Index* oldFreeList = FreeList;
+            FreeList = static_cast<Index*>(Alloc.allocate(sizeof(Index) * newCapacity));
+            relocate(oldFreeList, FreeList, FreeTop);
+            Alloc.deallocate(oldFreeList);
+        }
+
+        Capacity = newCapacity;
     }
 
     void reserve(Index newCapacity) {
@@ -92,11 +83,11 @@ public:
 #pragma region Allocation and Deallocation
 
     [[nodiscard]] constexpr bool can_allocate(const Index count = 1) const noexcept {
-        return FreeTop != 0 || Top + count <= Capacity;
+        return FreeTop != 0 || Size + count <= Capacity;
     }
 
     [[nodiscard]] const Index allocate() {
-        return FreeTop != 0 ? FreeList[--FreeTop] : Top++;
+        return FreeTop != 0 ? FreeList[--FreeTop] : Size++;
     }
 
     void deallocate(Index index) {
