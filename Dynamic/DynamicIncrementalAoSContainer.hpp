@@ -11,20 +11,15 @@ class DynamicIncrementalAoSContainer : public DynamicAoSContainer<T, Index, A> {
 public:
 
     using Base = DynamicAoSContainer<T, Index, A>;
-    using Base::Capacity;
-    using Base::Data;
+    using Base::Base;
 
 protected:
+
+    using Base::Capacity;
 
     Index Size = 0;
 
 public:
-
-    DynamicIncrementalAoSContainer(Index initialCapacity) : Base(initialCapacity) {}
-
-    DynamicIncrementalAoSContainer(DynamicIncrementalAoSContainer& other) : Base(other), Size(other.Size) {}
-
-    DynamicIncrementalAoSContainer(DynamicIncrementalAoSContainer&& other) : Base(std::move(other)), Size(other.Size) {}
 
 #pragma region Methods
 
