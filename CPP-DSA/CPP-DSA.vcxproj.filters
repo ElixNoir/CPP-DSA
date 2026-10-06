@@ -45,6 +45,9 @@
     <ClInclude Include="Alloca.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Benchmark.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

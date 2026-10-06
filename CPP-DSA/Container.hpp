@@ -131,14 +131,16 @@ namespace DSA {
 		}
 
 		void grow(INDEX newCapacity) requires std::is_trivial_v<T> {
-			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), capacity));
+			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR, T>)
+				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
 			else {
 				T* oldData = get_data();
 				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
 				std::memcpy(get_data(), oldData, capacity);
 				ALLOCATOR::deallocate(oldData);
 			}
+
+			capacity = newCapacity;
 		}
 
 		void reserve(INDEX newCapacity) requires std::is_trivial_v<T> {
@@ -154,7 +156,7 @@ namespace DSA {
 		}
 
 		void shrink(INDEX newCapacity) requires std::is_trivial_v<T> {
-			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR, T>)
 				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
 			else {
 				T* oldData = get_data();
@@ -162,6 +164,8 @@ namespace DSA {
 				std::memcpy(get_data(), oldData, newCapacity);
 				ALLOCATOR::deallocate(oldData);
 			}
+
+			capacity = newCapacity;
 		}
 
 #pragma endregion

@@ -11,12 +11,11 @@ namespace DSA {
 
             { allocator.allocate(newSize) } -> std::same_as<U*>;
             { allocator.deallocate(block) };
-            { allocator.reallocate(block, newSize) } -> std::same_as<U*>;
 
         };
 
-        template <typename T, typename U = void*>
-        concept ReallocatableAllocator = Allocator<T, U>&& requires(T allocator, size_t newSize, U* block) {
+        template <typename T, typename U = void>
+        concept ReallocatableAllocator = Allocator<T, U> && requires(T allocator, U* block, size_t newSize) {
 
             { allocator.reallocate(block, newSize) } -> std::same_as<U*>;
 

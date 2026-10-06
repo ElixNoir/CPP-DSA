@@ -128,6 +128,8 @@ namespace DSA {
 			move_construct_range_backward(Base::get_data(), oldData, size);
 			destroy_range_backward(oldData, oldData + size);
 			ALLOCATOR::deallocate(oldData);
+
+			Base::capacity = newCapacity;
 		}
 
 		void grow(INDEX newCapacity) requires concepts::ResizableContainer<CONTAINER> {
@@ -171,6 +173,8 @@ namespace DSA {
 			move_construct_range_backward(Base::get_data(), oldData, size < newCapacity ? size : newCapacity);
 			destroy_range_backward(oldData, oldData + size);
 			ALLOCATOR::deallocate(oldData);
+
+			Base::capacity = newCapacity;
 		}
 
 		void shrink(INDEX newCapacity) requires concepts::ResizableContainer<CONTAINER> {

@@ -1,12 +1,41 @@
 #include "Stack.hpp"
 
 #include <iostream>
+#include <chrono>
+#include <vector>
+
+#include "Benchmark.hpp"
+
+using namespace DSA;
+
+#define ITERATIONS 100000
 
 int main() {
-	DSA::Stack<DSA::DynamicContainer<int>> q(4);
-	q.push(69);
-	q.double_capacity();
-	std::cout << q.pop();
+    {
+        const double ns = benchmark<ITERATIONS>([] {
+            Stack<DynamicContainer<int>> stack(16);
+            for (int i = 0; i < ITERATIONS; ++i) {
+                if (!stack.can_push())
+                    stack.double_capacity();
+                stack.push(i);
+            }
+            });
 
-	return 0;
+        std::cout << "Custom Stack: "
+            << ns << " ns/op\n";
+    }
+
+    {
+        const double ns = benchmark<ITERATIONS>([] {
+            std::vector<int> stack;
+            stack.reserve(16);
+            for (int i = 0; i < ITERATIONS; ++i)
+                stack.push_back(i);
+            });
+
+        std::cout << "std::vector: "
+            << ns << " ns/op\n";
+    }
+
+    return 0;
 }

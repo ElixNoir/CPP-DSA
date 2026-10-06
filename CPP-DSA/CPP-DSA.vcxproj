@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.hpp" />
+    <ClInclude Include="Benchmark.hpp" />
     <ClInclude Include="DSA.hpp" />
     <ClInclude Include="IncrementalContainer.hpp" />
     <ClInclude Include="Buffer.hpp" />
