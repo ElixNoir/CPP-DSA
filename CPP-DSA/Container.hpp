@@ -46,7 +46,11 @@ namespace DSA {
 		};
 
 		template <typename T>
-		concept StaticContainer = Container<T> && !ContainerTraits<T>::dynamic;
+		concept StaticContainer = Container<T> && !ContainerTraits<T>::dynamic && requires(T container) {
+			
+			T::capacity;
+
+		};
 
 	}
 
@@ -76,47 +80,47 @@ namespace DSA {
 
 #pragma region Getters
 
-		constexpr INDEX get_capacity() const noexcept {
+		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
 			return capacity;
 		}
 
-		constexpr T* get_data() noexcept {
+		[[nodiscard]] constexpr T* get_data() noexcept {
 			return reinterpret_cast<T*>(data);
 		}
 
-		constexpr const T* get_data() const noexcept {
+		[[nodiscard]] constexpr const T* get_data() const noexcept {
 			return reinterpret_cast<const T*>(data);
 		}
 
-		constexpr operator T* () noexcept {
+		[[nodiscard]] constexpr operator T* () noexcept {
 			return get_data();
 		}
 
-		constexpr operator const T* () const noexcept {
+		[[nodiscard]] constexpr operator const T* () const noexcept {
 			return get_data();
 		}
 
-		constexpr std::byte* get_raw_data() noexcept {
+		[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
 			return reinterpret_cast<std::byte*>(data);
 		}
 
-		constexpr const std::byte* get_raw_data() const noexcept {
+		[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
 			return reinterpret_cast<const std::byte*>(data);
 		}
 
-		constexpr operator std::byte* () noexcept {
+		[[nodiscard]] constexpr operator std::byte* () noexcept {
 			return get_raw_data();
 		}
 
-		constexpr operator const std::byte* () const noexcept {
+		[[nodiscard]] constexpr operator const std::byte* () const noexcept {
 			return get_raw_data();
 		}
 
-		constexpr T& operator[](INDEX index) noexcept {
+		[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
 			return get_data()[index];
 		}
 
-		constexpr const T& operator[](INDEX index) const noexcept {
+		[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
 			return get_data()[index];
 		}
 
@@ -184,6 +188,8 @@ namespace DSA {
 	struct alignas(_T) StaticContainer {
 	protected:
 
+		constexpr static size_t capacity = CAPACITY;
+
 		alignas(_T) std::byte data[CAPACITY * sizeof(_T)];
 
 	public:
@@ -197,47 +203,47 @@ namespace DSA {
 
 #pragma region Getters
 
-		constexpr INDEX get_capacity() const noexcept {
+		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
 			return CAPACITY;
 		}
 
-		constexpr T* get_data() noexcept {
+		[[nodiscard]] constexpr T* get_data() noexcept {
 			return reinterpret_cast<T*>(data);
 		}
 
-		constexpr const T* get_data() const noexcept {
+		[[nodiscard]] constexpr const T* get_data() const noexcept {
 			return reinterpret_cast<const T*>(data);
 		}
 
-		constexpr operator T* () noexcept {
+		[[nodiscard]] constexpr operator T* () noexcept {
 			return get_data();
 		}
 
-		constexpr operator const T* () const noexcept {
+		[[nodiscard]] constexpr operator const T* () const noexcept {
 			return get_data();
 		}
 
-		constexpr std::byte* get_raw_data() noexcept {
+		[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
 			return reinterpret_cast<std::byte*>(data);
 		}
 
-		constexpr const std::byte* get_raw_data() const noexcept {
+		[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
 			return reinterpret_cast<const std::byte*>(data);
 		}
 
-		constexpr operator std::byte* () noexcept {
+		[[nodiscard]] constexpr operator std::byte* () noexcept {
 			return get_raw_data();
 		}
 
-		constexpr operator const std::byte* () const noexcept {
+		[[nodiscard]] constexpr operator const std::byte* () const noexcept {
 			return get_raw_data();
 		}
 
-		constexpr T& operator[](INDEX index) noexcept {
+		[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
 			return get_data()[index];
 		}
 
-		constexpr const T& operator[](INDEX index) const noexcept {
+		[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
 			return get_data()[index];
 		}
 

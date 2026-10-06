@@ -10,7 +10,7 @@ namespace DSA {
         concept Allocator = requires(T allocator, size_t newSize, U* block) {
 
             { allocator.allocate(newSize) } -> std::same_as<U*>;
-            { allocator.deallocate(block) };
+            { allocator.deallocate(block) } noexcept;
 
         };
 

@@ -5,7 +5,7 @@
 static constexpr size_t RUNS = 10;
 
 template <size_t ITERATIONS, typename F>
-double benchmark(F&& function) {
+[[nodiscard]] double benchmark(F&& function) {
     using Clock = std::chrono::steady_clock;
 
     function(); // Warm up

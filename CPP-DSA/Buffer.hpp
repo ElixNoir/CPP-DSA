@@ -26,7 +26,7 @@ private:
 
 #pragma region Methods
 
-    static size_t get_system_page_size() {
+    [[nodiscard]] static size_t get_system_page_size() {
 #if PLATFORM_WINDOWS
         SYSTEM_INFO si;
         GetSystemInfo(&si);
@@ -36,12 +36,12 @@ private:
 #endif
     }
 
-    static size_t system_page_size() {
+    [[nodiscard]] static size_t system_page_size() {
         static const size_t page_size = get_system_page_size();
         return page_size;
     }
 
-    std::byte* map() {
+    [[nodiscard]] std::byte* map() {
         std::byte* address;
 #if PLATFORM_WINDOWS
         // Reserve virtual address space; no physical memory or page file is used
@@ -65,7 +65,7 @@ private:
 #endif
     }
 
-    static size_t align_to_page(size_t size, size_t page_size) {
+    [[nodiscard]] static size_t align_to_page(size_t size, size_t page_size) {
         if (page_size == 0) return size;
         const size_t remainder = size % page_size;
         if (remainder == 0) return size;
@@ -103,49 +103,49 @@ public:
 
 #pragma region Methods
 
-    constexpr bool is_mapped() const noexcept {
+    [[nodiscard]] constexpr bool is_mapped() const noexcept {
         return data != nullptr;
     }
 
 #pragma region Getters
 
-    constexpr T* get_data() noexcept {
+    [[nodiscard]] constexpr T* get_data() noexcept {
         return reinterpret_cast<T*>(data);
     }
 
-    constexpr const T* get_data() const noexcept {
+    [[nodiscard]] constexpr const T* get_data() const noexcept {
         return reinterpret_cast<const T*>(data);
     }
 
-    constexpr operator T* () noexcept {
+    [[nodiscard]] constexpr operator T* () noexcept {
         return get_data();
     }
 
-    constexpr operator const T* () const noexcept {
+    [[nodiscard]] constexpr operator const T* () const noexcept {
         return get_data();
     }
 
-    constexpr std::byte* get_raw_data() noexcept {
+    [[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
         return reinterpret_cast<std::byte*>(data);
     }
 
-    constexpr const std::byte* get_raw_data() const noexcept {
+    [[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
         return reinterpret_cast<const std::byte*>(data);
     }
 
-    constexpr operator std::byte* () noexcept {
+    [[nodiscard]] constexpr operator std::byte* () noexcept {
         return get_raw_data();
     }
 
-    constexpr operator const std::byte* () const noexcept {
+    [[nodiscard]] constexpr operator const std::byte* () const noexcept {
         return get_raw_data();
     }
 
-    constexpr T& operator[](size_t index) noexcept {
+    [[nodiscard]] constexpr T& operator[](size_t index) noexcept {
         return get_data()[index];
     }
 
-    constexpr const T& operator[](size_t index) const noexcept {
+    [[nodiscard]] constexpr const T& operator[](size_t index) const noexcept {
         return get_data()[index];
     }
 

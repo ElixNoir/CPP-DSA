@@ -12,13 +12,13 @@ std::conditional_t<
     T <= std::numeric_limits<uint8_t>::max(),
     uint8_t,
     std::conditional_t<
-    T <= std::numeric_limits<uint16_t>::max(),
-    uint16_t,
-    std::conditional_t<
-    T <= std::numeric_limits<uint32_t>::max(),
-    uint32_t,
-    uint64_t
-    >
+        T <= std::numeric_limits<uint16_t>::max(),
+        uint16_t,
+        std::conditional_t<
+            T <= std::numeric_limits<uint32_t>::max(),
+            uint32_t,
+            uint64_t
+        >
     >
 >;
 
@@ -28,13 +28,13 @@ std::conditional_t<
     (T >= std::numeric_limits<int8_t>::min() && T <= std::numeric_limits<int8_t>::max()),
     int8_t,
     std::conditional_t<
-    (T >= std::numeric_limits<int16_t>::min() && T <= std::numeric_limits<int16_t>::max()),
-    int16_t,
-    std::conditional_t<
-    (T >= std::numeric_limits<int32_t>::min() && T <= std::numeric_limits<int32_t>::max()),
-    int32_t,
-    int64_t
-    >
+        (T >= std::numeric_limits<int16_t>::min() && T <= std::numeric_limits<int16_t>::max()),
+        int16_t,
+        std::conditional_t<
+            (T >= std::numeric_limits<int32_t>::min() && T <= std::numeric_limits<int32_t>::max()),
+            int32_t,
+            int64_t
+        >
     >
 >;
 

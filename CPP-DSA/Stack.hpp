@@ -1,6 +1,5 @@
 #pragma once
 
-#include "DSA.hpp"
 #include "IncrementalContainer.hpp"
 #include "StackIterator.hpp"
 
@@ -69,30 +68,30 @@ namespace DSA {
 
 #pragma region Stack
 
-		constexpr bool can_peek() const noexcept {
+		[[nodiscard]] constexpr bool can_peek() const noexcept {
 			return !Base::is_empty();
 		}
 
-		constexpr T& peek() noexcept {
+		[[nodiscard]] constexpr T& peek() noexcept {
 			return Base::get_data()[size - 1];
 		}
 
-		constexpr const T& peek() const noexcept {
+		[[nodiscard]] constexpr const T& peek() const noexcept {
 			return Base::get_data()[size - 1];
 		}
 
-		constexpr bool can_pop(INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_pop(INDEX count = 1) const noexcept {
 			return Base::can_remove(count);
 		}
 
-		constexpr T pop() noexcept {
+		[[nodiscard]] constexpr T pop() noexcept {
 			T* const address = Base::get_data() + --size;
 			T value = move(*address);
 			destroy_at(address);
 			return value;
 		}
 
-		constexpr bool can_push(INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_push(INDEX count = 1) const noexcept {
 			return Base::can_add(count);
 		}
 
@@ -106,79 +105,75 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity() requires
-			concepts::DynamicContainer<CONTAINER>
-			&& (!concepts::ResizableContainer<CONTAINER>)
-		{
-			grow(Base::get_capacity() << 1);
-		}
-
-		void double_capacity() requires concepts::ResizableContainer<CONTAINER> {
-			Base::double_capacity();
-		}
-
-		void grow(INDEX newCapacity) requires
-			concepts::DynamicContainer<CONTAINER>
-			&& (!concepts::ResizableContainer<CONTAINER>)
-		{
-			using ALLOCATOR = CONTAINER::ALLOCATOR;
-
-			T* oldData = Base::get_data();
-			data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
-			move_construct_range_backward(Base::get_data(), oldData, size);
-			destroy_range_backward(oldData, oldData + size);
-			ALLOCATOR::deallocate(oldData);
-
-			Base::capacity = newCapacity;
-		}
-
-		void grow(INDEX newCapacity) requires concepts::ResizableContainer<CONTAINER> {
-			Base::grow(newCapacity);
-		}
-
-		void reserve(INDEX newCapacity) requires
-			concepts::DynamicContainer<CONTAINER>
-			&& (!concepts::ResizableContainer<CONTAINER>)
-		{
-			if (newCapacity > Base::get_capacity())
-				resize(newCapacity);
-		}
-
-		void reserve(INDEX newCapacity) requires concepts::ResizableContainer<CONTAINER> {
-			Base::reserve(newCapacity);
-		}
-
-		void resize(INDEX newCapacity) requires
-			concepts::DynamicContainer<CONTAINER>
-			&& (!concepts::ResizableContainer<CONTAINER>)
-		{
-			if (newCapacity > Base::get_capacity())
-				grow(newCapacity);
+		void double_capacity() requires concepts::DynamicContainer<CONTAINER> {
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::double_capacity();
 			else
-				shrink(newCapacity);
+				grow(Base::get_capacity() << 1);
 		}
 
-		void resize(INDEX newCapacity) requires concepts::ResizableContainer<CONTAINER> {
-			Base::resize(newCapacity);
+		void grow(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::grow(newCapacity);
+			else {
+				using ALLOCATOR = CONTAINER::ALLOCATOR;
+
+				T* oldData = Base::get_data();
+				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
+				try {
+					move_construct_range_backward(Base::get_data(), oldData, size);
+					destroy_range_backward(oldData, oldData + size);
+					ALLOCATOR::deallocate(oldData);
+				}
+				catch (...) {
+					ALLOCATOR::deallocate(data);
+					data = oldData;
+					throw;
+				}
+
+				Base::capacity = newCapacity;
+			}
 		}
 
-		void shrink(INDEX newCapacity) requires
-			concepts::DynamicContainer<CONTAINER>
-			&& (!concepts::ResizableContainer<CONTAINER>)
-		{
-			using ALLOCATOR = CONTAINER::ALLOCATOR;
-
-			T* oldData = Base::get_data();
-			data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
-			move_construct_range_backward(Base::get_data(), oldData, size < newCapacity ? size : newCapacity);
-			destroy_range_backward(oldData, oldData + size);
-			ALLOCATOR::deallocate(oldData);
-
-			Base::capacity = newCapacity;
+		void reserve(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::reserve(newCapacity);
+			else if (newCapacity > Base::get_capacity())
+				grow(newCapacity);
 		}
 
-		void shrink(INDEX newCapacity) requires concepts::ResizableContainer<CONTAINER> {
-			Base::shrink(newCapacity);
+		void resize(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::resize(newCapacity);
+			else {
+				if (newCapacity > Base::get_capacity())
+					grow(newCapacity);
+				else
+					shrink(newCapacity);
+			}
+		}
+
+		void shrink(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::shrink(newCapacity);
+			else {
+				using ALLOCATOR = CONTAINER::ALLOCATOR;
+
+				T* oldData = Base::get_data();
+				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
+				try {
+					move_construct_range_backward(Base::get_data(), oldData, size < newCapacity ? size : newCapacity);
+					destroy_range_backward(oldData, oldData + size);
+					ALLOCATOR::deallocate(oldData);
+				}
+				catch (...) {
+					ALLOCATOR::deallocate(data);
+					data = oldData;
+					throw;
+				}
+
+				Base::capacity = newCapacity;
+			}
 		}
 
 #pragma endregion

@@ -11,28 +11,116 @@ namespace DSA {
 #pragma region Non-Trivial
 
 	template <typename T, typename... Arguments>
-	constexpr void construct_at(T* address, Arguments&&... arguments) {
+	constexpr void construct_at(T* address, Arguments&&... arguments) noexcept(
+		std::is_nothrow_constructible_v<T, Arguments...>
+	) {
 		std::construct_at<T>(address, forward<Arguments>(arguments)...);
 	}
 
 	template <typename T, typename... Arguments>
-	constexpr void construct_range_backward(T* begin, const T* end, Arguments&&... arguments) {
-		if constexpr (!std::is_trivially_constructible_v<T>) {
-			while (begin != end)
-				construct_at(--end, arguments);
-		}
-		else
+	constexpr void construct_range_backward(T* begin, const T* end, Arguments&&... arguments) noexcept(
+		std::is_nothrow_constructible_v<T, Arguments...>
+	) {
+		if constexpr (std::is_trivially_constructible_v<T, Arguments...>)
 			repeat(begin, end, T(forward<Arguments>(arguments)...));
+		else if constexpr (std::is_nothrow_constructible_v<T, Arguments...>) {
+			while (begin != end)
+				construct_at(--end, forward<Arguments>(arguments)...);
+		}
+		else {
+			const T* const e = end;
+			try {
+				while (begin != end)
+					construct_at(--end, forward<Arguments>(arguments)...);
+			}
+			catch (...) {
+				destroy_range_backward(end, e);
+				throw;
+			}
+		}
 	}
 
 	template <typename T, typename... Arguments>
-	constexpr void construct_range_forward(T* begin, const T* end, Arguments&&... arguments) {
-		if constexpr (!std::is_trivially_constructible_v<T>) {
-			while (begin != end)
-				construct_at(begin++, arguments);
-		}
-		else
+	constexpr void construct_range_forward(T* begin, const T* end, Arguments&&... arguments) noexcept(
+		std::is_nothrow_constructible_v<T, Arguments...>
+	) {
+		if constexpr (std::is_trivially_constructible_v<T, Arguments...>)
 			repeat(begin, end, T(forward<Arguments>(arguments)...));
+		else if constexpr (std::is_nothrow_constructible_v<T, Arguments...>) {
+			while (begin != end)
+				construct_at(begin++, forward<Arguments>(arguments)...);
+		}
+		else {
+			const T* const b = begin;
+			try {
+				while (begin != end)
+					construct_at(begin++, forward<Arguments>(arguments)...);
+			}
+			catch (...) {
+				destroy_range_forward(b, begin);
+				throw;
+			}
+		}
+	}
+
+	template <typename T>
+	constexpr void copy_construct_at(T* destination, const T& source) noexcept(
+		std::is_nothrow_copy_constructible_v<T>
+		|| std::is_trivially_copy_constructible_v<T>
+	) {
+		if constexpr (std::is_trivially_copy_constructible_v<T>)
+			std::memcpy(destination, &source, sizeof(T));
+		else
+			construct_at(destination, source);
+	}
+
+	template <typename T>
+	constexpr void copy_construct_range_backward(T* destination, const T* source, size_t count) noexcept(
+		std::is_nothrow_copy_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		if constexpr (std::is_trivially_copy_constructible_v<T>)
+			std::memcpy(destination, source, count);
+		else if constexpr (std::is_nothrow_copy_constructible_v<T>) {
+			while (count-- != 0)
+				copy_construct_at(destination + count, source[count]);
+		}
+		else {
+			try {
+				while (count-- != 0)
+					copy_construct_at(destination + count, source[count]);
+			}
+			catch (...) {
+				destroy_range_backward(destination + count, destination);
+				throw;
+			}
+		}
+	}
+
+	template <typename T>
+	constexpr void copy_construct_range_forward(T* destination, const T* source, const size_t count) noexcept(
+		std::is_nothrow_copy_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+		) {
+		if constexpr (std::is_trivially_copy_constructible_v<T>)
+			std::memcpy(destination, source, count);
+		else {
+			const T* const end = destination + count;
+			if constexpr (std::is_nothrow_copy_constructible_v<T>) {
+				while (destination != end)
+					copy_construct_at(destination++, *(source++));
+			}
+			else {
+				try {
+					while (destination != end)
+						copy_construct_at(destination++, *(source++));
+				}
+				catch (...) {
+					destroy_range_forward(end - count, destination);
+					throw;
+				}
+			}
+		}
 	}
 
 	template <typename T>
@@ -64,46 +152,121 @@ namespace DSA {
 		return std::move(data);
 	}
 
-	template <typename T, typename... Arguments>
-	constexpr void move_construct_range_backward(T* destination, const T* source, size_t count) {
-		if constexpr (!std::is_trivially_constructible_v<T>) {
-			while (count-- != 0)
-				construct_at(destination + count, move(source[count]));
-		}
+	template <typename T>
+	constexpr void move_construct_at(T* destination, T& source) noexcept(
+		std::is_nothrow_move_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		if constexpr (std::is_trivially_copyable_v<T>)
+			std::memcpy(destination, &source, sizeof(T));
 		else
-			std::memcpy(destination, source, count);
-	}
-
-	template <typename T, typename... Arguments>
-	constexpr void move_construct_range_forward(T* destination, const T* source, const size_t count) {
-		if constexpr (!std::is_trivially_constructible_v<T>) {
-			T* end = destination + count;
-			while (destination != end)
-				construct_at(destination++, move(*(source++)));
-		}
-		else
-			std::memcpy(destination, source, count);
+			construct_at(destination, move(source));
 	}
 
 	template <typename T>
-	constexpr void reconstruct_at(T* destination, T* source) {
-		construct_at(destination, move(*source));
+	constexpr void move_construct_range_backward(T* destination, T* source, size_t count) noexcept(
+		std::is_nothrow_move_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		if constexpr (std::is_trivially_copyable_v<T>)
+			std::memcpy(destination, source, count);
+		else if constexpr (std::is_nothrow_move_constructible_v<T>) {
+			while (count-- != 0)
+				move_construct_at(destination + count, source[count]);
+		}
+		else {
+			try {
+				while (count-- != 0)
+					move_construct_at(destination + count, source[count]);
+			}
+			catch (...) {
+				destroy_range_backward(destination + count, destination);
+				throw;
+			}
+		}
+	}
+
+	template <typename T>
+	constexpr void move_construct_range_forward(T* destination, T* source, const size_t count) noexcept(
+		std::is_nothrow_move_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		if constexpr (std::is_trivially_copyable_v<T>)
+			std::memcpy(destination, source, count);
+		else {
+			const T* const end = destination + count;
+			if constexpr (std::is_nothrow_move_constructible_v<T>) {
+				while (destination != end)
+					move_construct_at(destination++, *(source++));
+			}
+			else {
+				try {
+					while (destination != end)
+						move_construct_at(destination++, *(source++));
+				}
+				catch (...) {
+					destroy_range_forward(end - count, destination);
+					throw;
+				}
+			}
+		}
+	}
+
+	template <typename T>
+	constexpr void reconstruct_at(T* destination, T* source) noexcept(
+		std::is_nothrow_move_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		move_construct_at(destination, source);
 		destroy_at(source);
 	}
 
 	template <typename T>
-	constexpr void reconstruct_range_backward(T* destination, T* source, size_t count) {
-		if constexpr (!std::is_trivially_destructible_v<T>)
+	constexpr void reconstruct_range_backward(T* destination, T* source, size_t count) noexcept(
+		std::is_nothrow_move_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		if constexpr (std::is_trivially_copyable_v<T>)
+			std::memcpy(destination, source, count);
+		else if constexpr (std::is_nothrow_move_constructible_v<T>) {
 			while (count-- != 0)
 				reconstruct_at(destination + count, source + count);
+		}
+		else {
+			try {
+				while (count-- != 0)
+					reconstruct_at(destination + count, source + count);
+			}
+			catch (...) {
+				destroy_range_backward(destination + count, destination);
+				throw;
+			}
+		}
 	}
 
 	template <typename T>
-	constexpr void reconstruct_range_forward(T* destination, T* source, const size_t count) {
-		if constexpr (!std::is_trivially_destructible_v<T>) {
-			T* end = destination + count;
-			while (destination != end)
-				reconstruct_at(destination++, source++);
+	constexpr void reconstruct_range_forward(T* destination, T* source, const size_t count) noexcept(
+		std::is_nothrow_move_constructible_v<T>
+		|| std::is_trivially_copyable_v<T>
+	) {
+		if constexpr (std::is_trivially_copyable_v<T>)
+			std::memcpy(destination, source, count);
+		else {
+			const T* const end = destination + count;
+			if constexpr (std::is_nothrow_move_constructible_v<T>) {
+				while (destination != end)
+					reconstruct_at(destination++, source++);
+			}
+			else {
+				try {
+					while (destination != end)
+						reconstruct_at(destination++, source++);
+				}
+				catch (...) {
+					destroy_range_forward(end - count, destination);
+					throw;
+				}
+			}
 		}
 	}
 
