@@ -17,6 +17,7 @@ struct Bitmask {
 #pragma region Helpers
 
     constexpr static T BitCount = std::numeric_limits<T>::digits;
+	constexpr static T BitShift = std::bit_width(BitCount - 1);
 
     constexpr static T MaximumValue = std::numeric_limits<T>::max();
     constexpr static T MinimumValue = std::numeric_limits<T>::min();

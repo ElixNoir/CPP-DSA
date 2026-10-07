@@ -28,8 +28,6 @@ namespace DSA {
 			destroy_range_backward(Base::get_data(), Base::get_data() + size);
 		}
 
-		~Stack() = default;
-
 #pragma endregion
 
 #pragma region Methods
