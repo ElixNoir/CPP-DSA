@@ -4,10 +4,13 @@
 
 namespace DSA {
 
-    template <typename T = void>
+    template <typename _T = void, typename _INDEX = size_t>
     struct StandardAllocator {
 
-        [[nodiscard]] static T* allocate(size_t size) {
+        using T = _T;
+        using INDEX = _INDEX;
+
+        [[nodiscard]] static T* allocate(INDEX size) {
             return reinterpret_cast<T*>(std::malloc(size * sizeof(T)));
         }
 
@@ -15,7 +18,7 @@ namespace DSA {
             std::free(reinterpret_cast<void*>(block));
         }
 
-        [[nodiscard]] static T* reallocate(T* block, size_t size) {
+        [[nodiscard]] static T* reallocate(T* block, INDEX size) {
             return reinterpret_cast<T*>(std::realloc(reinterpret_cast<void*>(block), size * sizeof(T)));
         }
 

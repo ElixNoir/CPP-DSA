@@ -141,8 +141,12 @@
   <ItemGroup>
     <ClInclude Include="Allocator.hpp" />
     <ClInclude Include="Benchmark.hpp" />
+    <ClInclude Include="BitmappedTrie.hpp" />
     <ClInclude Include="Bitmask.hpp" />
+    <ClInclude Include="Bitset.hpp" />
+    <ClInclude Include="BitsetIterator.hpp" />
     <ClInclude Include="DSA.hpp" />
+    <ClInclude Include="Pool.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />
     <ClInclude Include="IncrementalContainer.hpp" />
     <ClInclude Include="Buffer.hpp" />

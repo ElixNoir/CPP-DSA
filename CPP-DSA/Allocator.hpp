@@ -6,19 +6,30 @@ namespace DSA {
 
     namespace concepts {
 
-        template <typename T, typename U = void>
-        concept Allocator = requires(T allocator, size_t newSize, U* block) {
+        template <typename T>
+        concept Allocator = requires(T allocator) {
 
-            { allocator.allocate(newSize) } -> std::same_as<U*>;
-            { allocator.deallocate(block) } noexcept;
+            typename T::T;
+            typename T::INDEX;
+
+            { allocator.allocate(std::declval<typename T::INDEX>()) } -> std::same_as<typename T::T*>;
+            { allocator.deallocate(std::declval<typename T::T*>()) };
 
         };
 
-        template <typename T, typename U = void>
-        concept ReallocatableAllocator = Allocator<T, U> && requires(T allocator, U* block, size_t newSize) {
+        template <typename T>
+        concept ReallocatableAllocator = Allocator<T> && requires(T allocator) {
 
-            { allocator.reallocate(block, newSize) } -> std::same_as<U*>;
+            { allocator.reallocate(std::declval<typename T::T*>(), std::declval<typename T::INDEX>()) } -> std::same_as<typename T::T*>;
 
+        };
+
+        template <typename T>
+        concept NothrowResizableAllocator = Allocator<T> && requires(T allocator) {
+            requires (
+                (ReallocatableAllocator<T> && noexcept(allocator.reallocate(std::declval<typename T::T*>(), std::declval<typename T::INDEX>())))
+                || (!ReallocatableAllocator<T> && noexcept(allocator.allocate(std::declval<typename T::INDEX>())) && noexcept(allocator.deallocate(std::declval<typename T::T*>())))
+            );
         };
 
     }

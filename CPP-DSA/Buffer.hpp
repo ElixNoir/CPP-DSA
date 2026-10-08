@@ -44,11 +44,11 @@ private:
     [[nodiscard]] std::byte* map() {
         std::byte* address;
 #if PLATFORM_WINDOWS
-        // Reserve virtual address space; no physical memory or page file is used
+        // Reserve virtual address space; no physical memory or page file is used.
         address = VirtualAlloc(NULL, maximum_capacity, MEM_RESERVE, PAGE_NOACCESS);
         return address;
 #elif PLATFORM_POSIX
-        // Reserve via PROT_NONE mapping
+        // Reserve via PROT_NONE mapping.
         address = mmap(NULL, maximum_capacity, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (address == MAP_FAILED)
             address = NULL;
@@ -89,11 +89,7 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(Buffer&& other) noexcept :
-        data(other.data),
-        physical_size(other.physical_size),
-        maximum_capacity(other.maximum_capacity)
-    {
+    Buffer(Buffer&& other) noexcept : data(other.data), physical_size(other.physical_size), maximum_capacity(other.maximum_capacity) {
         other.data = nullptr;
     }
 

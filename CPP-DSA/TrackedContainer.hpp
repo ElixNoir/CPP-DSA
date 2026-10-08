@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Bitmask.hpp"
+#include "Bitset.hpp"
 #include "IncrementalContainer.hpp"
 
 namespace DSA {
@@ -16,107 +16,96 @@ namespace DSA {
 	protected:
 
 		using Base::data;
+		using Base::size;
 
-		using Bitmap = std::conditional_t<
-			concepts::ContainerTraits<CONTAINER>::dynamic,
-			Bitmask<uintmax_t>*,
-			Bitmask<uintmax_t>[CONTAINER::capacity]
-		>;
-
-		Bitmap tracked;
+		Bitset<CONTAINER> tracked;
 
 #pragma region Methods
 
-		void helper_destroy() {
-			INDEX index = 0;
-			INDEX count = Base::get_size();
+		void helper_destroy() noexcept requires (
+			!std::is_trivially_destructible_v<T>
+		) {
+			INDEX count = size;
 
-			for (const Bitmask<uintmax_t>* mask = tracked; count != 0; mask++) {
-				int bitIndex = 0;
-
-				while (true) {
-					bitIndex = mask->index_of_trailing_one(bitIndex);
-					if (bitIndex == Bitmask<uintmax_t>::BitCount)
-						break;
-
-					destroy_at(Base::get_data() + index + bitIndex);
-
-					bitIndex++;
-					count--;
-				}
-
-				index += Bitmask<uintmax_t>::BitCount;
+			for (INDEX index : tracked.ones()) {
+				if (count == 0)
+					break;
+				destroy_at(Base::get_data() + index);
+				count--;
 			}
 		}
 
-		template <bool MODE>
-		void helper_resize(INDEX newCapacity) {
+		template <bool GROW>
+		void helper_resize(INDEX newCapacity) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
 			using ALLOCATOR = CONTAINER::ALLOCATOR;
 
 			T* oldData = Base::get_data();
-			data = reinterpret_cast<T*>(ALLOCATOR::allocate(newCapacity * sizeof(T)));
+			T* newData = ALLOCATOR::allocate(newCapacity);
 
-			INDEX index = 0;
-			INDEX count = Base::get_size();
+			INDEX count = size;
 
-			for (const Bitmask<uintmax_t>* mask = tracked; count != 0; mask++) {
-				int bitIndex = 0;
-
-				while (true) {
-					bitIndex = mask->index_of_trailing_one(bitIndex);
-					if (bitIndex == Bitmask<uintmax_t>::BitCount)
+			try {
+				for (INDEX index : tracked.ones()) {
+					if (count == 0)
 						break;
-
-					INDEX jndex = index + bitIndex;
-
-					if constexpr (std::is_nothrow_move_constructible_v<T>) {
-						if constexpr (MODE == true)
-							move_construct_at(Base::get_data() + jndex, oldData[jndex]);
-						else if constexpr (MODE == false) {
-							if (jndex < newCapacity)
-								move_construct_at(Base::get_data() + jndex, oldData[jndex]);
-						}
-					}
-					else {
-						try {
-							if constexpr (MODE == true)
-								move_construct_at(Base::get_data() + jndex, oldData[jndex]);
-							else if constexpr (MODE == false) {
-								if (jndex < newCapacity)
-									move_construct_at(Base::get_data() + jndex, oldData[jndex]);
-							}
-						}
-						catch (...) {
-							destroy_range_backward(Base::get_data(), Base::get_data() + jndex);
-							ALLOCATOR::deallocate(data);
-							data = oldData;
-							throw;
-						}
-					}
-					
-					destroy_at(oldData + jndex);
-
-					bitIndex++;
+					move_construct_at(newData + index, move(oldData[index]));
 					count--;
 				}
+			}
+			catch (...) {
+				if constexpr (!std::is_trivially_destructible_v<T>) {
+					for (INDEX index : tracked.ones()) {
+						if (count == size)
+							break;
+						destroy_at(newData + index);
+						count++;
+					}
+				}
 
-				index += Bitmask<uintmax_t>::BitCount;
+				ALLOCATOR::deallocate(newData);
+
+				throw;
+			}
+
+			if constexpr (!std::is_trivially_destructible_v<T>) {
+				for (INDEX index : tracked.ones()) {
+					if (count == size)
+						break;
+
+					destroy_at(oldData + index);
+					count++;
+				}
 			}
 
 			ALLOCATOR::deallocate(oldData);
 
+			data = reinterpret_cast<std::byte*>(newData);
 			Base::capacity = newCapacity;
+
+			tracked.resize<GROW>((newCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift);
 		}
 
 #pragma endregion
 
 	public:
 
-		~TrackedContainer() requires (!std::is_trivially_destructible_v<T>) {
+#pragma region Constructors & Destructors
+
+		TrackedContainer(INDEX initialCapacity) :
+			Base(initialCapacity),
+			tracked((initialCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift) {}
+
+		~TrackedContainer() requires (
+			!std::is_trivially_destructible_v<T>
+		) {
 			helper_destroy();
 		}
 
 		~TrackedContainer() = default;
+
+#pragma endregion
 
 #pragma region Methods
 
@@ -124,7 +113,8 @@ namespace DSA {
 
 		constexpr void empty() noexcept {
 			helper_destroy();
-			Base::size = 0;
+			tracked.empty();
+			size = 0;
 		}
 
 #pragma endregion
@@ -132,49 +122,69 @@ namespace DSA {
 #pragma region TrackedContainer
 
 		constexpr void track(INDEX index) noexcept {
-			tracked[index >> std::bit_width(Bitmask<uintmax_t>::BitCount)].set(index & (Bitmask<uintmax_t>::BitCount - 1));
+			tracked[index >> Bitmask<uintmax_t>::BitShift].set(index & (Bitmask<uintmax_t>::BitCount - 1));
 		}
 
 #pragma region Memory Management
 
-		void double_capacity() requires concepts::DynamicContainer<CONTAINER> {
-			if constexpr (concepts::ResizableContainer<CONTAINER>)
-				Base::double_capacity();
-			else
-				grow(capacity << 1);
+		void double_capacity() noexcept(
+			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
+			&& std::is_nothrow_move_constructible_v<T>
+		) requires (
+			concepts::DynamicContainer<CONTAINER>
+			&& !concepts::ResizableContainer<CONTAINER>
+		) {
+			grow(capacity << 1);
 		}
+		using Base::double_capacity;
 
-		void grow(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
-			if constexpr (concepts::ResizableContainer<CONTAINER>)
-				Base::grow(newCapacity);
-			else
-				helper_resize<true>(newCapacity);
+		void grow(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
+			&& std::is_nothrow_move_constructible_v<T>
+		) requires (
+			concepts::DynamicContainer<CONTAINER>
+			&& !concepts::ResizableContainer<CONTAINER>
+		) {
+			helper_resize<true>(newCapacity);
 		}
+		using Base::grow;
 
-		void reserve(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
-			if constexpr (concepts::ResizableContainer<CONTAINER>)
-				Base::reserve(newCapacity);
-			else if (newCapacity > capacity)
+		void reserve(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
+			&& std::is_nothrow_move_constructible_v<T>
+		) requires (
+			concepts::DynamicContainer<CONTAINER>
+			&& !concepts::ResizableContainer<CONTAINER>
+		) {
+			if (newCapacity > capacity)
 				grow(newCapacity);
 		}
+		using Base::reserve;
 
-		void resize(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
-			if constexpr (concepts::ResizableContainer<CONTAINER>)
-				Base::resize(newCapacity);
-			else {
-				if (newCapacity > capacity)
-					grow(newCapacity);
-				else
-					shrink(newCapacity);
-			}
-		}
-
-		void shrink(INDEX newCapacity) requires concepts::DynamicContainer<CONTAINER> {
-			if constexpr (concepts::ResizableContainer<CONTAINER>)
-				Base::shrink(newCapacity);
+		void resize(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
+			&& std::is_nothrow_move_constructible_v<T>
+		) requires (
+			concepts::DynamicContainer<CONTAINER>
+			&& !concepts::ResizableContainer<CONTAINER>
+		) {
+			if (newCapacity > capacity)
+				grow(newCapacity);
 			else
-				helper_resize<false>(newCapacity);
+				shrink(newCapacity);
 		}
+		using Base::resize;
+
+		void shrink(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
+			&& std::is_nothrow_move_constructible_v<T>
+		) requires (
+			concepts::DynamicContainer<CONTAINER>
+			&& !concepts::ResizableContainer<CONTAINER>
+		) {
+			helper_resize<false>(newCapacity);
+		}
+		using Base::shrink;
 
 #pragma endregion
 

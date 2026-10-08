@@ -1,39 +1,83 @@
 #pragma once
 
 #include "BitsetIterator.hpp"
+#include "Container.hpp"
 
-template <concepts::Container<Bitmask<uintmax_t>> CONTAINER>
-class Bitset : public CONTAINER {
-public:
+namespace DSA {
 
-	using Base = CONTAINER;
-	using typename Base::INDEX;
-	using typename Base::T;
+	template <concepts::Container CONTAINER>
+	class Bitset : public traits::RebindContainer_t<CONTAINER, Bitmask<std::uintmax_t>> {
+	public:
 
-public:
+		using Base = traits::RebindContainer_t<
+			CONTAINER,
+			Bitmask<std::uintmax_t>
+		>;
+		using typename Base::INDEX;
+		using typename Base::T;
 
 #pragma region Methods
 
-    constexpr T& get(uintmax_t bitIndex) noexcept {
-        return Base::get_data()[bitIndex >> Bitmask<uintmax_t>::BitShift];
-    }
+		constexpr T& get(INDEX index) noexcept {
+			return Base::get_data()[index];
+		}
 
-	constexpr T& operator[](uintmax_t bitIndex) noexcept {
-        return get(bitIndex);
-	}
+		constexpr const T& get(INDEX index) const noexcept {
+			return Base::get_data()[index];
+		}
+
+		constexpr T& operator[](INDEX index) noexcept {
+			return get(index);
+		}
+
+		constexpr const T& operator[](INDEX index) const noexcept {
+			return get(index);
+		}
+
+		constexpr void one() const noexcept {
+			std::memset(Base::get_data(), 0xFF, Base::get_capacity());
+		}
+
+		constexpr void zero() const noexcept {
+			std::memset(Base::get_data(), 0, Base::get_capacity());
+		}
 
 #pragma endregion
 
 #pragma endregion Iteration
 
-	BitsetIterator<INDEX> begin() noexcept {
-		return BitsetIterator<INDEX>(Base::get_data(), Base::get_capacity(), false);
-	}
+		template <bool ONES>
+		BitsetIterator<INDEX, ONES> begin() noexcept {
+			return BitsetIterator<INDEX, ONES>(Base::get_data(), Base::get_capacity(), false);
+		}
 
-	BitsetIterator<INDEX> end() noexcept {
-		return BitsetIterator<INDEX>(Base::get_data(), Base::get_capacity(), true);
-	}
+		template <bool ONES>
+		BitsetIterator<INDEX, ONES> end() noexcept {
+			return BitsetIterator<INDEX, ONES>(Base::get_data(), Base::get_capacity(), true);
+		}
+
+		auto ones() noexcept {
+			struct Proxy {
+				decltype(this) self;
+
+				auto begin() noexcept { return self->template begin<true>(); }
+				auto end() noexcept { return self->template end<true>(); }
+			};
+			return Proxy{ this };
+		}
+
+		auto zeros() noexcept {
+			struct Proxy {
+				decltype(this) self;
+
+				auto begin() noexcept { return self->template begin<false>(); }
+				auto end() noexcept { return self->template end<false>(); }
+			};
+			return Proxy{ this };
+		}
 
 #pragma endregion
 
-};
+	};
+
+}

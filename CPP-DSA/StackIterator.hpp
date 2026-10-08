@@ -1,35 +1,39 @@
 #pragma once
 
-template <typename T>
-class StackIterator {
-protected:
+namespace DSA {
 
-	T* address;
+	template <typename T>
+	class StackIterator {
+	protected:
 
-public:
+		T* address;
 
-	StackIterator(T* address) : address(address) {}
+	public:
 
-	T& operator*() const noexcept {
-		return *address;
-	}
+		StackIterator(T* address) : address(address) {}
 
-	T* operator->() const noexcept {
-		return address;
-	}
+		T& operator*() const noexcept {
+			return *address;
+		}
 
-	StackIterator<T>& operator++() noexcept {
-		address++;
-		return *this;
-	}
+		T* operator->() const noexcept {
+			return address;
+		}
 
-	StackIterator<T>& operator--() noexcept {
-		address--;
-		return *this;
-	}
+		StackIterator<T>& operator++() noexcept {
+			address++;
+			return *this;
+		}
 
-	bool operator!=(const StackIterator<T>& other) const noexcept {
-		return address != other.address;
-	}
+		StackIterator<T>& operator--() noexcept {
+			address--;
+			return *this;
+		}
 
-};
+		bool operator!=(const StackIterator<T>& other) const noexcept {
+			return address != other.address;
+		}
+
+	};
+
+}

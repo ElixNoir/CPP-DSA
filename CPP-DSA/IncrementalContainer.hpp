@@ -64,6 +64,14 @@ namespace DSA {
 
 #pragma endregion
 
+#pragma region Setters
+
+		constexpr void set_size(INDEX newSize) noexcept requires std::is_trivial_v<T> {
+			size = newSize;
+		}
+
+#pragma endregion
+
 #pragma endregion
 
 	};

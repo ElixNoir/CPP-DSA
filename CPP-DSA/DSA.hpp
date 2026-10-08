@@ -68,10 +68,7 @@ namespace DSA {
 		std::is_nothrow_copy_constructible_v<T>
 		|| std::is_trivially_copy_constructible_v<T>
 	) {
-		if constexpr (std::is_trivially_copy_constructible_v<T>)
-			std::memcpy(destination, &source, sizeof(T));
-		else
-			construct_at(destination, source);
+		construct_at(destination, source);
 	}
 
 	template <typename T>
@@ -156,7 +153,7 @@ namespace DSA {
 	constexpr void move_construct_at(T* destination, T& source) noexcept(
 		std::is_nothrow_move_constructible_v<T>
 		|| std::is_trivially_copyable_v<T>
-	) {
+		) {
 		if constexpr (std::is_trivially_copyable_v<T>)
 			std::memcpy(destination, &source, sizeof(T));
 		else
@@ -172,12 +169,12 @@ namespace DSA {
 			std::memcpy(destination, source, count);
 		else if constexpr (std::is_nothrow_move_constructible_v<T>) {
 			while (count-- != 0)
-				move_construct_at(destination + count, source[count]);
+				move_construct_at(destination + count, move(source[count]));
 		}
 		else {
 			try {
 				while (count-- != 0)
-					move_construct_at(destination + count, source[count]);
+					move_construct_at(destination + count, move(source[count]));
 			}
 			catch (...) {
 				destroy_range_backward(destination + count, destination);
@@ -197,12 +194,12 @@ namespace DSA {
 			const T* const end = destination + count;
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				while (destination != end)
-					move_construct_at(destination++, *(source++));
+					move_construct_at(destination++, move(*source++));
 			}
 			else {
 				try {
 					while (destination != end)
-						move_construct_at(destination++, *(source++));
+						move_construct_at(destination++, move(*source++));
 				}
 				catch (...) {
 					destroy_range_forward(end - count, destination);
@@ -213,12 +210,12 @@ namespace DSA {
 	}
 
 	template <typename T>
-	constexpr void reconstruct_at(T* destination, T* source) noexcept(
+	constexpr void reconstruct_at(T* destination, T&& source) noexcept(
 		std::is_nothrow_move_constructible_v<T>
 		|| std::is_trivially_copyable_v<T>
 	) {
-		move_construct_at(destination, source);
-		destroy_at(source);
+		move_construct_at(destination, move(source));
+		destroy_at(&source);
 	}
 
 	template <typename T>
@@ -230,12 +227,12 @@ namespace DSA {
 			std::memcpy(destination, source, count);
 		else if constexpr (std::is_nothrow_move_constructible_v<T>) {
 			while (count-- != 0)
-				reconstruct_at(destination + count, source + count);
+				reconstruct_at(destination + count, move(*(source + count)));
 		}
 		else {
 			try {
 				while (count-- != 0)
-					reconstruct_at(destination + count, source + count);
+					reconstruct_at(destination + count, move(*(source + count)));
 			}
 			catch (...) {
 				destroy_range_backward(destination + count, destination);
@@ -255,12 +252,12 @@ namespace DSA {
 			const T* const end = destination + count;
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				while (destination != end)
-					reconstruct_at(destination++, source++);
+					reconstruct_at(destination++, move(*source++));
 			}
 			else {
 				try {
 					while (destination != end)
-						reconstruct_at(destination++, source++);
+						reconstruct_at(destination++, move(*source++));
 				}
 				catch (...) {
 					destroy_range_forward(end - count, destination);

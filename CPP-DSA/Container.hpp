@@ -54,8 +54,29 @@ namespace DSA {
 
 	}
 
+	namespace traits {
+
+		template <typename CONTAINER>
+		struct RebindContainer;
+
+		template <
+			template <typename, typename...> typename CONTAINER,
+			typename T,
+			typename... ARGS
+		>
+		struct RebindContainer<CONTAINER<T, ARGS...>> {
+			template <typename NEW_T>
+			using type = CONTAINER<NEW_T, ARGS...>;
+		};
+
+		template <typename CONTAINER, typename NEW_T>
+		using RebindContainer_t =
+			typename RebindContainer<CONTAINER>::template type<NEW_T>;
+
+	}
+
 	template <typename _T, std::unsigned_integral _INDEX = size_t, typename _ALLOCATOR = StandardAllocator<_T>>
-		requires concepts::Allocator<_ALLOCATOR, _T>
+		requires concepts::Allocator<_ALLOCATOR>
 	struct DynamicContainer {
 	protected:
 
@@ -130,12 +151,20 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity() requires std::is_trivial_v<T> {
+		void double_capacity() noexcept(
+			concepts::NothrowResizableAllocator<ALLOCATOR>
+		) requires (
+			std::is_trivial_v<T>
+		) {
 			grow(capacity << 1);
 		}
 
-		void grow(INDEX newCapacity) requires std::is_trivial_v<T> {
-			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR, T>)
+		void grow(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<ALLOCATOR>
+		) requires (
+			std::is_trivial_v<T>
+		) {
+			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
 				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
 			else {
 				T* oldData = get_data();
@@ -147,20 +176,32 @@ namespace DSA {
 			capacity = newCapacity;
 		}
 
-		void reserve(INDEX newCapacity) requires std::is_trivial_v<T> {
+		void reserve(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<ALLOCATOR>
+		) requires (
+			std::is_trivial_v<T>
+		) {
 			if (newCapacity > capacity)
 				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity) requires std::is_trivial_v<T> {
+		void resize(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<ALLOCATOR>
+		) requires (
+			std::is_trivial_v<T>
+		) {
 			if (newCapacity > capacity)
 				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
 
-		void shrink(INDEX newCapacity) requires std::is_trivial_v<T> {
-			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR, T>)
+		void shrink(INDEX newCapacity) noexcept(
+			concepts::NothrowResizableAllocator<ALLOCATOR>
+		) requires (
+			std::is_trivial_v<T>
+		) {
+			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
 				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
 			else {
 				T* oldData = get_data();
@@ -179,7 +220,7 @@ namespace DSA {
 	};
 
 	template <typename T, typename INDEX, typename ALLOCATOR>
-		requires concepts::Allocator<ALLOCATOR, T>
+		requires concepts::Allocator<ALLOCATOR>
 	struct concepts::ContainerTraits<DynamicContainer<T, INDEX, ALLOCATOR>> {
 		constexpr static bool dynamic = true;
 	};
