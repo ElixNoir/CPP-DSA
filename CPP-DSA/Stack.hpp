@@ -6,6 +6,7 @@
 namespace DSA {
 
 	template <concepts::Container CONTAINER>
+		requires std::is_nothrow_destructible_v<typename CONTAINER::T>
 	class Stack : public IncrementalContainer<CONTAINER> {
 	public:
 
@@ -76,12 +77,12 @@ namespace DSA {
 
 #pragma region Methods
 
-#pragma region IncrementalContainer
+#pragma region Add & Remove
 
 		constexpr void add(const T& value) noexcept(
 			std::is_nothrow_copy_constructible_v<T>
 		) {
-			construct_at(Base::get_data() + size++, value);
+			copy_construct_at(Base::get_data() + size++, value);
 		}
 
 		constexpr void add(T&& value) noexcept(
@@ -90,8 +91,24 @@ namespace DSA {
 			move_construct_at(Base::get_data() + size++, move(value));
 		}
 
+		constexpr void add_copy_construct_many(const T* source, INDEX count) noexcept(
+			std::is_nothrow_copy_constructible_v<T>
+		) {
+			copy_construct_range_backward(Base::get_data() + size, source, count);
+			size += count;
+		}
+
+		constexpr void add_move_construct_many(const T* source, INDEX count) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			move_construct_range_backward(Base::get_data() + size, source, count);
+			size += count;
+		}
+
 		template <typename... Arguments>
-		constexpr void emplace(Arguments&&... arguments) {
+		constexpr void emplace(Arguments&&... arguments) noexcept(
+			std::is_nothrow_constructible_v<T, Arguments...>
+		) {
 			construct_at<T>(Base::get_data() + size++, forward<Arguments>(arguments)...);
 		}
 
@@ -105,14 +122,15 @@ namespace DSA {
 			destroy_at(Base::get_data() + size);
 		}
 
-		constexpr void remove(INDEX count) noexcept {
-			destroy_range_backward(Base::get_data() + size - count, Base::get_data() + size);
+		constexpr void remove_many(INDEX count) noexcept {
 			size -= count;
+			T* const address = Base::get_data() + size;
+			destroy_range_backward(address, address + count);
 		}
 
 #pragma endregion
 
-#pragma region Stack
+#pragma region Peek, Pop, & Push
 
 		[[nodiscard]] constexpr bool can_peek() const noexcept {
 			return !Base::is_empty();
@@ -147,7 +165,7 @@ namespace DSA {
 			return value;
 		}
 
-		[[nodiscard]] constexpr void pop(T* destination, INDEX count) noexcept( // To save on performance, this does not pop per-object.
+		[[nodiscard]] constexpr void pop_many(T* destination, INDEX count) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
 			size -= count;
@@ -171,6 +189,20 @@ namespace DSA {
 		) {
 			add(move(value));
 		}
+
+		constexpr void push_copy_construct_many(const T* source, INDEX count) noexcept(
+			std::is_nothrow_copy_constructible_v<T>
+		) {
+			add_copy_construct_many(source, count);
+		}
+
+		constexpr void push_move_construct_many(const T* source, INDEX count) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			add_move_construct_many(source, count);
+		}
+
+#pragma endregion
 
 #pragma region Memory Management
 
@@ -232,8 +264,6 @@ namespace DSA {
 			helper_resize<false>(newCapacity);
 		}
 		using Base::shrink;
-
-#pragma endregion
 
 #pragma endregion
 

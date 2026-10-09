@@ -83,6 +83,18 @@ namespace DSA {
 		std::byte* data = nullptr;
 		_INDEX capacity = 0;
 
+#pragma region Methods
+
+		constexpr void set_capacity(std::byte* newCapacity) noexcept {
+			capacity = newCapacity;
+		}
+
+		constexpr void set_data(std::byte* newData) noexcept {
+			data = newData;
+		}
+
+#pragma endregion
+
 	public:
 
 		using ALLOCATOR = _ALLOCATOR;
