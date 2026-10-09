@@ -36,14 +36,14 @@ namespace DSA {
 		) {
 			using ALLOCATOR = CONTAINER::ALLOCATOR;
 
-			T* oldData = Base::get_data();
-			T* newData = ALLOCATOR::allocate(newCapacity);
+			T* const oldData = Base::get_data();
+			T* const newData = ALLOCATOR::allocate(newCapacity);
 
 			try {
 				if constexpr (GROW)
-					move_construct_range_backward(newData, oldData, size);
+					move_construct_range_backward(newData, newData + size, oldData);
 				else
-					move_construct_range_backward(newData, oldData, size < newCapacity ? size : newCapacity);
+					move_construct_range_backward(newData, newData + Utilities::minimum(size, newCapacity), oldData);
 				destroy_range_backward(oldData, oldData + size);
 				ALLOCATOR::deallocate(oldData);
 			}
@@ -82,26 +82,30 @@ namespace DSA {
 		constexpr void add(const T& value) noexcept(
 			std::is_nothrow_copy_constructible_v<T>
 		) {
-			copy_construct_at(Base::get_data() + size++, value);
+			copy_construct_at(Base::get_data() + size, value);
+			size++;
 		}
 
 		constexpr void add(T&& value) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			move_construct_at(Base::get_data() + size++, move(value));
+			move_construct_at(Base::get_data() + size, move(value));
+			size++;
 		}
 
 		constexpr void add_copy_construct_many(const T* source, INDEX count) noexcept(
 			std::is_nothrow_copy_constructible_v<T>
 		) {
-			copy_construct_range_backward(Base::get_data() + size, source, count);
+			T* const address = Base::get_data() + size;
+			copy_construct_range_backward(address, address + count, source);
 			size += count;
 		}
 
 		constexpr void add_move_construct_many(const T* source, INDEX count) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			move_construct_range_backward(Base::get_data() + size, source, count);
+			T* const address = Base::get_data() + size;
+			move_construct_range_backward(address, address + count, source);
 			size += count;
 		}
 
@@ -109,7 +113,8 @@ namespace DSA {
 		constexpr void emplace(Arguments&&... arguments) noexcept(
 			std::is_nothrow_constructible_v<T, Arguments...>
 		) {
-			construct_at<T>(Base::get_data() + size++, forward<Arguments>(arguments)...);
+			construct_at<T>(Base::get_data() + size, forward<Arguments>(arguments)...);
+			size++;
 		}
 
 		constexpr void empty() noexcept {
@@ -118,14 +123,13 @@ namespace DSA {
 		}
 
 		constexpr void remove() noexcept {
-			size--;
-			destroy_at(Base::get_data() + size);
+			destroy_at(Base::get_data() + --size);
 		}
 
 		constexpr void remove_many(INDEX count) noexcept {
-			size -= count;
 			T* const address = Base::get_data() + size;
-			destroy_range_backward(address, address + count);
+			destroy_range_backward(address - count, address);
+			size -= count;
 		}
 
 #pragma endregion
@@ -168,10 +172,10 @@ namespace DSA {
 		[[nodiscard]] constexpr void pop_many(T* destination, INDEX count) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			size -= count;
-			T* const address = Base::get_data() + size;
-			move_construct_range_backward(destination, address, count);
+			T* const address = Base::get_data() + size - count;
+			move_construct_range_backward(destination, destination + count, address);
 			destroy_range_backward(address, address + count);
+			size -= count;
 		}
 
 		[[nodiscard]] constexpr bool can_push(INDEX count = 1) const noexcept {

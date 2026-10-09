@@ -65,17 +65,14 @@ namespace DSA {
             if constexpr (concepts::ReallocatableAllocator<ALLOCATOR> && std::is_trivially_copyable_v<T>)
                 data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(Base::get_data(), newCapacity));
             else {
-                T* oldData = Base::get_data();
-                T* newData = ALLOCATOR::allocate(newCapacity);
+                T* const oldData = Base::get_data();
+                T* const newData = ALLOCATOR::allocate(newCapacity);
 
                 try {
-                    if (back > front)
-                        move_construct_range_forward<false>(newData + front, oldData + front, back);
-                    else if (size != 0) {
-                        const INDEX oldCapacity = Base::get_capacity();
-                        move_construct_range_forward<false>(newData + front, oldData + front, oldCapacity - front);
-                        move_construct_range_forward(newData + oldCapacity, oldData + oldCapacity, back);
-                    }
+                    const INDEX count = Utilities::minimum(size, Base::get_capacity() - front);
+                    move_construct_range_forward<true, false>(newData, newData + count, oldData + front);
+                    if (size - count != 0)
+                        move_construct_range_forward(newData + count, newData + size, oldData);
                 }
                 catch (...) {
                     ALLOCATOR::deallocate(newData);
@@ -105,45 +102,47 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-        void add_back(const T& value) noexcept(
+        constexpr void add_back(const T& value) noexcept(
             std::is_nothrow_copy_constructible_v<T>
         ) {
             copy_construct_at(Base::get_data() + back, value);
-            back = (back + 1) % Base::get_capacity();
+            back = (back + 1 == Base::get_capacity()) ? 0 : back + 1;
             size++;
         }
-
-        void add_back(T&& value) noexcept(
+        
+        constexpr void add_back(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
             move_construct_at(Base::get_data() + back, move(value));
-            back = (back + 1) % Base::get_capacity();
+            back = (back + 1 == Base::get_capacity()) ? 0 : back + 1;
             size++;
         }
 
-        void add_front(const T& value) noexcept(
+        constexpr void add_front(const T& value) noexcept(
             std::is_nothrow_copy_constructible_v<T>
         ) {
-            copy_construct_at(Base::get_data() + front, value);
-            front = (front - 1) % Base::get_capacity();
+            const INDEX newFront = (front == 0) ? Base::get_capacity() - 1 : front - 1;
+            move_construct_at(Base::get_data() + newFront, value);
+            front = newFront;
             size++;
         }
 
-        void add_front(T&& value) noexcept(
+        constexpr void add_front(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
-            move_construct_at(Base::get_data() + front, move(value));
-            front = (front - 1) % Base::get_capacity();
+            const INDEX newFront = (front == 0) ? Base::get_capacity() - 1 : front - 1;
+            move_construct_at(Base::get_data() + newFront, move(value));
+            front = newFront;
             size++;
         }
 
-        void remove_back() noexcept {
-            back = (back - 1) % Base::get_capacity();
-            size--;
+        constexpr void remove_back() noexcept {
+            back = (back == 0) ? Base::get_capacity() - 1 : back - 1;
             destroy_at(Base::get_data() + back);
+            size--;
         }
 
-        void remove_back_many(INDEX count) noexcept {
+        /*constexpr void remove_back_many(INDEX count) noexcept {
             const INDEX capacity = Base::get_capacity();
             T* const data = Base::get_data();
 
@@ -158,15 +157,15 @@ namespace DSA {
 
             back = newBack;
             size -= count;
-        }
+        }*/
 
-        void remove_front() noexcept {
-            front = (front + 1) % Base::get_capacity();
-            size--;
+        constexpr void remove_front() noexcept {
             destroy_at(Base::get_data() + front);
+            front = (front + 1 == Base::get_capacity()) ? 0 : front + 1;
+            size--;
         }
 
-        void remove_front_many(INDEX count) noexcept {
+        /*constexpr void remove_front_many(INDEX count) noexcept {
             const INDEX capacity = Base::get_capacity();
             T* const data = Base::get_data();
 
@@ -181,7 +180,7 @@ namespace DSA {
 
             front = newFront;
             size -= count;
-        }
+        }*/
 
 #pragma endregion
 
@@ -191,7 +190,7 @@ namespace DSA {
             return Base::can_remove(count);
         }
 
-        [[nodiscard]] T dequeue_back() noexcept(
+        /*[[nodiscard]] constexpr T dequeue_back() noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
             back = (back - 1) % Base::get_capacity();
@@ -225,7 +224,7 @@ namespace DSA {
             size -= count;
         }
 
-        [[nodiscard]] T dequeue_front() noexcept(
+        [[nodiscard]] constexpr T dequeue_front() noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
             front = (front + 1) % Base::get_capacity();
@@ -245,11 +244,11 @@ namespace DSA {
             INDEX newFront = (front + count) % capacity;
 
             if (newFront > front) {
-                move_construct_range_backward<false>(destination, data + front, count);
+                move_construct_range_backward<true, false>(destination, destination + count, data + front);
                 destroy_range_forward<false>(data + front, data + newFront);
             }
             else {
-                move_construct_range_backward<false>(destination, data + front, capacity - front - 1);
+                move_construct_range_backward<true, false>(destination, destination + capacity - front - 1, data + front);
                 move_construct_range_backward(destination + capacity - front, data, newFront);
                 destroy_range_forward<false>(data + front, data + capacity - 1);
                 destroy_range_forward(data, data + newFront);
@@ -257,31 +256,31 @@ namespace DSA {
 
             front = newFront;
             size -= count;
-        }
+        }*/
 
         [[nodiscard]] constexpr bool can_enqueue(INDEX count = 1) const noexcept {
             return Base::can_add(count);
         }
 
-        void enqueue_back(const T& value) noexcept(
+        constexpr void enqueue_back(const T& value) noexcept(
             std::is_nothrow_copy_constructible_v<T>
         ) {
             add_back(value);
         }
 
-        void enqueue_back(T&& value) noexcept(
+        constexpr void enqueue_back(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
             add_back(move(value));
         }
 
-        void enqueue_front(const T& value) noexcept(
+        constexpr void enqueue_front(const T& value) noexcept(
             std::is_nothrow_copy_constructible_v<T>
         ) {
             add_front(value);
         }
 
-        void enqueue_front(T&& value) noexcept(
+        constexpr void enqueue_front(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
             add_front(move(value));

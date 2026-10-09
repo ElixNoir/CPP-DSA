@@ -84,7 +84,10 @@ namespace DSA {
 			data = reinterpret_cast<std::byte*>(newData);
 			Base::capacity = newCapacity;
 
-			tracked.resize<GROW>((newCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift);
+			if constexpr (GROW)
+				tracked.grow((newCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift);
+			else
+				tracked.shrink((newCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift);
 		}
 
 #pragma endregion
@@ -109,6 +112,14 @@ namespace DSA {
 
 #pragma region Methods
 
+#pragma region Track
+
+		constexpr void track(INDEX index) noexcept {
+			tracked[index >> Bitmask<uintmax_t>::BitShift].set(index & (Bitmask<uintmax_t>::BitCount - 1));
+		}
+
+#pragma endregion
+
 #pragma region IncrementalContainer
 
 		constexpr void empty() noexcept {
@@ -118,12 +129,6 @@ namespace DSA {
 		}
 
 #pragma endregion
-
-#pragma region TrackedContainer
-
-		constexpr void track(INDEX index) noexcept {
-			tracked[index >> Bitmask<uintmax_t>::BitShift].set(index & (Bitmask<uintmax_t>::BitCount - 1));
-		}
 
 #pragma region Memory Management
 
@@ -185,8 +190,6 @@ namespace DSA {
 			helper_resize<false>(newCapacity);
 		}
 		using Base::shrink;
-
-#pragma endregion
 
 #pragma endregion
 

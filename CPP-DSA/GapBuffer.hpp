@@ -29,103 +29,6 @@ namespace DSA {
 
 #pragma region Methods
 
-#pragma region GapBuffer
-
-		void back(INDEX position) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
-			const INDEX shift = start - position;
-			end -= shift;
-			start -= shift;
-			move_construct_range_backward(data + end, data + start, shift);
-		}
-
-		void forward(INDEX position) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
-			const INDEX shift = position - start;
-			move_construct_range_forward(data + start, data + end, shift);
-			end += shift;
-			start += shift;
-		}
-
-		void position(INDEX position) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
-			if (position < start)
-				back(position);
-			else if (position > start)
-				forward(position);
-		}
-
-		void add(const T& value) noexcept(
-			std::is_nothrow_copy_constructible_v<T>
-		) {
-			copy_construct_at(data + start++, value);
-		}
-
-		void add(T&& value) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
-			move_construct_at(data + start++, move(value));
-		}
-
-		void add_copy_construct_many(const T* source, INDEX count) noexcept(
-			std::is_nothrow_copy_constructible_v<T>
-		) {
-			copy_construct_range_forward(data + start, source, count);
-			start += count;
-		}
-
-		void add_move_construct_many(const T* source, INDEX count) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
-			move_construct_range_forward(data + start, source, count);
-			start += count;
-		}
-
-		void remove_end() noexcept {
-			T* const address = Base::get_data() + ++end;
-			destroy_range_forward(address - 1, address);
-		}
-
-		void remove_end_many(INDEX count) noexcept {
-			end += count;
-			T* const address = Base::get_data() + end;
-			destroy_range_forward(address - count, address);
-		}
-
-		void remove_start() noexcept {
-			T* const address = Base::get_data() + --start;
-			destroy_range_forward(address, address + 1);
-		}
-
-		void remove_start_many(INDEX count) noexcept {
-			start -= count;
-			T* const address = Base::get_data() + start;
-			destroy_range_forward(address, address + count);
-		}
-
-#pragma region Checks
-
-		[[nodsicard]] constexpr bool can_add(INDEX count = 1) const noexcept {
-			return gap_size() >= count;
-		}
-
-		[[nodsicard]] constexpr bool can_remove(INDEX count = 1) const noexcept {
-			return size() >= count;
-		}
-
-		[[nodiscard]] constexpr bool is_empty() const noexcept {
-			return size() == 0;
-		}
-
-		[[nodiscard]] constexpr bool is_full() const noexcept {
-			return size() == Base::get_capacity();
-		}
-
-#pragma endregion
-
 #pragma region Getters
 
 		[[nodiscard]] constexpr T* data() const noexcept {
@@ -150,11 +53,121 @@ namespace DSA {
 
 #pragma endregion
 
-#pragma region Helpers
+#pragma region Checks
 
-		//constexpr void empty() noexcept {
-			
-		//}
+		[[nodsicard]] constexpr bool can_add(INDEX count = 1) const noexcept {
+			return gap_size() >= count;
+		}
+
+		[[nodsicard]] constexpr bool can_remove(INDEX count = 1) const noexcept {
+			return size() >= count;
+		}
+
+		[[nodiscard]] constexpr bool is_empty() const noexcept {
+			return size() == 0;
+		}
+
+		[[nodiscard]] constexpr bool is_full() const noexcept {
+			return size() == Base::get_capacity();
+		}
+
+#pragma endregion
+
+#pragma region Add & Remove
+
+		void add(const T& value) noexcept(
+			std::is_nothrow_copy_constructible_v<T>
+		) {
+			copy_construct_at(Base::get_data() + start, value);
+			start++;
+		}
+
+		void add(T&& value) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			move_construct_at(Base::get_data() + start, move(value));
+			start++;
+		}
+
+		void add_copy_construct_many(const T* source, INDEX count) noexcept(
+			std::is_nothrow_copy_constructible_v<T>
+		) {
+			T* const address = Base::get_data() + start;
+			copy_construct_range_forward(address, address + count, source);
+			start += count;
+		}
+
+		void add_move_construct_many(const T* source, INDEX count) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			T* const address = Base::get_data() + start;
+			move_construct_range_forward(address, address + count, source);
+			start += count;
+		}
+
+		void remove_end() noexcept {
+			T* const address = Base::get_data() + end;
+			destroy_range_forward(address, address + 1);
+			end++;
+		}
+
+		void remove_end_many(INDEX count) noexcept {
+			T* const address = Base::get_data() + end;
+			destroy_range_forward(address, address + count);
+			end += count;
+		}
+
+		void remove_start() noexcept {
+			T* const address = Base::get_data() + start;
+			destroy_range_forward(address - 1, address);
+			start--;
+		}
+
+		void remove_start_many(INDEX count) noexcept {
+			T* const address = Base::get_data() + start;
+			destroy_range_forward(address - count, address);
+			start -= count;
+		}
+
+#pragma endregion
+
+#pragma region Back, Forward, & Position
+
+		void back(INDEX position) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			T* const address = Base::get_data();
+			const INDEX shift = start - position;
+			if constexpr (std::is_nothrow_move_constructible_v<T>) {
+				end -= shift;
+				start -= shift;
+				move_construct_range_backward(address + end, address + end + shift, address + start);
+			}
+			else {
+				move_construct_range_backward(address + end - shift, address + end, address + start - shift);
+				end -= shift;
+				start -= shift;
+			}
+		}
+
+		void forward(INDEX position) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			T* const address = Base::get_data();
+			const INDEX shift = position - start;
+			move_construct_range_forward(address + start, address + start + shift, address + end);
+			end += shift;
+			start += shift;
+		}
+
+		void position(INDEX position) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+		) {
+			if (position < start)
+				back(position);
+			else if (position > start)
+				forward(position);
+		}
 
 #pragma endregion
 
@@ -208,12 +221,6 @@ namespace DSA {
 			if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
 		}
-
-#pragma endregion
-
-#pragma region Setters
-
-#pragma endregion
 
 #pragma endregion
 

@@ -19,6 +19,7 @@ namespace DSA {
 		using Base::data;
 		using Base::size;
 
+		INDEX free_top = 0;
 		Stack<DynamicContainer<T, INDEX>> free_stack;
 
 		void helper_destroy() noexcept requires (
@@ -72,8 +73,8 @@ namespace DSA {
 			for (INDEX index : free_stack)
 				occupied.get(index >> Bitmask<uintmax_t>::BitShift).set(index & (Bitmask<uintmax_t>::BitCount - 1));
 
-			T* oldData = Base::get_data();
-			T* newData = ALLOCATOR::allocate(newCapacity);
+			T* const oldData = Base::get_data();
+			T* const newData = ALLOCATOR::allocate(newCapacity);
 
 			INDEX count = size;
 
@@ -133,14 +134,28 @@ namespace DSA {
 #pragma region IncrementalContainer
 
 		constexpr INDEX add(const T& value) noexcept(
-			std::is_nothrow_move_constructible_v<T>
+			std::is_nothrow_copy_constructible_v<T>
 		) {
 			INDEX index;
-			if (!free_stack.is_empty())
+			if (!free_stack.is_empty()) {
 				index = free_stack.pop();
+				try {
+					copy_construct_at(Base::get_data() + index, value);
+				}
+				catch (...) {
+					free_stack.push(index);
+					throw;
+				}
+			}
 			else {
-				index = free_stack.get_size();
-				free_stack.push(value);
+				index = free_top++;
+				try {
+					copy_construct_at(Base::get_data() + index, value);
+				}
+				catch (...) {
+					free_top--;
+					throw;
+				}
 			}
 
 			size++;
@@ -152,11 +167,25 @@ namespace DSA {
 			std::is_nothrow_move_constructible_v<T>
 		) {
 			INDEX index;
-			if (!free_stack.is_empty())
+			if (!free_stack.is_empty()) {
 				index = free_stack.pop();
+				try {
+					move_construct_at(Base::get_data() + index, value);
+				}
+				catch (...) {
+					free_stack.push(index);
+					throw;
+				}
+			}
 			else {
-				index = free_stack.get_size();
-				free_stack.push(move(value));
+				index = free_top++;
+				try {
+					move_construct_at(Base::get_data() + index, value);
+				}
+				catch (...) {
+					free_top--;
+					throw;
+				}
 			}
 
 			size++;
@@ -165,6 +194,7 @@ namespace DSA {
 		}
 
 		constexpr void remove(INDEX index) noexcept {
+			destroy_at(Base::get_data() + index);
 			free_stack.push(index);
 			size--;
 		}
@@ -180,7 +210,7 @@ namespace DSA {
 #pragma region Pool
 
 		constexpr INDEX allocate(const T& value) noexcept(
-			std::is_nothrow_move_constructible_v<T>
+			std::is_nothrow_copy_constructible_v<T>
 		) {
 			return add(value);
 		}
@@ -202,7 +232,6 @@ namespace DSA {
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
 			grow(Base::get_capacity() << 1);
 		}
@@ -213,24 +242,20 @@ namespace DSA {
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
 			helper_resize(newCapacity);
+			free_stack.grow(newCapacity);
 		}
-		using Base::grow;
 
 		void reserve(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
 			if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
-			free_stack.reserve(newCapacity);
 		}
-		using Base::reserve;
 
 #pragma endregion
 
