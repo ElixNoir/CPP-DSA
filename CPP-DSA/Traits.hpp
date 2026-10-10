@@ -6,6 +6,26 @@
 #include <limits>
 #include <type_traits>
 
+#pragma region Templates
+
+/*
+template <typename T>
+struct template_of;
+
+template <template <typename...> class T, typename... Args>
+struct template_of<T<Args...>> {
+    template <typename... NewArgs>
+    using type = T<NewArgs...>;
+};
+
+template <typename T, typename... NewArgs>
+using template_of_t = typename template_of<T>::type<NewArgs>;
+*/
+
+#pragma endregion
+
+#pragma region Integral Types
+
 template <uintmax_t T>
 using smallest_uint_t =
 std::conditional_t<
@@ -50,3 +70,5 @@ using smallest_sum_t = std::conditional_t<
         std::numeric_limits<B>::digits
     ))>
 >;
+
+#pragma endregion

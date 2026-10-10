@@ -59,19 +59,23 @@ namespace DSA {
 		template <typename CONTAINER>
 		struct RebindContainer;
 
-		template <
-			template <typename, typename...> typename CONTAINER,
-			typename T,
-			typename... ARGS
-		>
-		struct RebindContainer<CONTAINER<T, ARGS...>> {
-			template <typename NEW_T>
-			using type = CONTAINER<NEW_T, ARGS...>;
+		template <typename T>
+		struct container_replace_first_arg;
+
+		template <template <typename, auto> typename T, typename First, auto Value>
+		struct container_replace_first_arg<T<First, Value>> {
+			template <typename U>
+			using type = T<U, Value>;
 		};
 
-		template <typename CONTAINER, typename NEW_T>
-		using RebindContainer_t =
-			typename RebindContainer<CONTAINER>::template type<NEW_T>;
+		template <template <typename...> typename T, typename First, typename... Rest>
+		struct container_replace_first_arg<T<First, Rest...>> {
+			template <typename U>
+			using type = T<U, Rest...>;
+		};
+
+		template <typename T, typename U>
+		using container_replace_first_arg_t = typename container_replace_first_arg<T>::template type<U>;
 
 	}
 
@@ -109,9 +113,15 @@ namespace DSA {
 
 #pragma region Methods
 
-#pragma region Container
-
 #pragma region Getters
+
+		constexpr T& get(INDEX index) noexcept {
+			return get_data()[index];
+		}
+
+		constexpr const T& get(INDEX index) const noexcept {
+			return get_data()[index];
+		}
 
 		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
 			return capacity;
@@ -150,18 +160,32 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
-			return get_data()[index];
+			return get(index);
 		}
 
 		[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
-			return get_data()[index];
+			return get(index);
 		}
-
-#pragma endregion
 
 #pragma endregion
 
 #pragma region Memory Management
+
+#pragma region Assignment
+
+		DynamicContainer& operator=(DynamicContainer&& other) noexcept {
+			if (this == &other)
+				return *this;
+
+			ALLOCATOR::deallocate(data);
+
+			data = std::exchange(other.data, nullptr);
+			capacity = std::exchange(other.capacity, 0);
+
+			return *this;
+		}
+
+#pragma endregion
 
 		void double_capacity() noexcept(
 			concepts::NothrowResizableAllocator<ALLOCATOR>
@@ -225,6 +249,14 @@ namespace DSA {
 			capacity = newCapacity;
 		}
 
+		constexpr void one() const noexcept {
+			std::memset(data, 0xFF, capacity);
+		}
+
+		constexpr void zero() const noexcept {
+			std::memset(data, 0, capacity);
+		}
+
 #pragma endregion
 
 #pragma endregion
@@ -250,11 +282,23 @@ namespace DSA {
 		using INDEX = smallest_uint_t<CAPACITY>;
 		using T = _T;
 
+#pragma region Constructors & Destructors
+
+		StaticContainer() = default;
+
+#pragma endregion
+
 #pragma region Methods
 
-#pragma region Container
-
 #pragma region Getters
+
+		constexpr T& get(INDEX index) noexcept {
+			return get_data()[index];
+		}
+
+		constexpr const T& get(INDEX index) const noexcept {
+			return get_data()[index];
+		}
 
 		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
 			return CAPACITY;
@@ -293,14 +337,24 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
-			return get_data()[index];
+			return get(index);
 		}
 
 		[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
-			return get_data()[index];
+			return get(index);
 		}
 
 #pragma endregion
+
+#pragma region Memory Management
+
+		constexpr void one() const noexcept {
+			std::memset(data, 0xFF, capacity);
+		}
+
+		constexpr void zero() const noexcept {
+			std::memset(data, 0, capacity);
+		}
 
 #pragma endregion
 

@@ -85,7 +85,7 @@ namespace DSA {
 		void add(T&& value) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			move_construct_at(Base::get_data() + start, move(value));
+			move_construct_at(Base::get_data() + start, std::move(value));
 			start++;
 		}
 

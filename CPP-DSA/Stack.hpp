@@ -89,7 +89,7 @@ namespace DSA {
 		constexpr void add(T&& value) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			move_construct_at(Base::get_data() + size, move(value));
+			move_construct_at(Base::get_data() + size, std::move(value));
 			size++;
 		}
 
@@ -164,7 +164,7 @@ namespace DSA {
 			std::is_nothrow_move_constructible_v<T>
 		) {
 			T* const address = Base::get_data() + --size;
-			T value = move(*address);
+			T value = std::move(*address);
 			destroy_at(address);
 			return value;
 		}
@@ -191,7 +191,7 @@ namespace DSA {
 		constexpr void push(T&& value) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			add(move(value));
+			add(std::move(value));
 		}
 
 		constexpr void push_copy_construct_many(const T* source, INDEX count) noexcept(
@@ -215,59 +215,62 @@ namespace DSA {
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			grow(Base::get_capacity() << 1);
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::double_capacity();
+			else
+				grow(Base::get_capacity() << 1);
 		}
-		using Base::double_capacity;
 
 		void grow(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			helper_resize<true>(newCapacity);
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::grow(newCapacity);
+			else
+				helper_resize<true>(newCapacity);
 		}
-		using Base::grow;
 
 		void reserve(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			if (newCapacity > Base::get_capacity())
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::reserve(newCapacity);
+			else if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
 		}
-		using Base::reserve;
 
 		void resize(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			if (newCapacity > Base::get_capacity())
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::resize(newCapacity);
+			else if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
-		using Base::resize;
 
 		void shrink(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			helper_resize<false>(newCapacity);
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::shrink(newCapacity);
+			else
+				helper_resize<false>(newCapacity);
 		}
-		using Base::shrink;
 
 #pragma endregion
 

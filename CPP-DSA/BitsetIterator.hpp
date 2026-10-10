@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <iterator>
 
-namespace {
+namespace DSA {
 
     template <std::unsigned_integral INDEX, bool ONES>
     class BitsetIterator {

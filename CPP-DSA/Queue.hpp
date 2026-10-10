@@ -51,7 +51,7 @@ namespace DSA {
         ) requires (
             concepts::DynamicContainer<CONTAINER>
         ) {
-            grow(2 * newCapacity);
+            grow(Base::get_capacity() << 1);
         }
 
         void grow(INDEX newCapacity) noexcept(
@@ -113,7 +113,7 @@ namespace DSA {
         constexpr void add_back(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
-            move_construct_at(Base::get_data() + back, move(value));
+            move_construct_at(Base::get_data() + back, std::move(value));
             back = (back + 1 == Base::get_capacity()) ? 0 : back + 1;
             size++;
         }
@@ -131,7 +131,7 @@ namespace DSA {
             std::is_nothrow_move_constructible_v<T>
         ) {
             const INDEX newFront = (front == 0) ? Base::get_capacity() - 1 : front - 1;
-            move_construct_at(Base::get_data() + newFront, move(value));
+            move_construct_at(Base::get_data() + newFront, std::move(value));
             front = newFront;
             size++;
         }
@@ -142,7 +142,7 @@ namespace DSA {
             size--;
         }
 
-        /*constexpr void remove_back_many(INDEX count) noexcept {
+        constexpr void remove_back_many(INDEX count) noexcept {
             const INDEX capacity = Base::get_capacity();
             T* const data = Base::get_data();
 
@@ -157,7 +157,7 @@ namespace DSA {
 
             back = newBack;
             size -= count;
-        }*/
+        }
 
         constexpr void remove_front() noexcept {
             destroy_at(Base::get_data() + front);
@@ -165,7 +165,7 @@ namespace DSA {
             size--;
         }
 
-        /*constexpr void remove_front_many(INDEX count) noexcept {
+        constexpr void remove_front_many(INDEX count) noexcept {
             const INDEX capacity = Base::get_capacity();
             T* const data = Base::get_data();
 
@@ -180,7 +180,7 @@ namespace DSA {
 
             front = newFront;
             size -= count;
-        }*/
+        }
 
 #pragma endregion
 
@@ -190,13 +190,13 @@ namespace DSA {
             return Base::can_remove(count);
         }
 
-        /*[[nodiscard]] constexpr T dequeue_back() noexcept(
+        [[nodiscard]] constexpr T dequeue_back() noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
             back = (back - 1) % Base::get_capacity();
             T* const address = Base::get_data() + back;
             size--;
-            T value = move(*address);
+            T value = std::move(*address);
             destroy_at(address);
             return value;
         }
@@ -210,12 +210,12 @@ namespace DSA {
             INDEX newBack = (back - count) % capacity;
 
             if (newBack < back) {
-                move_construct_range_backward(destination, data + newBack, count);
+                move_construct_range_backward(destination, destination + count, data + newBack);
                 destroy_range_backward(data + newBack, data + back);
             }
             else {
-                move_construct_range_backward(destination, data, back);
-                move_construct_range_backward(destination + back, data + newBack, capacity - newBack);
+                move_construct_range_backward(destination, destination + back, data);
+                move_construct_range_backward(destination + back, destination + capacity - newBack, data + newBack);
                 destroy_range_backward(data, data + back);
                 destroy_range_backward(data + newBack, data + capacity);
             }
@@ -230,7 +230,7 @@ namespace DSA {
             front = (front + 1) % Base::get_capacity();
             T* const address = Base::get_data() + front;
             size--;
-            T value = move(*address);
+            T value = std::move(*address);
             destroy_at(address);
             return value;
         }
@@ -256,7 +256,7 @@ namespace DSA {
 
             front = newFront;
             size -= count;
-        }*/
+        }
 
         [[nodiscard]] constexpr bool can_enqueue(INDEX count = 1) const noexcept {
             return Base::can_add(count);
@@ -271,7 +271,7 @@ namespace DSA {
         constexpr void enqueue_back(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
-            add_back(move(value));
+            add_back(std::move(value));
         }
 
         constexpr void enqueue_front(const T& value) noexcept(
@@ -283,7 +283,7 @@ namespace DSA {
         constexpr void enqueue_front(T&& value) noexcept(
             std::is_nothrow_move_constructible_v<T>
         ) {
-            add_front(move(value));
+            add_front(std::move(value));
         }
 
         [[nodiscard]] constexpr bool can_peek(INDEX count = 1) const noexcept {

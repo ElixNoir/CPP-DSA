@@ -6,40 +6,21 @@
 namespace DSA {
 
 	template <concepts::Container CONTAINER>
-	class Bitset : public traits::RebindContainer_t<CONTAINER, Bitmask<std::uintmax_t>> {
+	class Bitset : public traits::container_replace_first_arg_t<CONTAINER, Bitmask<>> {
 	public:
 
-		using Base = traits::RebindContainer_t<
-			CONTAINER,
-			Bitmask<std::uintmax_t>
-		>;
+		using Base = traits::container_replace_first_arg_t<CONTAINER, Bitmask<>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 #pragma region Methods
 
-		constexpr T& get(INDEX index) noexcept {
-			return Base::get_data()[index];
+		constexpr bool get_bit_at(INDEX index) const noexcept {
+			return Base::get(index >> Bitmask<uintmax_t>::BitShift).get(index & (Bitmask<uintmax_t>::BitCount - 1));
 		}
 
-		constexpr const T& get(INDEX index) const noexcept {
-			return Base::get_data()[index];
-		}
-
-		constexpr T& operator[](INDEX index) noexcept {
-			return get(index);
-		}
-
-		constexpr const T& operator[](INDEX index) const noexcept {
-			return get(index);
-		}
-
-		constexpr void one() const noexcept {
-			std::memset(Base::get_data(), 0xFF, Base::get_capacity());
-		}
-
-		constexpr void zero() const noexcept {
-			std::memset(Base::get_data(), 0, Base::get_capacity());
+		constexpr void set_bit_at(INDEX index) noexcept {
+			Base::get(index >> Bitmask<uintmax_t>::BitShift).set(index & (Bitmask<uintmax_t>::BitCount - 1));
 		}
 
 #pragma endregion

@@ -128,16 +128,6 @@ namespace DSA {
 	}
 
 	template <typename T>
-	constexpr T&& forward(std::remove_reference_t<T>& data) {
-		return static_cast<T&&>(data);
-	}
-
-	template <typename T>
-	constexpr std::remove_reference_t<T>&& move(T&& data) {
-		return std::move(data);
-	}
-
-	template <typename T>
 	constexpr void move_construct_at(T* destination, T&& source) noexcept(
 		std::is_nothrow_move_constructible_v<T>
 		|| std::is_trivially_copyable_v<T>
@@ -145,7 +135,7 @@ namespace DSA {
 		if constexpr (std::is_trivially_copyable_v<T>)
 			std::memcpy(destination, &source, sizeof(T));
 		else
-			construct_at(destination, move(source));
+			construct_at(destination, std::move(source));
 	}
 
 	template <bool DESTINATION_LEFT_INCLUSIVE = true, bool SOURCE_LEFT_INCLUSIVE = true, typename T>
@@ -161,7 +151,7 @@ namespace DSA {
 				while (begin != end)
 					move_construct_at(
 						DESTINATION_LEFT_INCLUSIVE ? --end : end--,
-						move(*(SOURCE_LEFT_INCLUSIVE ? --source : source--)));
+						std::move(*(SOURCE_LEFT_INCLUSIVE ? --source : source--)));
 			}
 			catch (...) {
 				destroy_range_backward<DESTINATION_LEFT_INCLUSIVE>(end, e);
@@ -183,7 +173,7 @@ namespace DSA {
 				while (begin != end)
 					move_construct_at(
 						DESTINATION_LEFT_INCLUSIVE ? begin++ : ++begin,
-						move(*(SOURCE_LEFT_INCLUSIVE ? source++ : ++source)));
+						std::move(*(SOURCE_LEFT_INCLUSIVE ? source++ : ++source)));
 			}
 			catch (...) {
 				destroy_range_forward<DESTINATION_LEFT_INCLUSIVE>(b, begin);
@@ -197,7 +187,7 @@ namespace DSA {
 		std::is_nothrow_move_constructible_v<T>
 		|| std::is_trivially_copyable_v<T>
 	) {
-		move_construct_at(destination, move(source));
+		move_construct_at(destination, std::move(source));
 		destroy_at(&source);
 	}
 
@@ -215,7 +205,7 @@ namespace DSA {
 				while (begin != end)
 					reconstruct_at(
 						DESTINATION_LEFT_INCLUSIVE ? --end : end--,
-						move(*(SOURCE_LEFT_INCLUSIVE ? --source : source--)));
+						std::move(*(SOURCE_LEFT_INCLUSIVE ? --source : source--)));
 			}
 			catch (...) {
 				destroy_range_backward<DESTINATION_LEFT_INCLUSIVE>(end, e);
@@ -237,7 +227,7 @@ namespace DSA {
 				while (begin != end)
 					reconstruct_at(
 						DESTINATION_LEFT_INCLUSIVE ? begin++ : ++begin,
-						move(*(SOURCE_LEFT_INCLUSIVE ? source++ : ++source)));
+						std::move(*(SOURCE_LEFT_INCLUSIVE ? source++ : ++source)));
 			}
 			catch (...) {
 				destroy_range_forward<DESTINATION_LEFT_INCLUSIVE>(b, begin);

@@ -50,7 +50,7 @@ namespace DSA {
 				for (INDEX index : tracked.ones()) {
 					if (count == 0)
 						break;
-					move_construct_at(newData + index, move(oldData[index]));
+					move_construct_at(newData + index, std::move(oldData[index]));
 					count--;
 				}
 			}
@@ -96,9 +96,13 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
-		TrackedContainer(INDEX initialCapacity) :
+		TrackedContainer(INDEX initialCapacity) requires (
+			concepts::DynamicContainer<CONTAINER>
+		) :
 			Base(initialCapacity),
 			tracked((initialCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift) {}
+
+		TrackedContainer() = default;
 
 		~TrackedContainer() requires (
 			!std::is_trivially_destructible_v<T>
@@ -112,10 +116,36 @@ namespace DSA {
 
 #pragma region Methods
 
-#pragma region Track
+#pragma region Find & Track
 
-		constexpr void track(INDEX index) noexcept {
-			tracked[index >> Bitmask<uintmax_t>::BitShift].set(index & (Bitmask<uintmax_t>::BitCount - 1));
+		constexpr INDEX find_occupied(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index < capacity) {
+				int bitIndex = tracked.get(index >> Bitmask<uintmax_t>::BitShift).index_of_trailing_one();;
+				if (bitIndex != 64)
+					return index + bitIndex;
+				index++;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX find_unoccupied(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index < capacity) {
+				int bitIndex = tracked.get(index >> Bitmask<uintmax_t>::BitShift).index_of_trailing_zero();;
+				if (bitIndex != 64)
+					return index + bitIndex;
+				index++;
+			}
+			return capacity;
+		}
+
+		constexpr bool get_tracked(INDEX index) const noexcept {
+			return tracked.get_bit_at(index);
+		}
+
+		constexpr void set_tracked(INDEX index) noexcept {
+			tracked.set_bit_at(index);
 		}
 
 #pragma endregion
@@ -123,8 +153,9 @@ namespace DSA {
 #pragma region IncrementalContainer
 
 		constexpr void empty() noexcept {
-			helper_destroy();
-			tracked.empty();
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
+			tracked.zero();
 			size = 0;
 		}
 
@@ -137,59 +168,62 @@ namespace DSA {
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			grow(capacity << 1);
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::double_capacity();
+			else
+				grow(Base::get_capacity() << 1);
 		}
-		using Base::double_capacity;
 
 		void grow(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			helper_resize<true>(newCapacity);
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::grow(newCapacity);
+			else
+				helper_resize<true>(newCapacity);
 		}
-		using Base::grow;
 
 		void reserve(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			if (newCapacity > capacity)
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::reserve(newCapacity);
+			else if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
 		}
-		using Base::reserve;
 
 		void resize(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			if (newCapacity > capacity)
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::resize(newCapacity);
+			else if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
-		using Base::resize;
 
 		void shrink(INDEX newCapacity) noexcept(
 			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>
 		) requires (
 			concepts::DynamicContainer<CONTAINER>
-			&& !concepts::ResizableContainer<CONTAINER>
 		) {
-			helper_resize<false>(newCapacity);
+			if constexpr (concepts::ResizableContainer<CONTAINER>)
+				Base::shrink(newCapacity);
+			else
+				helper_resize<false>(newCapacity);
 		}
-		using Base::shrink;
 
 #pragma endregion
 

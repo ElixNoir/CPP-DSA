@@ -82,7 +82,7 @@ namespace DSA {
 				for (INDEX index : occupied.zeros()) {
 					if (count == 0)
 						break;
-					move_construct_at(newData + index, move(oldData[index]));
+					move_construct_at(newData + index, std::move(oldData[index]));
 					count--;
 				}
 			}
@@ -218,7 +218,7 @@ namespace DSA {
 		constexpr INDEX allocate(T&& value) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) {
-			return add(move(value));
+			return add(std::move(value));
 		}
 
 		constexpr void deallocate(INDEX index) noexcept {
