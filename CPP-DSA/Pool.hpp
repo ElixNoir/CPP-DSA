@@ -7,6 +7,7 @@
 namespace DSA {
 
 	template <concepts::Container CONTAINER>
+		requires std::is_nothrow_destructible_v<typename CONTAINER::T>
 	class Pool : public IncrementalContainer<CONTAINER> {
 	public:
 

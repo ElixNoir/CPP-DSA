@@ -273,13 +273,15 @@ namespace DSA {
 	struct alignas(_T) StaticContainer {
 	protected:
 
-		constexpr static size_t capacity = CAPACITY;
+		static_assert(CAPACITY > 0, "Capacity must be greater than 0");
+
+		constexpr static size_t capacity = CAPACITY - 1;
 
 		alignas(_T) std::byte data[CAPACITY * sizeof(_T)];
 
 	public:
 
-		using INDEX = smallest_uint_t<CAPACITY>;
+		using INDEX = smallest_uint_t<capacity>;
 		using T = _T;
 
 #pragma region Constructors & Destructors
@@ -301,7 +303,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
-			return CAPACITY;
+			return capacity;
 		}
 
 		[[nodiscard]] constexpr T* get_data() noexcept {

@@ -7,6 +7,8 @@
 
 namespace DSA {
 
+	struct EMPTY_STRUCT {};
+
 #pragma region Functions
 
 #pragma region Non-Trivial
@@ -15,7 +17,7 @@ namespace DSA {
 	constexpr void construct_at(T* address, Arguments&&... arguments) noexcept(
 		std::is_nothrow_constructible_v<T, Arguments...>
 	) {
-		std::construct_at<T>(address, forward<Arguments>(arguments)...);
+		std::construct_at<T>(address, std::forward<Arguments>(arguments)...);
 	}
 
 	template <bool LEFT_INCLUSIVE = true, typename T, typename... Arguments>

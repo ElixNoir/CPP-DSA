@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="Allocator.hpp" />
     <ClInclude Include="Benchmark.hpp" />
+    <ClInclude Include="BinarySearchTree.hpp" />
     <ClInclude Include="BitmappedTrie.hpp" />
     <ClInclude Include="Bitmask.hpp" />
     <ClInclude Include="Bitset.hpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="GapBuffer.hpp" />
     <ClInclude Include="Hashes.hpp" />
     <ClInclude Include="Hashmap.hpp" />
+    <ClInclude Include="KeyValuePair.hpp" />
     <ClInclude Include="Pool.hpp" />
     <ClInclude Include="Queue.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />

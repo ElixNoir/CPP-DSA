@@ -1,13 +1,13 @@
-#include "Hashmap.hpp"
+#include "BinarySearchTree.hpp"
 
 #include <iostream>
 
 using namespace DSA;
 
 int main() {
-    Hashmap<StaticContainer<int, 4>> q;
-    q.insert(69);
-    std::cout << static_cast<int>(q.find(69));
+    BinarySearchTree<StaticContainer<int, 4>> q;
+    auto index = q.insert(69);
+    std::cout << q.get(index).key_value_pair.key << '\n' << static_cast<int>(q.find(69));
 
     return 0;
 }
