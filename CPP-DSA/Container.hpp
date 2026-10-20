@@ -9,284 +9,249 @@ namespace DSA {
 	namespace concepts {
 
 		template <typename T>
-		concept Container = requires(T container) {
+		concept Container = requires(T t, typename T::INDEX index) {
 
-			typename T::T;
 			typename T::INDEX;
+			typename T::T;
 
-			{ container.get_capacity() } -> std::same_as<typename T::INDEX>;
-			{ container.get_data() } -> std::same_as<typename T::T*>;
+			{ t.get_capacity() } -> std::same_as<typename T::INDEX>;
+			{ t.get(index) } -> std::same_as<typename T::T&>;
+			{ std::as_const(t).get(index) } -> std::same_as<const typename T::T&>;
+			{ t.get_data() } -> std::same_as<typename T::T*>;
+			{ std::as_const(t).get_data() } -> std::same_as<const typename T::T*>;
+			{ t.get_raw_data() } -> std::same_as<std::byte*>;
+			{ std::as_const(t).get_raw_data() } -> std::same_as<const std::byte*>;
 
 		};
 
 		template <typename T>
-		struct ContainerTraits {
-			constexpr static bool dynamic = false;
-		};
-
-		template <typename T>
-		concept DynamicContainer = Container<T> && ContainerTraits<T>::dynamic && requires(T container) {
+		concept DynamicContainer = Container<T> && requires(T t) {
 
 			typename T::ALLOCATOR;
 
 		};
 
 		template <typename T>
-		concept RawContainer = Container<T> && requires(T container) {
+		concept ResizableContainer = DynamicContainer<T> && requires(T t, size_t newCapacity) {
 
-			{ container.get_raw_data() } -> std::same_as<std::byte*>;
-
-		};
-
-		template <typename T>
-		concept ResizableContainer = DynamicContainer<T> && requires(T container, size_t newCapacity) {
-
-			{ container.resize(newCapacity) };
+			{ t.resize(newCapacity) };
 
 		};
 
 		template <typename T>
-		concept StaticContainer = Container<T> && !ContainerTraits<T>::dynamic && requires(T container) {
-			
-			T::capacity;
+		concept StaticContainer = Container<T> && requires(T t) {
+
+			requires !requires { typename T::ALLOCATOR; };
 
 		};
 
 	}
 
-	namespace traits {
+	template <std::unsigned_integral _INDEX = size_t, template <typename, std::unsigned_integral> typename _ALLOCATOR_TEMPLATE = StandardAllocator>
+	struct DynamicContainerConfiguration {
 
-		template <typename CONTAINER>
-		struct RebindContainer;
+		template <typename T, std::unsigned_integral INDEX>
+		using ALLOCATOR_TEMPLATE = _ALLOCATOR_TEMPLATE<T, INDEX>;
 
-		template <typename T>
-		struct container_replace_first_arg;
+		constexpr static _INDEX maximum_capacity = std::numeric_limits<_INDEX>::max();
 
-		template <template <typename, auto> typename T, typename First, auto Value>
-		struct container_replace_first_arg<T<First, Value>> {
-			template <typename U>
-			using type = T<U, Value>;
-		};
+		template <typename _T>
+			requires concepts::Allocator<ALLOCATOR_TEMPLATE<_T, _INDEX>>
+		class CONTAINER {
+		public:
 
-		template <template <typename...> typename T, typename First, typename... Rest>
-		struct container_replace_first_arg<T<First, Rest...>> {
-			template <typename U>
-			using type = T<U, Rest...>;
-		};
+			using INDEX = _INDEX;
+			using T = _T;
 
-		template <typename T, typename U>
-		using container_replace_first_arg_t = typename container_replace_first_arg<T>::template type<U>;
+			using ALLOCATOR = ALLOCATOR_TEMPLATE<T, INDEX>;
 
-	}
+		protected:
 
-	template <typename _T, std::unsigned_integral _INDEX = size_t, typename _ALLOCATOR = StandardAllocator<_T>>
-		requires concepts::Allocator<_ALLOCATOR>
-	struct DynamicContainer {
-	protected:
+			std::byte* data = nullptr;
+			INDEX capacity = 0;
 
-		std::byte* data = nullptr;
-		_INDEX capacity = 0;
-
-#pragma region Methods
-
-		constexpr void set_capacity(std::byte* newCapacity) noexcept {
-			capacity = newCapacity;
-		}
-
-		constexpr void set_data(std::byte* newData) noexcept {
-			data = newData;
-		}
-
-#pragma endregion
-
-	public:
-
-		using ALLOCATOR = _ALLOCATOR;
-		using INDEX = _INDEX;
-		using T = _T;
-
-		DynamicContainer() = default;
-
-		DynamicContainer(INDEX initialCapacity) : capacity(initialCapacity) {
-			data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(initialCapacity));
-		}
-
-#pragma region Methods
-
-#pragma region Getters
-
-		constexpr T& get(INDEX index) noexcept {
-			return get_data()[index];
-		}
-
-		constexpr const T& get(INDEX index) const noexcept {
-			return get_data()[index];
-		}
-
-		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
-			return capacity;
-		}
-
-		[[nodiscard]] constexpr T* get_data() noexcept {
-			return reinterpret_cast<T*>(data);
-		}
-
-		[[nodiscard]] constexpr const T* get_data() const noexcept {
-			return reinterpret_cast<const T*>(data);
-		}
-
-		[[nodiscard]] constexpr operator T* () noexcept {
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr operator const T* () const noexcept {
-			return get_data();
-		}
-
-		[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
-			return reinterpret_cast<std::byte*>(data);
-		}
-
-		[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
-			return reinterpret_cast<const std::byte*>(data);
-		}
-
-		[[nodiscard]] constexpr operator std::byte* () noexcept {
-			return get_raw_data();
-		}
-
-		[[nodiscard]] constexpr operator const std::byte* () const noexcept {
-			return get_raw_data();
-		}
-
-		[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
-			return get(index);
-		}
-
-		[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
-			return get(index);
-		}
-
-#pragma endregion
-
-#pragma region Memory Management
-
-#pragma region Assignment
-
-		DynamicContainer& operator=(DynamicContainer&& other) noexcept {
-			if (this == &other)
-				return *this;
-
-			ALLOCATOR::deallocate(data);
-
-			data = std::exchange(other.data, nullptr);
-			capacity = std::exchange(other.capacity, 0);
-
-			return *this;
-		}
-
-#pragma endregion
-
-		void double_capacity() noexcept(
-			concepts::NothrowResizableAllocator<ALLOCATOR>
-		) requires (
-			std::is_trivial_v<T>
-		) {
-			grow(capacity << 1);
-		}
-
-		void grow(INDEX newCapacity) noexcept(
-			concepts::NothrowResizableAllocator<ALLOCATOR>
-		) requires (
-			std::is_trivial_v<T>
-		) {
-			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
-			else {
-				T* oldData = get_data();
-				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
-				std::memcpy(get_data(), oldData, capacity);
-				ALLOCATOR::deallocate(oldData);
-			}
-
-			capacity = newCapacity;
-		}
-
-		void reserve(INDEX newCapacity) noexcept(
-			concepts::NothrowResizableAllocator<ALLOCATOR>
-		) requires (
-			std::is_trivial_v<T>
-		) {
-			if (newCapacity > capacity)
-				grow(newCapacity);
-		}
-
-		void resize(INDEX newCapacity) noexcept(
-			concepts::NothrowResizableAllocator<ALLOCATOR>
-		) requires (
-			std::is_trivial_v<T>
-		) {
-			if (newCapacity > capacity)
-				grow(newCapacity);
-			else
-				shrink(newCapacity);
-		}
-
-		void shrink(INDEX newCapacity) noexcept(
-			concepts::NothrowResizableAllocator<ALLOCATOR>
-		) requires (
-			std::is_trivial_v<T>
-		) {
-			if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-				data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
-			else {
-				T* oldData = get_data();
-				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
-				std::memcpy(get_data(), oldData, newCapacity);
-				ALLOCATOR::deallocate(oldData);
-			}
-
-			capacity = newCapacity;
-		}
-
-		constexpr void one() const noexcept {
-			std::memset(data, 0xFF, capacity);
-		}
-
-		constexpr void zero() const noexcept {
-			std::memset(data, 0, capacity);
-		}
-
-#pragma endregion
-
-#pragma endregion
-
-	};
-
-	template <typename T, typename INDEX, typename ALLOCATOR>
-		requires concepts::Allocator<ALLOCATOR>
-	struct concepts::ContainerTraits<DynamicContainer<T, INDEX, ALLOCATOR>> {
-		constexpr static bool dynamic = true;
-	};
-
-	template <typename _T, size_t CAPACITY>
-	struct alignas(_T) StaticContainer {
-	protected:
-
-		static_assert(CAPACITY > 0, "Capacity must be greater than 0");
-
-		constexpr static size_t capacity = CAPACITY - 1;
-
-		alignas(_T) std::byte data[CAPACITY * sizeof(_T)];
-
-	public:
-
-		using INDEX = smallest_uint_t<capacity>;
-		using T = _T;
+		public:
 
 #pragma region Constructors & Destructors
 
-		StaticContainer() = default;
+			CONTAINER() noexcept = default;
+
+			CONTAINER(INDEX initialCapacity) : capacity(initialCapacity) {
+				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(initialCapacity));
+			}
+
+			~CONTAINER() noexcept {
+				ALLOCATOR::deallocate(get_data());
+			}
+
+#pragma endregion
+
+#pragma region Methods
+
+#pragma region Assignment
+
+			CONTAINER& operator=(CONTAINER&& other) noexcept {
+				if (this == &other)
+					return *this;
+
+				ALLOCATOR::deallocate(data);
+
+				data = std::exchange(other.get_raw_data(), nullptr);
+				capacity = std::exchange(other.capacity, 0);
+
+				return *this;
+			}
+
+#pragma endregion
+
+#pragma region Getters
+
+			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
+				return get_data()[index];
+			}
+
+			[[nodiscard]] constexpr const T& get(INDEX index) const noexcept {
+				return get_data()[index];
+			}
+
+			[[nodiscard]] constexpr T* get_data() noexcept {
+				return reinterpret_cast<T*>(data);
+			}
+
+			[[nodiscard]] constexpr const T* get_data() const noexcept {
+				return reinterpret_cast<const T*>(data);
+			}
+
+			[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
+				return reinterpret_cast<std::byte*>(get_data());
+			}
+
+			[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
+				return reinterpret_cast<const std::byte*>(get_data());
+			}
+
+			[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
+				return get(index);
+			}
+
+			[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
+				return get(index);
+			}
+
+			[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
+				return capacity;
+			}
+
+#pragma endregion
+
+#pragma region Memory Management
+
+			void double_capacity()
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				grow(get_capacity() << 1);
+			}
+
+			void grow(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
+				else {
+					T* oldData = get_data();
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
+					std::memcpy(get_data(), oldData, get_capacity());
+					ALLOCATOR::deallocate(oldData);
+				}
+			}
+
+			void reserve(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if (newCapacity > get_capacity())
+					grow(newCapacity);
+			}
+
+			void resize(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if (newCapacity > get_capacity())
+					grow(newCapacity);
+				else
+					shrink(newCapacity);
+			}
+
+			void shrink(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
+				else {
+					T* oldData = get_data();
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
+					std::memcpy(get_data(), oldData, newCapacity);
+					ALLOCATOR::deallocate(oldData);
+				}
+			}
+
+			constexpr void one() noexcept {
+				std::memset(get_raw_data(), 0xFF, capacity * sizeof(T));
+			}
+
+			constexpr void zero() noexcept {
+				std::memset(get_raw_data(), 0, capacity * sizeof(T));
+			}
+
+			constexpr void one(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void zero(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0, count * sizeof(T));
+			}
+
+#pragma endregion
+
+#pragma endregion
+
+		};
+
+	};
+
+	template <size_t CAPACITY>
+		requires (CAPACITY > 0)
+	struct StaticContainerConfiguration {
+
+		using _INDEX = smallest_uint_t<CAPACITY - 1>;
+
+		template <typename T, std::unsigned_integral INDEX>
+		using ALLOCATOR_TEMPLATE = void;
+
+		constexpr static _INDEX maximum_capacity = CAPACITY;
+
+		template <typename _T>
+		class alignas(_T) CONTAINER {
+		public:
+
+			using INDEX = _INDEX;
+			using T = _T;
+
+			constexpr static INDEX maximum_capacity = CAPACITY;
+
+		protected:
+
+			alignas(T) std::byte data[CAPACITY * sizeof(T)];
+
+		public:
+
+#pragma region Constructors & Destructors
+
+			CONTAINER() = default;
 
 #pragma endregion
 
@@ -294,73 +259,229 @@ namespace DSA {
 
 #pragma region Getters
 
-		constexpr T& get(INDEX index) noexcept {
-			return get_data()[index];
-		}
+			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
+				return get_data()[index];
+			}
 
-		constexpr const T& get(INDEX index) const noexcept {
-			return get_data()[index];
-		}
+			[[nodiscard]] constexpr const T& get(INDEX index) const noexcept {
+				return get_data()[index];
+			}
 
-		[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
-			return capacity;
-		}
+			[[nodiscard]] constexpr T* get_data() noexcept {
+				return reinterpret_cast<T*>(data);
+			}
 
-		[[nodiscard]] constexpr T* get_data() noexcept {
-			return reinterpret_cast<T*>(data);
-		}
+			[[nodiscard]] constexpr const T* get_data() const noexcept {
+				return reinterpret_cast<const T*>(data);
+			}
 
-		[[nodiscard]] constexpr const T* get_data() const noexcept {
-			return reinterpret_cast<const T*>(data);
-		}
+			[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
+				return reinterpret_cast<std::byte*>(get_data());
+			}
 
-		[[nodiscard]] constexpr operator T* () noexcept {
-			return get_data();
-		}
+			[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
+				return reinterpret_cast<const std::byte*>(get_data());
+			}
 
-		[[nodiscard]] constexpr operator const T* () const noexcept {
-			return get_data();
-		}
+			[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
+				return get(index);
+			}
 
-		[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
-			return reinterpret_cast<std::byte*>(data);
-		}
+			[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
+				return get(index);
+			}
 
-		[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
-			return reinterpret_cast<const std::byte*>(data);
-		}
-
-		[[nodiscard]] constexpr operator std::byte* () noexcept {
-			return get_raw_data();
-		}
-
-		[[nodiscard]] constexpr operator const std::byte* () const noexcept {
-			return get_raw_data();
-		}
-
-		[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
-			return get(index);
-		}
-
-		[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
-			return get(index);
-		}
+			[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
+				return CAPACITY;
+			}
 
 #pragma endregion
 
 #pragma region Memory Management
 
-		constexpr void one() const noexcept {
-			std::memset(data, 0xFF, capacity);
-		}
+			constexpr void one() noexcept {
+				std::memset(get_raw_data(), 0xFF, get_capacity() * sizeof(T));
+			}
 
-		constexpr void zero() const noexcept {
-			std::memset(data, 0, capacity);
-		}
+			constexpr void zero() noexcept {
+				std::memset(get_raw_data(), 0, get_capacity() * sizeof(T));
+			}
+
+			constexpr void one(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void zero(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0, count * sizeof(T));
+			}
 
 #pragma endregion
 
 #pragma endregion
+
+		};
+
+	};
+
+	template <std::unsigned_integral _INDEX = size_t, template <typename, std::unsigned_integral> typename _ALLOCATOR_TEMPLATE = StandardAllocator>
+	struct AlternateDynamicContainerConfiguration {
+
+		template <typename T, std::unsigned_integral INDEX>
+		using ALLOCATOR_TEMPLATE = _ALLOCATOR_TEMPLATE<T, INDEX>;
+
+		constexpr static _INDEX maximum_capacity = std::numeric_limits<_INDEX>::max();
+
+		template <typename _T>
+			requires concepts::Allocator<ALLOCATOR_TEMPLATE<_T, _INDEX>>
+		class CONTAINER {
+		public:
+
+			using INDEX = _INDEX;
+			using T = _T;
+
+			using ALLOCATOR = ALLOCATOR_TEMPLATE<T, INDEX>;
+
+		protected:
+
+			std::byte* data = nullptr;
+
+		public:
+
+#pragma region Constructors & Destructors
+
+			CONTAINER() noexcept = default;
+
+			CONTAINER(INDEX initialCapacity) {
+				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(initialCapacity));
+			}
+
+			~CONTAINER() noexcept {
+				ALLOCATOR::deallocate(get_data());
+			}
+
+#pragma endregion
+
+#pragma region Methods
+
+#pragma region Assignment
+
+			CONTAINER& operator=(CONTAINER&& other) noexcept {
+				if (this == &other)
+					return *this;
+
+				ALLOCATOR::deallocate(data);
+
+				data = std::exchange(other.get_raw_data(), nullptr);
+
+				return *this;
+			}
+
+#pragma endregion
+
+#pragma region Getters
+
+			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
+				return get_data()[index];
+			}
+
+			[[nodiscard]] constexpr const T& get(INDEX index) const noexcept {
+				return get_data()[index];
+			}
+
+			[[nodiscard]] constexpr T* get_data() noexcept {
+				return reinterpret_cast<T*>(data);
+			}
+
+			[[nodiscard]] constexpr const T* get_data() const noexcept {
+				return reinterpret_cast<const T*>(data);
+			}
+
+			[[nodiscard]] constexpr std::byte* get_raw_data() noexcept {
+				return reinterpret_cast<std::byte*>(get_data());
+			}
+
+			[[nodiscard]] constexpr const std::byte* get_raw_data() const noexcept {
+				return reinterpret_cast<const std::byte*>(get_data());
+			}
+
+			[[nodiscard]] constexpr T& operator[](INDEX index) noexcept {
+				return get(index);
+			}
+
+			[[nodiscard]] constexpr const T& operator[](INDEX index) const noexcept {
+				return get(index);
+			}
+
+#pragma endregion
+
+#pragma region Memory Management
+
+			void double_capacity(INDEX oldCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				grow(oldCapacity << 1, oldCapacity);
+			}
+
+			void grow(INDEX newCapacity, INDEX oldCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
+				else {
+					T* oldData = get_data();
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
+					std::memcpy(get_data(), oldData, oldCapacity);
+					ALLOCATOR::deallocate(oldData);
+				}
+			}
+
+			void reserve(INDEX newCapacity, INDEX oldCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if (newCapacity > oldCapacity)
+					grow(newCapacity, oldCapacity);
+			}
+
+			void resize(INDEX newCapacity, INDEX oldCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if (newCapacity > oldCapacity)
+					grow(newCapacity, oldCapacity);
+				else
+					shrink(newCapacity);
+			}
+
+			void shrink(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::reallocate(get_data(), newCapacity));
+				else {
+					T* oldData = get_data();
+					data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(newCapacity));
+					std::memcpy(get_data(), oldData, newCapacity);
+					ALLOCATOR::deallocate(oldData);
+				}
+			}
+
+			constexpr void one(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void zero(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0, count * sizeof(T));
+			}
+
+#pragma endregion
+
+#pragma endregion
+
+		};
 
 	};
 

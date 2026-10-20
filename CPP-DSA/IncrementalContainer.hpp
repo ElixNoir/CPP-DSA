@@ -4,11 +4,11 @@
 
 namespace DSA {
 
-	template <concepts::Container CONTAINER>
-	class IncrementalContainer : public CONTAINER {
+	template <typename ContainerConfiguration, typename T>
+	class IncrementalContainer : public ContainerConfiguration::template CONTAINER<T> {
 	public:
 
-		using Base = CONTAINER;
+		using Base = ContainerConfiguration::template CONTAINER<T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -20,9 +20,7 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
-		IncrementalContainer() = default;
-
-		using CONTAINER::CONTAINER;
+		using Base::Base;
 
 #pragma endregion
 
@@ -56,9 +54,12 @@ namespace DSA {
 
 #pragma endregion
 
-#pragma region Helpers
+#pragma region Memory Management
 
-		constexpr void empty() noexcept requires std::is_trivial_v<T> {
+		constexpr void empty()
+			noexcept
+			requires std::is_trivial_v<T>
+		{
 			size = 0;
 		}
 
@@ -66,7 +67,10 @@ namespace DSA {
 
 #pragma region Setters
 
-		constexpr void set_size(INDEX newSize) noexcept requires std::is_trivial_v<T> {
+		constexpr void set_size(INDEX newSize)
+			noexcept
+			requires std::is_trivial_v<T>
+		{
 			size = newSize;
 		}
 

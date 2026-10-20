@@ -142,6 +142,7 @@
     <ClInclude Include="Allocator.hpp" />
     <ClInclude Include="Benchmark.hpp" />
     <ClInclude Include="BinarySearchTree.hpp" />
+    <ClInclude Include="BitmappedPriorityDeque.hpp" />
     <ClInclude Include="BitmappedTrie.hpp" />
     <ClInclude Include="Bitmask.hpp" />
     <ClInclude Include="Bitset.hpp" />
@@ -153,7 +154,8 @@
     <ClInclude Include="Hashmap.hpp" />
     <ClInclude Include="KeyValuePair.hpp" />
     <ClInclude Include="Pool.hpp" />
-    <ClInclude Include="Queue.hpp" />
+    <ClInclude Include="Deque.hpp" />
+    <ClInclude Include="Test.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />
     <ClInclude Include="IncrementalContainer.hpp" />
     <ClInclude Include="Buffer.hpp" />

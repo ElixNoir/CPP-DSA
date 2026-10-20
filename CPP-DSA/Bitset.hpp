@@ -5,27 +5,127 @@
 
 namespace DSA {
 
-	template <concepts::Container CONTAINER>
-	class Bitset : public traits::container_replace_first_arg_t<CONTAINER, Bitmask<>> {
+	template <typename ContainerConfiguration>
+	class Bitset : public ContainerConfiguration::template CONTAINER<Bitmask<>> {
 	public:
 
-		using Base = traits::container_replace_first_arg_t<CONTAINER, Bitmask<>>;
+		using Base = ContainerConfiguration::template CONTAINER<Bitmask<>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 #pragma region Methods
 
+		constexpr Bitmask<>& get_bitmask_from_bitIndex(INDEX bitIndex) noexcept {
+			return Base::get(bitIndex >> Bitmask<>::BitShift);
+		}
+
+		constexpr const Bitmask<>& get_bitmask_from_bitIndex(INDEX bitIndex) const noexcept {
+			return Base::get(bitIndex >> Bitmask<>::BitShift);
+		}
+
 		constexpr bool get_bit_at(INDEX index) const noexcept {
-			return Base::get(index >> Bitmask<uintmax_t>::BitShift).get(index & (Bitmask<uintmax_t>::BitCount - 1));
+			return get_bitmask_from_bitIndex(index).get(index & (Bitmask<>::BitCount - 1));
+		}
+
+		constexpr void reset_bit_at(INDEX index) noexcept {
+			get_bitmask_from_bitIndex(index).reset(index & (Bitmask<>::BitCount - 1));
 		}
 
 		constexpr void set_bit_at(INDEX index) noexcept {
-			Base::get(index >> Bitmask<uintmax_t>::BitShift).set(index & (Bitmask<uintmax_t>::BitCount - 1));
+			get_bitmask_from_bitIndex(index).set(index & (Bitmask<>::BitCount - 1));
+		}
+
+		constexpr INDEX first_leading_one(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index < capacity) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_one();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index += Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX first_leading_zero(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index < capacity) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_zero();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index += Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX first_trailing_one(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index < capacity) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_one();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index += Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX first_trailing_zero(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index < capacity) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_zero();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index += Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX last_leading_one(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index > Bitmask<>::BitCount) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_one();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index -= Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX last_leading_zero(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index > Bitmask<>::BitCount) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_zero();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index -= Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX last_trailing_one(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index > Bitmask<>::BitCount) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_one();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index -= Bitmask<>::BitCount;
+			}
+			return capacity;
+		}
+
+		constexpr INDEX last_trailing_zero(INDEX index = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			while (index > Bitmask<>::BitCount) {
+				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_zero();
+				if (bitIndex != Bitmask<>::BitCount)
+					return index + bitIndex;
+				index -= Bitmask<>::BitCount;
+			}
+			return capacity;
 		}
 
 #pragma endregion
 
-#pragma endregion Iteration
+#pragma region Iteration
 
 		template <bool ONES>
 		BitsetIterator<INDEX, ONES> begin() noexcept {
@@ -39,7 +139,7 @@ namespace DSA {
 
 		auto ones() noexcept {
 			struct Proxy {
-				decltype(this) self;
+				Bitset* self;
 
 				auto begin() noexcept { return self->template begin<true>(); }
 				auto end() noexcept { return self->template end<true>(); }
@@ -49,7 +149,7 @@ namespace DSA {
 
 		auto zeros() noexcept {
 			struct Proxy {
-				decltype(this) self;
+				Bitset* self;
 
 				auto begin() noexcept { return self->template begin<false>(); }
 				auto end() noexcept { return self->template end<false>(); }

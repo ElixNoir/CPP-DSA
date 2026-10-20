@@ -4,8 +4,9 @@
 
 namespace DSA {
 
-    template <typename _T = void, typename _INDEX = size_t>
-    struct StandardAllocator {
+    template <typename _T = void, std::unsigned_integral _INDEX = size_t>
+    class StandardAllocator {
+    public:
 
         using T = _T;
         using INDEX = _INDEX;

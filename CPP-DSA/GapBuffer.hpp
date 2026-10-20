@@ -4,12 +4,12 @@
 
 namespace DSA {
 
-	template <concepts::Container CONTAINER>
-		requires std::is_nothrow_destructible_v<typename CONTAINER::T>
-	class GapBuffer : public CONTAINER {
+	template <typename ContainerConfiguration, typename T>
+		requires std::is_nothrow_destructible_v<T>
+	class GapBuffer : public ContainerConfiguration::template CONTAINER<T> {
 	public:
 
-		using Base = CONTAINER;
+		using Base = ContainerConfiguration::template CONTAINER<T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -30,10 +30,6 @@ namespace DSA {
 #pragma region Methods
 
 #pragma region Getters
-
-		[[nodiscard]] constexpr T* data() const noexcept {
-			return data;
-		}
 
 		[[nodiscard]] constexpr INDEX end() const noexcept {
 			return end;
@@ -75,31 +71,31 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		void add(const T& value) noexcept(
-			std::is_nothrow_copy_constructible_v<T>
-		) {
+		void add(const T& value) 
+			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		{
 			copy_construct_at(Base::get_data() + start, value);
 			start++;
 		}
 
-		void add(T&& value) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
+		void add(T&& value) 
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
 			move_construct_at(Base::get_data() + start, std::move(value));
 			start++;
 		}
 
-		void add_copy_construct_many(const T* source, INDEX count) noexcept(
-			std::is_nothrow_copy_constructible_v<T>
-		) {
+		void add_copy_construct_many(const T* source, INDEX count) 
+			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		{
 			T* const address = Base::get_data() + start;
 			copy_construct_range_forward(address, address + count, source);
 			start += count;
 		}
 
-		void add_move_construct_many(const T* source, INDEX count) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
+		void add_move_construct_many(const T* source, INDEX count) 
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
 			T* const address = Base::get_data() + start;
 			move_construct_range_forward(address, address + count, source);
 			start += count;
@@ -133,9 +129,9 @@ namespace DSA {
 
 #pragma region Back, Forward, & Position
 
-		void back(INDEX position) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
+		void back(INDEX position) 
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
 			T* const address = Base::get_data();
 			const INDEX shift = start - position;
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
@@ -150,9 +146,9 @@ namespace DSA {
 			}
 		}
 
-		void forward(INDEX position) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
+		void forward(INDEX position) 
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
 			T* const address = Base::get_data();
 			const INDEX shift = position - start;
 			move_construct_range_forward(address + start, address + start + shift, address + end);
@@ -160,9 +156,9 @@ namespace DSA {
 			start += shift;
 		}
 
-		void position(INDEX position) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) {
+		void position(INDEX position) 
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
 			if (position < start)
 				back(position);
 			else if (position > start)
@@ -173,22 +169,20 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity() noexcept(
-			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
-			&& std::is_nothrow_move_constructible_v<T>
-		) requires (
-			concepts::DynamicContainer<CONTAINER>
-		) {
+		void double_capacity()
+			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
+				&& std::is_nothrow_move_constructible_v<T>)
+			requires concepts::DynamicContainer<Base>
+		{
 			grow(end << 1);
 		}
 
-		void grow(INDEX newCapacity) noexcept(
-			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
-			&& std::is_nothrow_move_constructible_v<T>
-		) requires (
-			concepts::DynamicContainer<CONTAINER>
-		) {
-			using ALLOCATOR = CONTAINER::ALLOCATOR;
+		void grow(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
+				&& std::is_nothrow_move_constructible_v<T>)
+			requires concepts::DynamicContainer<Base>
+		{
+			using ALLOCATOR = Base::ALLOCATOR;
 
 			T* oldData = Base::get_data();
 			T* newData = ALLOCATOR::allocate(newCapacity);
@@ -212,12 +206,11 @@ namespace DSA {
 			Base::capacity = newCapacity;
 		}
 
-		void reserve(INDEX newCapacity) noexcept(
-			concepts::NothrowResizableAllocator<CONTAINER::ALLOCATOR>
-			&& std::is_nothrow_move_constructible_v<T>
-		) requires (
-			concepts::DynamicContainer<CONTAINER>
-		) {
+		void reserve(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
+				&& std::is_nothrow_move_constructible_v<T>)
+			requires concepts::DynamicContainer<Base>
+		{
 			if (newCapacity > Base::get_capacity())
 				grow(newCapacity);
 		}

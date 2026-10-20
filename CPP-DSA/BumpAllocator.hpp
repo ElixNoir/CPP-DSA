@@ -4,27 +4,27 @@
 
 namespace DSA {
 
-    template <concepts::Container CONTAINER>
-		requires std::is_nothrow_destructible_v<typename CONTAINER::T>
-    class BumpAllocator : IncrementalContainer<CONTAINER> {
-    public:
+	template <typename ContainerConfiguration, typename T>
+		requires std::is_nothrow_destructible_v<T>
+	class BumpAllocator : IncrementalContainer<ContainerConfiguration, T> {
+	public:
 
-        using Base = IncrementalContainer<CONTAINER>;
-        using typename Base::INDEX;
-        using typename Base::T;
+		using Base = IncrementalContainer<ContainerConfiguration, T>;
+		using typename Base::INDEX;
+		using typename Base::T;
 
-    protected:
+	protected:
 
-        using Base::data;
+		using Base::data;
 		using Base::size;
 
-    public:
+	public:
 
 #pragma region Constructors & Destructors
 
-        /*~BumpAllocator() {
-            // lookup destructor by class (also vtables??)
-        }*/
+		/*~BumpAllocator() {
+			// lookup destructor by class (also vtables??)
+		}*/
 
 #pragma endregion
 
@@ -32,28 +32,28 @@ namespace DSA {
 
 #pragma region BumpAllocator
 
-        [[nodiscard]] constexpr bool can_allocate() const noexcept {
-            return size <= Base::get_capacity();
-        }
+		[[nodiscard]] constexpr bool can_allocate() const noexcept {
+			return size <= Base::get_capacity();
+		}
 
-        [[nodiscard]] INDEX allocate() {
-            return size++;
-        }
+		[[nodiscard]] INDEX allocate() {
+			return size++;
+		}
 
-        [[nodiscard]] constexpr bool can_allocate(size_t count) const noexcept {
-            return size * count <= Base::get_capacity();
-        }
+		[[nodiscard]] constexpr bool can_allocate(size_t count) const noexcept {
+			return size * count <= Base::get_capacity();
+		}
 
-        [[nodiscard]] INDEX allocate(size_t count) {
-            INDEX index = size;
-            size += count;
-            return index;
-        }
-
-#pragma endregion
+		[[nodiscard]] INDEX allocate(size_t count) {
+			INDEX index = size;
+			size += count;
+			return index;
+		}
 
 #pragma endregion
 
-    };
+#pragma endregion
+
+	};
 
 }

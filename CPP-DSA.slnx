@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="CPP-DSA/CPP-DSA.vcxproj" />
+  <Project Path="CPP-DSA/CPP-DSA.vcxproj" Id="5e47e5a2-3110-4290-84a9-e95d2ab083a7" />
 </Solution>
