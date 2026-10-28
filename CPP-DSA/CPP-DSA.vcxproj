@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.hpp" />
+    <ClInclude Include="AVLTree.hpp" />
     <ClInclude Include="Benchmark.hpp" />
     <ClInclude Include="BinarySearchTree.hpp" />
     <ClInclude Include="BitmappedPriorityDeque.hpp" />
@@ -147,14 +148,29 @@
     <ClInclude Include="Bitmask.hpp" />
     <ClInclude Include="Bitset.hpp" />
     <ClInclude Include="BitsetIterator.hpp" />
+    <ClInclude Include="bubble_sort.hpp" />
     <ClInclude Include="BumpAllocator.hpp" />
+    <ClInclude Include="comb_sort.hpp" />
+    <ClInclude Include="Comparable.hpp" />
     <ClInclude Include="DSA.hpp" />
     <ClInclude Include="GapBuffer.hpp" />
+    <ClInclude Include="Hashable.hpp" />
     <ClInclude Include="Hashes.hpp" />
     <ClInclude Include="Hashmap.hpp" />
+    <ClInclude Include="insertion_sort.hpp" />
     <ClInclude Include="KeyValuePair.hpp" />
+    <ClInclude Include="Memory.hpp" />
     <ClInclude Include="Pool.hpp" />
     <ClInclude Include="Deque.hpp" />
+    <ClInclude Include="Primitive.hpp" />
+    <ClInclude Include="quad_sort.hpp" />
+    <ClInclude Include="rank_sort.hpp" />
+    <ClInclude Include="repeat.hpp" />
+    <ClInclude Include="selection_sort.hpp" />
+    <ClInclude Include="shell_sort.hpp" />
+    <ClInclude Include="Sorting.hpp" />
+    <ClInclude Include="swap.hpp" />
+    <ClInclude Include="Swappable.hpp" />
     <ClInclude Include="Test.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />
     <ClInclude Include="IncrementalContainer.hpp" />
@@ -165,7 +181,7 @@
     <ClInclude Include="Container.hpp" />
     <ClInclude Include="Stack.hpp" />
     <ClInclude Include="Traits.hpp" />
-    <ClInclude Include="Utilities.hpp" />
+    <ClInclude Include="Math.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
