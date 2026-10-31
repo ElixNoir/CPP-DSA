@@ -16,8 +16,8 @@ namespace DSA {
 		using TRACKED = Bitset<
 			std::conditional_t<
 				concepts::DynamicContainer<Base>,
-				AlternateDynamicContainerConfiguration<INDEX, Base::ALLOCATOR>,
-				StaticContainerConfiguration<((Base::capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift)>
+				AlternateDynamicContainerConfiguration<INDEX, typename Base::ALLOCATOR>,
+				StaticContainerConfiguration<((Base::maximum_capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift)>
 			>
 		>;
 
@@ -113,18 +113,42 @@ namespace DSA {
 
 		TrackedContainer() noexcept = default;
 
-		~TrackedContainer()
-			noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			helper_destroy();
+		~TrackedContainer() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
 		}
-
-		~TrackedContainer() noexcept = default;
 
 #pragma endregion
 
 #pragma region Methods
+
+#pragma region Tracking
+
+		[[nodiscard]] constexpr bool contains_tracked_index(INDEX index) const noexcept {
+			return index < Base::get_capacity() && tracked.get_bit_at(index);
+		}
+
+		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX start) const noexcept {
+			return tracked.find_first_bit<true, true, true>(start);
+		}
+
+		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX start) const noexcept {
+			return tracked.find_first_bit<false, true, true>(start);
+		}
+
+		[[nodiscard]] constexpr bool is_tracking(INDEX index) const noexcept {
+			return tracked.get_bit_at(index);
+		}
+
+		[[nodiscard]] constexpr bool track(INDEX index) const noexcept {
+			return tracked.set_bit_at(index);
+		}
+
+		[[nodiscard]] constexpr bool untrack(INDEX index) const noexcept {
+			return tracked.reset_bit_at(index);
+		}
+
+#pragma endregion
 
 #pragma region Memory Management
 
@@ -143,7 +167,7 @@ namespace DSA {
 			if constexpr (!std::is_trivially_destructible_v<T>)
 				helper_destroy();
 			tracked.zero();
-			Base::size = 0;
+			Base::set_size(0);
 		}
 
 		void grow(INDEX newCapacity)

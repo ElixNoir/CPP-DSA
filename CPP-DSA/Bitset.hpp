@@ -13,113 +13,98 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		using BitIndex = promoted_t<INDEX>;
+
+		constexpr static Bitmask<>::T BitCount = Bitmask<>::BitCount;
+		constexpr static Bitmask<>::T BitShift = Bitmask<>::BitShift;
+
 #pragma region Methods
 
-		constexpr Bitmask<>& get_bitmask_from_bitIndex(INDEX bitIndex) noexcept {
+		constexpr Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) noexcept {
 			return Base::get(bitIndex >> Bitmask<>::BitShift);
 		}
 
-		constexpr const Bitmask<>& get_bitmask_from_bitIndex(INDEX bitIndex) const noexcept {
+		constexpr const Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) const noexcept {
 			return Base::get(bitIndex >> Bitmask<>::BitShift);
 		}
 
-		constexpr bool get_bit_at(INDEX index) const noexcept {
-			return get_bitmask_from_bitIndex(index).get(index & (Bitmask<>::BitCount - 1));
+		constexpr Bitmask<>::T get_bit_at(BitIndex bitIndex) const noexcept {
+			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (Bitmask<>::BitCount - 1));
 		}
 
-		constexpr void reset_bit_at(INDEX index) noexcept {
-			get_bitmask_from_bitIndex(index).reset(index & (Bitmask<>::BitCount - 1));
+		constexpr void reset_bit_at(BitIndex bitIndex) noexcept {
+			get_bitmask_from_bitIndex(bitIndex).reset(bitIndex & (Bitmask<>::BitCount - 1));
 		}
 
-		constexpr void set_bit_at(INDEX index) noexcept {
-			get_bitmask_from_bitIndex(index).set(index & (Bitmask<>::BitCount - 1));
+		constexpr void set_bit_at(BitIndex bitIndex) noexcept {
+			get_bitmask_from_bitIndex(bitIndex).set(bitIndex & (Bitmask<>::BitCount - 1));
 		}
 
-		constexpr INDEX first_leading_one(INDEX index = 0) const noexcept {
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit(BitIndex bitIndex) const noexcept {
 			const INDEX capacity = Base::get_capacity();
-			while (index < capacity) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_one();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index += Bitmask<>::BitCount;
-			}
-			return capacity;
-		}
+			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
+			int bitOffset;
 
-		constexpr INDEX first_leading_zero(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index < capacity) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_zero();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index += Bitmask<>::BitCount;
-			}
-			return capacity;
-		}
+			bitIndex >>= BitShift; // technically fits in INDEX
 
-		constexpr INDEX first_trailing_one(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index < capacity) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_one();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index += Bitmask<>::BitCount;
+			if constexpr (TRAILING) {
+				if constexpr (ONES)
+					bitOffset = Base::get(bitIndex).index_of_trailing_one(initialOffset);
+				else
+					bitOffset = Base::get(bitIndex).index_of_trailing_zero(initialOffset);
 			}
-			return capacity;
-		}
+			else {
+				if constexpr (ONES)
+					bitOffset = Base::get(bitIndex).index_of_leading_one(initialOffset);
+				else
+					bitOffset = Base::get(bitIndex).index_of_leading_zero(initialOffset);
+			}
 
-		constexpr INDEX first_trailing_zero(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index < capacity) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_zero();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index += Bitmask<>::BitCount;
-			}
-			return capacity;
-		}
+			if (bitOffset != BitCount)
+				return bitIndex << BitShift + bitOffset;
 
-		constexpr INDEX last_leading_one(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index > Bitmask<>::BitCount) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_one();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index -= Bitmask<>::BitCount;
-			}
-			return capacity;
-		}
+			if constexpr (FRONT) {
+				while (bitIndex < capacity) {
+					const Bitmask<>& mask = Base::get(++bitIndex);
+					if constexpr (TRAILING) {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_trailing_one();
+						else
+							bitOffset = mask.index_of_trailing_zero();
+					}
+					else {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_leading_one();
+						else
+							bitOffset = mask.index_of_leading_zero();
+					}
 
-		constexpr INDEX last_leading_zero(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index > Bitmask<>::BitCount) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_leading_zero();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index -= Bitmask<>::BitCount;
+					if (bitOffset != BitCount)
+						return bitIndex << BitShift + bitOffset;
+				}
 			}
-			return capacity;
-		}
+			else {
+				while (bitIndex > 0) {
+					const Bitmask<>& mask = Base::get(--bitIndex);
+					if constexpr (TRAILING) {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_trailing_one();
+						else
+							bitOffset = mask.index_of_trailing_zero();
+					}
+					else {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_leading_one();
+						else
+							bitOffset = mask.index_of_leading_zero();
+					}
 
-		constexpr INDEX last_trailing_one(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index > Bitmask<>::BitCount) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_one();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index -= Bitmask<>::BitCount;
+					if (bitOffset != BitCount)
+						return bitIndex << BitShift + bitOffset;
+				}
 			}
-			return capacity;
-		}
 
-		constexpr INDEX last_trailing_zero(INDEX index = 0) const noexcept {
-			const INDEX capacity = Base::get_capacity();
-			while (index > Bitmask<>::BitCount) {
-				int bitIndex = get_bitmask_from_bitIndex(index).index_of_trailing_zero();
-				if (bitIndex != Bitmask<>::BitCount)
-					return index + bitIndex;
-				index -= Bitmask<>::BitCount;
-			}
 			return capacity;
 		}
 

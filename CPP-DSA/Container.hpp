@@ -104,6 +104,14 @@ namespace DSA {
 
 #pragma endregion
 
+#pragma region Checks
+
+			[[nodiscard]] constexpr bool contains_index(INDEX index) const noexcept {
+				return index < get_capacity();
+			}
+
+#pragma endregion
+
 #pragma region Getters
 
 			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
@@ -257,6 +265,14 @@ namespace DSA {
 
 #pragma region Methods
 
+#pragma region Checks
+
+			[[nodiscard]] constexpr bool contains_index(INDEX index) const noexcept {
+				return index < get_capacity();
+			}
+
+#pragma endregion
+
 #pragma region Getters
 
 			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
@@ -374,6 +390,14 @@ namespace DSA {
 				data = std::exchange(other.get_raw_data(), nullptr);
 
 				return *this;
+			}
+
+#pragma endregion
+
+#pragma region Checks
+
+			[[nodiscard]] constexpr bool contains_index(INDEX index) const noexcept {
+				return index < get_capacity();
 			}
 
 #pragma endregion

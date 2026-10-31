@@ -1,10 +1,6 @@
 #pragma once
 
-#pragma region Dependencies
-
 #include "IncrementalContainer.hpp"
-
-#pragma endregion
 
 namespace DSA {
 
@@ -22,7 +18,41 @@ namespace DSA {
 		INDEX back = 0;
 		INDEX front = 0;
 
+#pragma region Methods
+
+		void helper_destroy()
+			noexcept
+			requires (!std::is_trivially_destructible_v<T>)
+		{
+			const INDEX capacity = Base::get_capacity();
+			T* const data = Base::get_data();
+
+			INDEX newFront = (front + size) % capacity;
+
+			if (newFront > front)
+				destroy_range_forward<false>(data + front, data + newFront);
+			else {
+				destroy_range_forward<false>(data + front, data + capacity - 1);
+				destroy_range_forward(data, data + newFront);
+			}
+		}
+
+#pragma endregion
+
 	public:
+
+#pragma region Constructors & Destructors
+
+		~Deque()
+			noexcept
+			requires (!std::is_trivially_destructible_v<T>)
+		{
+			helper_destroy();
+		}
+
+		~Deque() noexcept = default;
+
+#pragma endregion
 
 #pragma region Methods
 
@@ -254,6 +284,15 @@ namespace DSA {
 			requires concepts::DynamicContainer<Base>
 		{
 			grow(Base::get_capacity() << 1);
+		}
+
+		constexpr void empty() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
+
+			size = 0;
+			back = 0;
+			front = 0;
 		}
 
 		void grow(INDEX newCapacity)

@@ -145,6 +145,12 @@
       <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="rank_sort.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="Scheduler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseDeque.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

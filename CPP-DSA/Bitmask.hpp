@@ -7,8 +7,10 @@
 
 namespace DSA {
 
-    template <std::unsigned_integral T = uintmax_t>
+    template <std::unsigned_integral _T = uintmax_t>
     struct Bitmask {
+
+        using T = _T;
 
 #pragma region Properties
 
@@ -85,7 +87,7 @@ namespace DSA {
         }
 
         constexpr void flip(T start, T mask) noexcept {
-            data ^= this->mask_trailing(start, mask);
+            data ^= mask_trailing(start, mask);
         }
 
         constexpr void flip_length(T start, T length) noexcept {
@@ -112,12 +114,12 @@ namespace DSA {
             return data;
         }
 
-        [[nodiscard]] constexpr bool get(T index) const noexcept {
+        [[nodiscard]] constexpr T get(T index) const noexcept {
             return data & mask_trailing(index);
         }
 
         [[nodiscard]] constexpr T get(T start, T mask) const noexcept {
-            return data & this->mask_trailing(start, mask);
+            return data & mask_trailing(start, mask);
         }
 
         [[nodiscard]] constexpr T get_length(T start, T length) const noexcept {

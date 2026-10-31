@@ -166,9 +166,11 @@
     <ClInclude Include="quad_sort.hpp" />
     <ClInclude Include="rank_sort.hpp" />
     <ClInclude Include="repeat.hpp" />
+    <ClInclude Include="Scheduler.hpp" />
     <ClInclude Include="selection_sort.hpp" />
     <ClInclude Include="shell_sort.hpp" />
     <ClInclude Include="Sorting.hpp" />
+    <ClInclude Include="SparseDeque.hpp" />
     <ClInclude Include="swap.hpp" />
     <ClInclude Include="Swappable.hpp" />
     <ClInclude Include="Test.hpp" />
