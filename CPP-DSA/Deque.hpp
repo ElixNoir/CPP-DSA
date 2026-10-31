@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IncrementalContainer.hpp"
+#include "Math.hpp"
 
 namespace DSA {
 
@@ -27,7 +28,7 @@ namespace DSA {
 			const INDEX capacity = Base::get_capacity();
 			T* const data = Base::get_data();
 
-			INDEX newFront = (front + size) % capacity;
+			INDEX newFront = (front + Base::get_size()) % capacity;
 
 			if (newFront > front)
 				destroy_range_forward<false>(data + front, data + newFront);
@@ -290,7 +291,7 @@ namespace DSA {
 			if constexpr (!std::is_trivially_destructible_v<T>)
 				helper_destroy();
 
-			size = 0;
+			Base::set_size(0);
 			back = 0;
 			front = 0;
 		}
@@ -311,7 +312,7 @@ namespace DSA {
 				T* const newData = ALLOCATOR::allocate(newCapacity);
 
 				try {
-					const INDEX count = Utilities::minimum(size, Base::get_capacity() - front);
+					const INDEX count = Algorithms::Math::minimum(size, Base::get_capacity() - front);
 					move_construct_range_forward<true, false>(newData, newData + count, oldData + front);
 					if (size - count != 0)
 						move_construct_range_forward(newData + count, newData + size, oldData);

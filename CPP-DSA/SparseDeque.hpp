@@ -130,14 +130,6 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool can_enqueue(INDEX count = 1) const noexcept {
-			return count <= Base::get_capacity() - span;
-		}
-
-		[[nodiscard]] constexpr bool can_dequeue(INDEX count = 1) const noexcept {
-			return Base::can_remove(count);
-		}
-
 		[[nodiscard]] constexpr bool is_full() const noexcept {
 			return span == Base::get_capacity();
 		}

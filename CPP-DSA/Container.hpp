@@ -65,6 +65,8 @@ namespace DSA {
 
 			using ALLOCATOR = ALLOCATOR_TEMPLATE<T, INDEX>;
 
+			constexpr static INDEX maximum_capacity = std::numeric_limits<_INDEX>::max();
+
 		protected:
 
 			std::byte* data = nullptr;
@@ -208,15 +210,23 @@ namespace DSA {
 			}
 
 			constexpr void one() noexcept {
-				std::memset(get_raw_data(), 0xFF, capacity * sizeof(T));
+				std::memset(get_raw_data(), 0xFF, get_capacity() * sizeof(T));
 			}
 
-			constexpr void zero() noexcept {
-				std::memset(get_raw_data(), 0, capacity * sizeof(T));
+			constexpr void one(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0xFF, count * sizeof(T));
 			}
 
 			constexpr void one(INDEX begin, INDEX count) noexcept {
 				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void zero() noexcept {
+				std::memset(get_raw_data(), 0, get_capacity() * sizeof(T));
+			}
+
+			constexpr void zero(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0, count * sizeof(T));
 			}
 
 			constexpr void zero(INDEX begin, INDEX count) noexcept {
@@ -232,13 +242,9 @@ namespace DSA {
 	};
 
 	template <size_t CAPACITY>
-		requires (CAPACITY > 0)
 	struct StaticContainerConfiguration {
 
 		using _INDEX = smallest_uint_t<CAPACITY - 1>;
-
-		template <typename T, std::unsigned_integral INDEX>
-		using ALLOCATOR_TEMPLATE = void;
 
 		constexpr static _INDEX maximum_capacity = CAPACITY;
 
@@ -319,12 +325,20 @@ namespace DSA {
 				std::memset(get_raw_data(), 0xFF, get_capacity() * sizeof(T));
 			}
 
-			constexpr void zero() noexcept {
-				std::memset(get_raw_data(), 0, get_capacity() * sizeof(T));
+			constexpr void one(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0xFF, count * sizeof(T));
 			}
 
 			constexpr void one(INDEX begin, INDEX count) noexcept {
 				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void zero() noexcept {
+				std::memset(get_raw_data(), 0, get_capacity() * sizeof(T));
+			}
+
+			constexpr void zero(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0, count * sizeof(T));
 			}
 
 			constexpr void zero(INDEX begin, INDEX count) noexcept {
@@ -356,6 +370,8 @@ namespace DSA {
 			using T = _T;
 
 			using ALLOCATOR = ALLOCATOR_TEMPLATE<T, INDEX>;
+
+			constexpr static INDEX maximum_capacity = std::numeric_limits<_INDEX>::max();
 
 		protected:
 
@@ -390,14 +406,6 @@ namespace DSA {
 				data = std::exchange(other.get_raw_data(), nullptr);
 
 				return *this;
-			}
-
-#pragma endregion
-
-#pragma region Checks
-
-			[[nodiscard]] constexpr bool contains_index(INDEX index) const noexcept {
-				return index < get_capacity();
 			}
 
 #pragma endregion
@@ -493,8 +501,16 @@ namespace DSA {
 				}
 			}
 
+			constexpr void one(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0xFF, count * sizeof(T));
+			}
+
 			constexpr void one(INDEX begin, INDEX count) noexcept {
 				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void zero(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0, count * sizeof(T));
 			}
 
 			constexpr void zero(INDEX begin, INDEX count) noexcept {

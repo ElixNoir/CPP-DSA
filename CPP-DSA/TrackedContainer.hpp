@@ -16,7 +16,7 @@ namespace DSA {
 		using TRACKED = Bitset<
 			std::conditional_t<
 				concepts::DynamicContainer<Base>,
-				AlternateDynamicContainerConfiguration<INDEX, typename Base::ALLOCATOR>,
+				AlternateDynamicContainerConfiguration<INDEX>,
 				StaticContainerConfiguration<((Base::maximum_capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift)>
 			>
 		>;
@@ -140,12 +140,12 @@ namespace DSA {
 			return tracked.get_bit_at(index);
 		}
 
-		[[nodiscard]] constexpr bool track(INDEX index) const noexcept {
-			return tracked.set_bit_at(index);
+		[[nodiscard]] constexpr void track(INDEX index) noexcept {
+			tracked.set_bit_at(index);
 		}
 
-		[[nodiscard]] constexpr bool untrack(INDEX index) const noexcept {
-			return tracked.reset_bit_at(index);
+		[[nodiscard]] constexpr void untrack(INDEX index) noexcept {
+			tracked.reset_bit_at(index);
 		}
 
 #pragma endregion
@@ -166,7 +166,8 @@ namespace DSA {
 		constexpr void empty() noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
 				helper_destroy();
-			tracked.zero();
+
+			tracked.zero(Base::get_capacity());
 			Base::set_size(0);
 		}
 

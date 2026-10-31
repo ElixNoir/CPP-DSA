@@ -3,13 +3,13 @@
 #include "BitmappedPriorityDeque.hpp"
 #include "SparseDeque.hpp"
 
-#include <functional>
-
 namespace DSA {
 
-	template <typename ArgsType, size_t FRAMES>
+	template <typename ArgsType = EMPTY_STRUCT, size_t FRAMES = 60>
 	class StaticScheduler {
 	public:
+
+		using Callback = void (*)(ArgsType);
 
 		struct TaskKey {
 
@@ -20,7 +20,7 @@ namespace DSA {
 
 		struct Task {
 
-			std::function<void(ArgsType)> callback;
+			Callback callback;
 			[[no_unique_address]] ArgsType args;
 
 		};
@@ -29,11 +29,27 @@ namespace DSA {
 
 		uint16_t frame_counter = 0;
 
-		SparseDeque<DynamicContainerConfiguration<>, Task> deques[FRAMES];
+		SparseDeque<StaticContainerConfiguration<4>, Task> deques[FRAMES];
 
 	public:
 
-		constexpr void cancel(const TaskKey& taskKey) noexcept {
+#pragma region Methods
+
+#pragma region Getters
+
+		[[nodiscard]] constexpr Task& get(TaskKey taskKey) noexcept {
+			return deques[taskKey.frame].get(taskKey.index);
+		}
+
+		[[nodiscard]] constexpr const Task& get(TaskKey taskKey) const noexcept {
+			return deques[taskKey.frame].get(taskKey.index);
+		}
+
+#pragma endregion
+
+#pragma region Cancel, Execute, & Schedule
+
+		constexpr void cancel(TaskKey taskKey) noexcept {
 			deques[taskKey.frame].untrack(taskKey.index);
 		}
 
@@ -47,18 +63,27 @@ namespace DSA {
 			++frame_counter;
 		}
 
-		[[nodiscard]] constexpr bool can_schedule(uint16_t frame_offset) const noexcept {
-			return deques[frame_offset + frame_counter].can_enqueue_back();
+		[[nodiscard]] constexpr bool can_schedule(uint16_t frame_offset, uint32_t count = 1) const noexcept {
+			return deques[frame_offset + frame_counter].can_enqueue_back(count);
 		}
 
-		template <std::invocable<Task> F>
-		[[nodiscard]] constexpr TaskKey schedule(F function, uint16_t frame_offset) noexcept {
-			const size_t frame = frame_offset + frame_counter;
+		constexpr TaskKey schedule(Callback function, uint16_t frame_offset, ArgsType args = ArgsType{}) noexcept {
+			const uint16_t frame = frame_offset + frame_counter;
 			auto& deque = deques[frame];
-			const size_t index = deque.enqueue_back(F);
+			const uint32_t index = deque.enqueue_back(Task{ function, args });
 			deque.track(index);
-			return TaskKey { index, frame };
+			return TaskKey{ index, frame };
 		}
+
+		constexpr void schedule_at(Callback function, uint16_t frame, uint32_t index, ArgsType args = ArgsType{}) noexcept {
+			auto& deque = deques[frame];
+			deque.get(index) = Task{ function, args };
+			deque.track(index);
+		}
+
+#pragma endregion
+
+#pragma endregion
 
 	};
 
