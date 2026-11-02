@@ -21,7 +21,7 @@ namespace Algorithms {
 			if (index < LENGTH)
 				Algorithms::Sorting::insertion_sort<ASCENDING>(data + index, data + LENGTH);
 
-			typename DSA::StaticContainerConfiguration<LENGTH>::template CONTAINER<T> temporaryData;
+			typename DSA::StaticContainerConfiguration<LENGTH>::template STRUCTURE<T> temporaryData;
 
 			INDEX block = 4;
 
@@ -83,7 +83,7 @@ namespace Algorithms {
 			if (index < length)
 				Algorithms::Sorting::insertion_sort<ASCENDING>(data + index, data + length);
 
-			DSA::AlternateDynamicContainerConfiguration<>::CONTAINER<T> temporaryData(length);
+			DSA::AllocatedContainerConfiguration<>::STRUCTURE<T> temporaryData(length);
 
 			INDEX block = 4;
 

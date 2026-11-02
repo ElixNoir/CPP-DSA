@@ -4,6 +4,7 @@
 
 namespace DSA {
 
+	using namespace Algorithms;
 	using namespace Algorithms::Memory;
 
 	struct EMPTY_STRUCT {};

@@ -13,7 +13,7 @@ namespace DSA {
 
 		struct TaskKey {
 
-			uint32_t index;
+			uint16_t index;
 			uint16_t frame;
 
 		};
@@ -29,7 +29,7 @@ namespace DSA {
 
 		uint16_t frame_counter = 0;
 
-		SparseDeque<StaticContainerConfiguration<4>, Task> deques[FRAMES];
+		SparseDeque<StaticContainerConfiguration<16>, Task> deques[FRAMES];
 
 	public:
 
@@ -60,15 +60,15 @@ namespace DSA {
 				Task task = deque.dequeue_front();
 				task.callback(task.args);
 			}
-			++frame_counter;
+			frame_counter = (frame_counter + 1) % FRAMES;
 		}
 
 		[[nodiscard]] constexpr bool can_schedule(uint16_t frame_offset, uint32_t count = 1) const noexcept {
-			return deques[frame_offset + frame_counter].can_enqueue_back(count);
+			return deques[(frame_offset + frame_counter) % FRAMES].can_enqueue_back(count);
 		}
 
 		constexpr TaskKey schedule(Callback function, uint16_t frame_offset, ArgsType args = ArgsType{}) noexcept {
-			const uint16_t frame = frame_offset + frame_counter;
+			const uint16_t frame = (frame_offset + frame_counter) % FRAMES;
 			auto& deque = deques[frame];
 			const uint32_t index = deque.enqueue_back(Task{ function, args });
 			deque.track(index);

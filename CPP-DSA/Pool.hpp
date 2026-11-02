@@ -1,36 +1,44 @@
 #pragma once
 
 #include "Bitset.hpp"
-#include "IncrementalContainer.hpp"
 #include "Stack.hpp"
 
 namespace DSA {
 
-	template <typename ContainerConfiguration, typename T>
+	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class Pool : public IncrementalContainer<ContainerConfiguration, T> {
+	class Pool : public Collection<ContainerConfiguration, T> {
 	public:
 
-		using Base = IncrementalContainer<ContainerConfiguration, T>;
+		using Base = Collection<ContainerConfiguration, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		using BitsetContainerConfiguration = std::conditional_t<
+		using BitsetConfiguration = std::conditional_t<
 			concepts::DynamicContainer<Base>,
-			AlternateDynamicContainerConfiguration<INDEX, ContainerConfiguration::template ALLOCATOR_TEMPLATE>,
+			HeapStorageConfiguration<INDEX, ContainerConfiguration::template ALLOCATOR_TEMPLATE>,
 			StaticContainerConfiguration<ContainerConfiguration::maximum_capacity>
 		>;
 
 	protected:
 
 		INDEX free_top = 0;
-		Stack<ContainerConfiguration, T> free_stack;
+		Stack<ContainerConfiguration, INDEX> free_stack;
+
+#pragma region Methods
 
 		void helper_destroy()
-			noexcept
-			requires (!std::is_trivially_destructible_v<T>)
+			noexcept (noexcept(Bitset<BitsetConfiguration>(0)))
+			requires (concepts::Container<Base> && !std::is_trivially_destructible_v<T>)
 		{
-			Bitset<BitsetContainerConfiguration> bitset((Base::get_capacity() + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift);
+			helper_destroy(Base::get_capacity());
+		}
+
+		void helper_destroy(INDEX oldCapacity)
+			noexcept (noexcept(Bitset<BitsetConfiguration>(0)))
+			requires (concepts::Storage<Base> && !std::is_trivially_destructible_v<T>)
+		{
+			Bitset<BitsetConfiguration> bitset((oldCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift);
 			bitset.zero();
 			for (INDEX index : free_stack)
 				bitset.set_bit_at(index);
@@ -40,21 +48,26 @@ namespace DSA {
 				if (count == 0)
 					break;
 				destroy_at(Base::get_data() + index);
-				count--;
+				--count;
 			}
 		}
 
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
-			requires (concepts::DynamicContainer<Base>
-				&& !concepts::ResizableContainer<Base>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicContainer<Base>
+		{
+			helper_resize(newCapacity, Base::get_capacity());
+		}
+
+		void helper_resize(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
 
 			const INDEX size = Base::get_size();
 
-			Bitset<BitsetContainerConfiguration> bitset((Base::get_capacity() + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift);
+			Bitset<BitsetConfiguration> bitset((oldCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift);
 			bitset.zero();
 			for (INDEX index : free_stack)
 				bitset.set_bit_at(index);
@@ -69,7 +82,7 @@ namespace DSA {
 					if (count == 0)
 						break;
 					move_construct_at(newData + index, std::move(oldData[index]));
-					count--;
+					--count;
 				}
 			}
 			catch (...) {
@@ -78,7 +91,7 @@ namespace DSA {
 						if (count == size)
 							break;
 						destroy_at(newData + index);
-						count++;
+						++count;
 					}
 				}
 
@@ -93,15 +106,17 @@ namespace DSA {
 						break;
 
 					destroy_at(oldData + index);
-					count++;
+					++count;
 				}
 			}
 
 			ALLOCATOR::deallocate(oldData);
 
-			Base::data = reinterpret_cast<std::byte*>(newData);
-			Base::capacity = newCapacity;
+			Base::set_data(newData);
+			Base::set_capacity(newCapacity);
 		}
+
+#pragma endregion
 
 	public:
 
@@ -113,12 +128,19 @@ namespace DSA {
 
 		~Pool()
 			noexcept
-			requires (!std::is_trivially_destructible_v<T>)
+			requires concepts::Container<Base>
 		{
-			helper_destroy();
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
 		}
 
-		~Pool() noexcept = default;
+		constexpr void destroy(INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy(capacity);
+		}
 
 #pragma endregion
 
@@ -141,17 +163,12 @@ namespace DSA {
 				}
 			}
 			else {
-				index = free_top++;
-				try {
-					copy_construct_at(Base::get_data() + index, value);
-				}
-				catch (...) {
-					free_top--;
-					throw;
-				}
+				index = free_top;
+				copy_construct_at(Base::get_data() + index, value);
+				++free_top;
 			}
 
-			Base::size++;
+			++Base::size;
 
 			return index;
 		}
@@ -171,17 +188,12 @@ namespace DSA {
 				}
 			}
 			else {
-				index = free_top++;
-				try {
-					move_construct_at(Base::get_data() + index, std::move(value));
-				}
-				catch (...) {
-					free_top--;
-					throw;
-				}
+				index = free_top;
+				move_construct_at(Base::get_data() + index, std::move(value));
+				++free_top;
 			}
 
-			Base::size++;
+			++Base::size;
 
 			return index;
 		}
@@ -189,7 +201,7 @@ namespace DSA {
 		constexpr void remove(INDEX index) noexcept {
 			destroy_at(Base::get_data() + index);
 			free_stack.push(index);
-			Base::size--;
+			--Base::size;
 		}
 
 #pragma endregion
@@ -217,35 +229,53 @@ namespace DSA {
 #pragma region Memory Management
 
 		void double_capacity()
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			grow(Base::get_capacity() << 1);
+			double_capacity(Base::get_capacity());
+		}
+
+		void double_capacity(INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			grow(oldCapacity << 1, oldCapacity);
 		}
 
 		constexpr void empty() noexcept {
 			helper_destroy();
 			free_stack.empty();
 			free_top = 0;
-			Base::size = 0;
+			Base::set_size(0);
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			helper_resize(newCapacity);
-			free_stack.grow(newCapacity);
+			grow(newCapacity, Base::get_capacity());
+		}
+
+		void grow(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			helper_resize(newCapacity, oldCapacity);
+			free_stack.grow(newCapacity, oldCapacity);
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if (newCapacity > Base::get_capacity())
+			reserve(newCapacity, Base::get_capacity());
+		}
+
+		void reserve(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
 				grow(newCapacity);
 		}
 

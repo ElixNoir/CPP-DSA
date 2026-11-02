@@ -159,7 +159,9 @@
     <ClInclude Include="Hashmap.hpp" />
     <ClInclude Include="insertion_sort.hpp" />
     <ClInclude Include="KeyValuePair.hpp" />
+    <ClInclude Include="LinkedList.hpp" />
     <ClInclude Include="Memory.hpp" />
+    <ClInclude Include="Heap.hpp" />
     <ClInclude Include="Pool.hpp" />
     <ClInclude Include="Deque.hpp" />
     <ClInclude Include="Primitive.hpp" />
@@ -171,11 +173,12 @@
     <ClInclude Include="shell_sort.hpp" />
     <ClInclude Include="Sorting.hpp" />
     <ClInclude Include="SparseDeque.hpp" />
+    <ClInclude Include="Storage.hpp" />
     <ClInclude Include="swap.hpp" />
     <ClInclude Include="Swappable.hpp" />
     <ClInclude Include="Test.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />
-    <ClInclude Include="IncrementalContainer.hpp" />
+    <ClInclude Include="Collection.hpp" />
     <ClInclude Include="Buffer.hpp" />
     <ClInclude Include="Alloca.hpp" />
     <ClInclude Include="StackIterator.hpp" />

@@ -39,7 +39,7 @@
     <ClInclude Include="StackIterator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IncrementalContainer.hpp">
+    <ClInclude Include="Collection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Buffer.hpp">
@@ -151,6 +151,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SparseDeque.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Heap.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LinkedList.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Storage.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

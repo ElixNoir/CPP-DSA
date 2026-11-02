@@ -5,11 +5,11 @@
 
 namespace DSA {
 
-	template <typename ContainerConfiguration>
-	class Bitset : public ContainerConfiguration::template CONTAINER<Bitmask<>> {
+	template <concepts::StorageConfiguration ContainerConfiguration>
+	class Bitset : public ContainerConfiguration::template STRUCTURE<Bitmask<>> {
 	public:
 
-		using Base = ContainerConfiguration::template CONTAINER<Bitmask<>>;
+		using Base = ContainerConfiguration::template STRUCTURE<Bitmask<>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -21,29 +21,103 @@ namespace DSA {
 #pragma region Methods
 
 		constexpr Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) noexcept {
-			return Base::get(bitIndex >> Bitmask<>::BitShift);
+			return Base::get(bitIndex >> BitShift);
 		}
 
 		constexpr const Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) const noexcept {
-			return Base::get(bitIndex >> Bitmask<>::BitShift);
+			return Base::get(bitIndex >> BitShift);
 		}
 
 		constexpr Bitmask<>::T get_bit_at(BitIndex bitIndex) const noexcept {
-			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (Bitmask<>::BitCount - 1));
+			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (BitCount - 1));
 		}
 
 		constexpr void reset_bit_at(BitIndex bitIndex) noexcept {
-			get_bitmask_from_bitIndex(bitIndex).reset(bitIndex & (Bitmask<>::BitCount - 1));
+			get_bitmask_from_bitIndex(bitIndex).reset(bitIndex & (BitCount - 1));
 		}
 
 		constexpr void set_bit_at(BitIndex bitIndex) noexcept {
-			get_bitmask_from_bitIndex(bitIndex).set(bitIndex & (Bitmask<>::BitCount - 1));
+			get_bitmask_from_bitIndex(bitIndex).set(bitIndex & (BitCount - 1));
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit(BitIndex bitIndex) const noexcept {
-			const INDEX capacity = Base::get_capacity();
+		constexpr BitIndex find_first_bit()
+			const noexcept
+			requires concepts::Container<Base>
+		{
+			return find_first_bit_and_capacity(Base::get_capacity());
+		}
+
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit_and_capacity(INDEX capacity)
+			const noexcept
+			requires concepts::Storage<Base>
+		{
 			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
+
+			int bitOffset;
+
+			if constexpr (FRONT) {
+				BitIndex bitIndex = 0;
+				while (bitIndex < capacity) {
+					const Bitmask<>& mask = Base::get(bitIndex++);
+					if constexpr (TRAILING) {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_trailing_one();
+						else
+							bitOffset = mask.index_of_trailing_zero();
+					}
+					else {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_leading_one();
+						else
+							bitOffset = mask.index_of_leading_zero();
+					}
+
+					if (bitOffset != BitCount)
+						return bitIndex << BitShift + bitOffset;
+				}
+			}
+			else {
+				BitIndex bitIndex = capacity;
+				while (bitIndex > 0) {
+					const Bitmask<>& mask = Base::get(--bitIndex);
+					if constexpr (TRAILING) {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_trailing_one();
+						else
+							bitOffset = mask.index_of_trailing_zero();
+					}
+					else {
+						if constexpr (ONES)
+							bitOffset = mask.index_of_leading_one();
+						else
+							bitOffset = mask.index_of_leading_zero();
+					}
+
+					if (bitOffset != BitCount)
+						return bitIndex << BitShift + bitOffset;
+				}
+			}
+
+			return capacity;
+		}
+
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit(BitIndex bitIndex)
+			const noexcept
+			requires concepts::Container<Base>
+		{
+			return find_first_bit_and_capacity(bitIndex, Base::get_capacity());
+		}
+
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit_and_capacity(BitIndex bitIndex, INDEX capacity)
+			const noexcept
+			requires concepts::Storage<Base>
+		{
+			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
+
 			int bitOffset;
 
 			bitIndex >>= BitShift; // technically fits in INDEX
@@ -113,31 +187,73 @@ namespace DSA {
 #pragma region Iteration
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> begin() noexcept {
-			return BitsetIterator<INDEX, ONES>(Base::get_data(), Base::get_capacity(), false);
+		BitsetIterator<INDEX, ONES> begin()
+			noexcept
+			requires concepts::Container<Base>
+		{
+			return begin<ONES>(Base::get_capacity());
 		}
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> end() noexcept {
-			return BitsetIterator<INDEX, ONES>(Base::get_data(), Base::get_capacity(), true);
+		BitsetIterator<INDEX, ONES> begin(INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, false);
 		}
 
-		auto ones() noexcept {
+		template <bool ONES>
+		BitsetIterator<INDEX, ONES> end()
+			noexcept
+			requires concepts::Container<Base>
+		{
+			return end<ONES>(Base::get_capacity());
+		}
+
+		template <bool ONES>
+		BitsetIterator<INDEX, ONES> end(INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, true);
+		}
+
+		auto ones()
+			noexcept
+			requires concepts::Container<Base>
+		{
+			return ones(Base::get_capacity());
+		}
+
+		auto ones(INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
 			struct Proxy {
 				Bitset* self;
 
-				auto begin() noexcept { return self->template begin<true>(); }
-				auto end() noexcept { return self->template end<true>(); }
+				auto begin() noexcept { return self->template begin<true>(capacity); }
+				auto end() noexcept { return self->template end<true>(capacity); }
 			};
 			return Proxy{ this };
 		}
 
-		auto zeros() noexcept {
+		auto zeros()
+			noexcept
+			requires concepts::Container<Base>
+		{
+			return zeros(Base::get_capacity());
+		}
+
+		auto zeros(INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
 			struct Proxy {
 				Bitset* self;
 
-				auto begin() noexcept { return self->template begin<false>(); }
-				auto end() noexcept { return self->template end<false>(); }
+				auto begin() noexcept { return self->template begin<false>(capacity); }
+				auto end() noexcept { return self->template end<false>(capacity); }
 			};
 			return Proxy{ this };
 		}

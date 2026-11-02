@@ -42,7 +42,7 @@ uintmax_t default_hash(const T& value) noexcept {
 
 namespace DSA {
 
-	template <typename ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = default_hash>
+	template <concepts::StorageConfiguration ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = default_hash>
 		requires std::is_nothrow_destructible_v<T>
 	class Hashmap : public TrackedContainer<ContainerConfiguration, T> {
 	public:
@@ -53,14 +53,11 @@ namespace DSA {
 
 	protected:
 
-		using Base::data;
-
 #pragma region Methods
 
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
-			requires concepts::DynamicContainer<Base>
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
 
@@ -75,7 +72,7 @@ namespace DSA {
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				for (INDEX index : Base::tracked.ones()) {
 					T& key = oldData[index];
-					const INDEX newIndex = HASH(key) % newCapacity; // rehashing
+					const INDEX newIndex = HASH(key) % newCapacity;
 					move_construct_at(newData + newIndex, std::move(key));
 					if constexpr (!std::is_trivially_destructible_v<T>)
 						destroy_at(newData + index);
@@ -86,7 +83,7 @@ namespace DSA {
 				try {
 					for (INDEX index : Base::tracked.ones()) {
 						T& key = oldData[index];
-						const INDEX newIndex = HASH(key) % newCapacity; // rehashing
+						const INDEX newIndex = HASH(key) % newCapacity;
 						move_construct_at(newData + newIndex, std::move(key));
 						newTracked.set_bit_at(newIndex);
 					}
@@ -113,8 +110,8 @@ namespace DSA {
 				}
 			}
 
-			Base::data = reinterpret_cast<std::byte*>(newData);
-			Base::capacity = newCapacity;
+			Base::set_data(newData);
+			Base::set_capacity(newCapacity);
 			Base::tracked = newTracked;
 		}
 
@@ -122,11 +119,22 @@ namespace DSA {
 
 	public:
 
+#pragma region Methods
+
 #pragma region Find, Insert, Set, Upsert
 
-		[[nodiscard]] constexpr INDEX find(const T& key) const noexcept {
+		[[nodiscard]] constexpr INDEX find(const T& key)
+			const noexcept
+			requires concepts::Container<Base>
+		{
+			return find(key, Base::get_capacity());
+		}
+
+		[[nodiscard]] constexpr INDEX find(const T& key, INDEX capacity)
+			const noexcept
+			requires concepts::Storage<Base>
+		{
 			const T* data = Base::get_data();
-			const INDEX capacity = Base::get_capacity();
 			const INDEX begin = HASH(key) % capacity;
 
 			INDEX index = begin;
@@ -142,8 +150,17 @@ namespace DSA {
 			return capacity; // if container is used well, unreachable due to threshold in DynamicContainer
 		}
 
-		[[nodiscard]] constexpr INDEX find_unoccupied(const T& key) const noexcept {
-			const INDEX capacity = Base::get_capacity();
+		[[nodiscard]] constexpr INDEX find_unoccupied(const T& key)
+			const noexcept
+			requires concepts::Container<Base>
+		{
+			return find_unoccupied(key, Base::get_capacity());
+		}
+
+		[[nodiscard]] constexpr INDEX find_unoccupied(const T& key, INDEX capacity)
+			const noexcept
+			requires concepts::Storage<Base>
+		{
 			const INDEX begin = HASH(key) % capacity;
 
 			INDEX index = Base::find_unoccupied(begin);
@@ -155,100 +172,157 @@ namespace DSA {
 			return index;
 		}
 
-		void insert(const T& key) noexcept {
+		void insert(const T& key)
+			noexcept
+			requires concepts::Container<Base>
+		{
 			set(find_unoccupied(key), key);
-			Base::size++;
+			++Base::size;
 		}
 
-		void insert(T&& key) noexcept {
+		void insert(const T& key, INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			set(find_unoccupied(key, capacity), key);
+			++Base::size;
+		}
+
+		void insert(T&& key)
+			noexcept
+			requires concepts::Container<Base>
+		{
 			set(find_unoccupied(key), std::move(key));
-			Base::size++;
+			++Base::size;
+		}
+
+		void insert(T&& key, INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			set(find_unoccupied(key, capacity), std::move(key));
+			++Base::size;
 		}
 
 		void set(INDEX index, const T& key) noexcept {
 			copy_construct_at(Base::get_data() + index, key);
 			Base::tracked.set_bit_at(index);
-			Base::size++;
+			++Base::size;
 		}
 
 		void set(INDEX index, T&& key) noexcept {
 			move_construct_at(Base::get_data() + index, std::move(key));
 			Base::tracked.set_bit_at(index);
-			Base::size++;
+			++Base::size;
 		}
 
-		void upsert(const T& key) noexcept {
-			set(find(key), key);
+		void upsert(const T& key)
+			noexcept
+			requires concepts::Container<Base>
+		{
+			upsert(key, Base::get_capacity());
 		}
 
-		void upsert(T&& key) noexcept {
-			set(find(key), std::move(key));
+		void upsert(const T& key, INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			set(find(key, capacity), key);
+		}
+
+		void upsert(T&& key)
+			noexcept
+			requires concepts::Container<Base>
+		{
+			upsert(std::move(key), Base::get_capacity());
+		}
+
+		void upsert(T&& key, INDEX capacity)
+			noexcept
+			requires concepts::Storage<Base>
+		{
+			set(find(key, capacity), std::move(key));
 		}
 
 #pragma endregion
 
 #pragma region Memory Management
 
-		[[nodiscard]] constexpr bool should_grow() const noexcept {
-			return static_cast<double>(size) / Base::get_capacity() > 0.8;
-		}
-
 		void double_capacity()
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::double_capacity();
-			else
-				grow(Base::get_capacity() << 1);
+			double_capacity(Base::get_capacity());
+		}
+
+		void double_capacity(INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			grow(oldCapacity << 1);
+		}
+
+		[[nodiscard]] constexpr bool should_grow()
+			const noexcept
+			requires concepts::Container<Base>
+		{
+			return should_grow(Base::get_capacity());
+		}
+
+		[[nodiscard]] constexpr bool should_grow(INDEX capacity)
+			const noexcept
+			requires concepts::Storage<Base>
+		{
+			return static_cast<double>(size) / capacity > 0.8;
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
-			requires concepts::DynamicContainer<Base>
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::grow(newCapacity);
-			else
-				helper_resize<true>(newCapacity);
+			helper_resize<true>(newCapacity);
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::reserve(newCapacity);
-			else if (newCapacity > Base::get_capacity())
+			reserve(newCapacity, Base::get_capacity());
+		}
+
+		void reserve(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
 				grow(newCapacity);
 		}
 
 		void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::resize(newCapacity);
-			else if (newCapacity > Base::get_capacity())
+			resize(newCapacity, Base::get_capacity());
+		}
+
+		void resize(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
 				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
 
 		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
-			requires concepts::DynamicContainer<Base>
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::shrink(newCapacity);
-			else
-				helper_resize<false>(newCapacity);
+			helper_resize<false>(newCapacity);
 		}
+
+#pragma endregion
 
 #pragma endregion
 

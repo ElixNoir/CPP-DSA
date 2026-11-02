@@ -1,16 +1,17 @@
 #pragma once
 
-#include "IncrementalContainer.hpp"
+#include "Collection.hpp"
+#include "Math.hpp"
 #include "StackIterator.hpp"
 
 namespace DSA {
 
-	template <typename ContainerConfiguration, typename T>
+	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class Stack : public IncrementalContainer<ContainerConfiguration, T> {
+	class Stack : public Collection<ContainerConfiguration, T> {
 	public:
 
-		using Base = IncrementalContainer<ContainerConfiguration, T>;
+		using Base = Collection<ContainerConfiguration, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -22,37 +23,44 @@ namespace DSA {
 			noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
-			destroy_range_backward(Base::get_data(), Base::get_data() + Base::size);
+			destroy_range_backward(Base::get_data(), Base::get_data() + Base::get_size());
 		}
 
 		template <bool GROW>
 		void helper_resize(INDEX newCapacity) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 		) requires (
-			concepts::DynamicContainer<Base>
-			&& !concepts::ResizableContainer<Base>
+			concepts::DynamicStorage<Base>
 		) {
-			using ALLOCATOR = Base::ALLOCATOR;
+			if constexpr (concepts::ResizableContainer<Base>)
+				Base::resize(newCapacity);
+			else {
+				using ALLOCATOR = Base::ALLOCATOR;
 
-			T* const oldData = Base::get_data();
-			T* const newData = ALLOCATOR::allocate(newCapacity);
+				T* const oldData = Base::get_data();
+				T* const newData = ALLOCATOR::allocate(newCapacity);
 
-			try {
-				if constexpr (GROW)
-					move_construct_range_backward(newData, newData + Base::size, oldData);
-				else
-					move_construct_range_backward(newData, newData + Utilities::minimum(Base::size, newCapacity), oldData);
-				destroy_range_backward(oldData, oldData + Base::size);
+				try {
+					if constexpr (GROW)
+						reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
+					else {
+						const INDEX size = Base::get_size();
+						reconstruct_range_backward(newData, newData + newCapacity, oldData);
+						destroy_range_backward(oldData + newCapacity, oldData + size);
+						Base::set_size(newCapacity);
+					}
+				}
+				catch (...) {
+					ALLOCATOR::deallocate(newData);
+					throw;
+				}
+
 				ALLOCATOR::deallocate(oldData);
-			}
-			catch (...) {
-				ALLOCATOR::deallocate(Base::get_data());
-				Base::data = oldData;
-				throw;
-			}
 
-			Base::data = reinterpret_cast<std::byte*>(newData);
-			Base::capacity = newCapacity;
+				Base::set_data(newData);
+				if constexpr (concepts::DynamicContainer<Base>)
+					Base::set_capacity(newCapacity);
+			}
 		}
 
 #pragma endregion
@@ -81,39 +89,39 @@ namespace DSA {
 		constexpr void add(const T& value) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			copy_construct_at(Base::get_data() + Base::size, value);
-			Base::size++;
+			copy_construct_at(Base::get_data() + Base::get_size(), value);
+			++Base::size;
 		}
 
 		constexpr void add(T&& value) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			move_construct_at(Base::get_data() + Base::size, std::move(value));
-			Base::size++;
+			move_construct_at(Base::get_data() + Base::get_size(), std::move(value));
+			++Base::size;
 		}
 
-		constexpr void add_copy_construct_many(const T* source, INDEX count) 
+		constexpr void add_many(const T* source, INDEX count) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			T* const address = Base::get_data() + Base::size;
+			T* const address = Base::get_data() + Base::get_size();
 			copy_construct_range_backward(address, address + count, source);
 			Base::size += count;
 		}
 
-		constexpr void add_move_construct_many(const T* source, INDEX count) 
+		constexpr void add_many(T* source, INDEX count) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			T* const address = Base::get_data() + Base::size;
+			T* const address = Base::get_data() + Base::get_size();
 			move_construct_range_backward(address, address + count, source);
 			Base::size += count;
 		}
 
 		template <typename... Arguments>
-		constexpr void emplace(Arguments&&... arguments) noexcept(
-			std::is_nothrow_constructible_v<T, Arguments...>
-		) {
-			construct_at<T>(Base::get_data() + Base::size, forward<Arguments>(arguments)...);
-			Base::size++;
+		constexpr void emplace(Arguments&&... arguments)
+			noexcept(std::is_nothrow_constructible_v<T, Arguments...>)
+		{
+			construct_at<T>(Base::get_data() + Base::get_size(), forward<Arguments>(arguments)...);
+			++Base::size;
 		}
 
 		constexpr void remove() noexcept {
@@ -121,7 +129,7 @@ namespace DSA {
 		}
 
 		constexpr void remove_many(INDEX count) noexcept {
-			T* const address = Base::get_data() + Base::size;
+			T* const address = Base::get_data() + Base::get_size();
 			destroy_range_backward(address - count, address);
 			Base::size -= count;
 		}
@@ -135,19 +143,19 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr T& peek() noexcept {
-			return Base::get_data()[Base::size - 1];
+			return Base::get(Base::get_size() - 1);
 		}
 
 		[[nodiscard]] constexpr const T& peek() const noexcept {
-			return Base::get_data()[Base::size - 1];
+			return Base::get(Base::get_size() - 1);
 		}
 
 		[[nodiscard]] constexpr T* peek(INDEX count) noexcept {
-			return Base::get_data() + Base::size - count;
+			return Base::get_data() + Base::get_size() - count;
 		}
 
 		[[nodiscard]] constexpr const T* peek(INDEX count) const noexcept {
-			return Base::get_data() + Base::size - count;
+			return Base::get_data() + Base::get_size() - count;
 		}
 
 		[[nodiscard]] constexpr bool can_pop(INDEX count = 1) const noexcept {
@@ -166,7 +174,7 @@ namespace DSA {
 		[[nodiscard]] constexpr void pop_many(T* destination, INDEX count) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			T* const address = Base::get_data() + Base::size - count;
+			T* const address = Base::get_data() + Base::get_size() - count;
 			move_construct_range_backward(destination, destination + count, address);
 			destroy_range_backward(address, address + count);
 			Base::size -= count;
@@ -205,65 +213,69 @@ namespace DSA {
 #pragma region Memory Management
 
 		void double_capacity()
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::double_capacity();
-			else
-				grow(Base::get_capacity() << 1);
+			double_capacity(Base::get_capacity());
+		}
+
+		void double_capacity(INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicContainer<Base>
+		{
+			grow(oldCapacity << 1, oldCapacity);
 		}
 
 		constexpr void empty() noexcept {
-			helper_destroy();
-			Base::size = 0;
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
+			Base::set_size(0);
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::grow(newCapacity);
-			else
-				helper_resize<true>(newCapacity);
+			helper_resize<true>(newCapacity);
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::reserve(newCapacity);
-			else if (newCapacity > Base::get_capacity())
-				grow(newCapacity);
+			reserve(newCapacity, Base::get_capacity());
+		}
+
+		void reserve(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
+				grow(newCapacity, oldCapacity);
 		}
 
 		void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::resize(newCapacity);
-			else if (newCapacity > Base::get_capacity())
-				grow(newCapacity);
+			resize(newCapacity, Base::get_capacity());
+		}
+
+		void resize(INDEX newCapacity, INDEX oldCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
+				grow(newCapacity, oldCapacity);
 			else
 				shrink(newCapacity);
 		}
 
 		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableAllocator<Base::ALLOCATOR>
-				&& std::is_nothrow_move_constructible_v<T>)
-			requires concepts::DynamicContainer<Base>
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
 		{
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::shrink(newCapacity);
-			else
-				helper_resize<false>(newCapacity);
+			helper_resize<false>(newCapacity);
 		}
 
 #pragma endregion
@@ -279,11 +291,11 @@ namespace DSA {
 		}
 
 		StackIterator<T> end() noexcept {
-			return StackIterator<T>(Base::get_data() + Base::size);
+			return StackIterator<T>(Base::get_data() + Base::get_size());
 		}
 
 		StackIterator<const T> end() const noexcept {
-			return StackIterator<const T>(Base::get_data() + Base::size);
+			return StackIterator<const T>(Base::get_data() + Base::get_size());
 		}
 
 #pragma endregion
