@@ -20,7 +20,7 @@ namespace DSA {
 		using TRACKED = Bitset<
 			std::conditional_t<
 				concepts::DynamicStorageConfiguration<ContainerConfiguration>,
-				HeapStorageConfiguration<INDEX>,
+				HeapStorageConfiguration<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
 				StaticContainerConfiguration<((Base::maximum_capacity + BitCount - 1) >> BitShift)>
 			>
 		>;
@@ -31,48 +31,21 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_destroy()
-			noexcept
-			requires (concepts::Container<Base> && !std::is_trivially_destructible_v<T>)
-		{
-			if constexpr (concepts::DynamicStorageConfiguration<ContainerConfiguration>)
-				helper_destroy(Base::get_capacity());
-			else {
-				INDEX count = Base::get_size();
-
-				for (INDEX index : tracked.ones() {
-					if (count == 0)
-						break;
-					destroy_at(Base::get_data() + index);
-					count--;
-				}
-			}
-		}
-
-		void helper_destroy(INDEX capacity)
-			noexcept
-			requires (concepts::Storage<Base> && !std::is_trivially_destructible_v<T>)
+		void helper_destroy(INDEX capacity = Base::default_capacity()) noexcept
+			requires (!std::is_trivially_destructible_v<T>)
 		{
 			INDEX count = Base::get_size();
 
-			for (INDEX index : tracked.ones(((capacity + BitCount - 1) >> BitShift)) {
+			for (INDEX index : tracked.ones(get_bitset_capacity(capacity))) {
 				if (count == 0)
 					break;
 				destroy_at(Base::get_data() + index);
-				count--;
+				--count;
 			}
 		}
 
 		template <bool GROW>
-		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			helper_resize<GROW>(newCapacity, Base::get_capacity());
-		}
-
-		template <bool GROW>
-		void helper_resize(INDEX newCapacity, INDEX oldCapacity)
+		void helper_resize(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
@@ -80,26 +53,29 @@ namespace DSA {
 
 			const INDEX size = Base::get_size();
 
+			const INDEX newBitsetCapacity = get_bitset_capacity(newCapacity);
+			const INDEX oldBitsetCapacity = get_bitset_capacity(oldCapacity);
+
 			T* const oldData = Base::get_data();
 			T* const newData = ALLOCATOR::allocate(newCapacity);
 
 			INDEX count = size;
 
 			try {
-				for (INDEX index : tracked.ones()) {
+				for (INDEX index : tracked.ones(oldBitsetCapacity)) {
 					if (count == 0)
 						break;
 					move_construct_at(newData + index, std::move(oldData[index]));
-					count--;
+					--count;
 				}
 			}
 			catch (...) {
 				if constexpr (!std::is_trivially_destructible_v<T>) {
-					for (INDEX index : tracked.ones()) {
+					for (INDEX index : tracked.ones(oldBitsetCapacity)) {
 						if (count == size)
 							break;
 						destroy_at(newData + index);
-						count++;
+						++count;
 					}
 				}
 
@@ -109,12 +85,12 @@ namespace DSA {
 			}
 
 			if constexpr (!std::is_trivially_destructible_v<T>) {
-				for (INDEX index : tracked.ones()) {
+				for (INDEX index : tracked.ones(oldBitsetCapacity)) {
 					if (count == size)
 						break;
 
 					destroy_at(oldData + index);
-					count++;
+					++count;
 				}
 			}
 
@@ -124,9 +100,9 @@ namespace DSA {
 			Base::set_capacity(newCapacity);
 
 			if constexpr (GROW)
-				tracked.grow(((newCapacity + BitCount - 1) >> BitShift), ((oldCapacity + BitCount - 1) >> BitShift));
+				tracked.grow(newBitsetCapacity, oldBitsetCapacity);
 			else
-				tracked.shrink(((newCapacity + BitCount - 1) >> BitShift));
+				tracked.shrink(newBitsetCapacity);
 		}
 
 #pragma endregion
@@ -135,103 +111,56 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
-		TrackedContainer(INDEX initialCapacity)
-			requires (concepts::DynamicStorage<Base>) :
-			Base(initialCapacity),
-			tracked((initialCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift) {}
-
 		TrackedContainer() noexcept = default;
 
-		void destroy(INDEX capacity)
-			noexcept
+		TrackedContainer(INDEX initialCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (concepts::DynamicStorage<Base>)
+		: Base(initialCapacity), tracked((initialCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift) {}
+
+		~TrackedContainer() noexcept
 			requires concepts::Container<Base>
 		{
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy(capacity);
+			destroy();
 		}
 
-		~TrackedContainer()
-			noexcept
-			requires concepts::Container<Base>
-		{
+		void destroy(INDEX capacity = Base::default_capacity()) noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
+				helper_destroy(capacity);
 		}
 
 #pragma endregion
 
 #pragma region Methods
 
-#pragma region Tracking
+#pragma region Getters
 
-		[[nodiscard]] constexpr bool contains_tracked_index(INDEX index)
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return contains_tracked_index(Base::get_capacity());
+		[[nodiscard]] constexpr INDEX get_bitset_capacity(INDEX capacity = Base::default_capacity()) const noexcept {
+			return (capacity + BitCount - 1) >> BitShift;
 		}
 
-		[[nodiscard]] constexpr bool contains_tracked_index(INDEX index, INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
+#pragma endregion
+
+#pragma region Tracking
+
+		[[nodiscard]] constexpr bool contains_tracked_index(INDEX index, INDEX capacity = Base::default_capacity()) const noexcept {
 			return index < capacity && tracked.get_bit_at(index);
 		}
 
-		[[nodiscard]] constexpr INDEX find_first_tracked()
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return find_first_tracked_and_capacity(Base::get_capacity());
+		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX capacity = Base::default_capacity()) const noexcept {
+			return tracked.find_first_bit<true, true, true>(0, capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX find_first_tracked_and_capacity(INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return tracked.find_first_bit_and_capacity<true, true, true>(0, capacity);
+		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX start, INDEX capacity = Base::default_capacity()) const noexcept {
+			return tracked.find_first_bit_after<true, true, true>(start, capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX start)
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return find_first_tracked_and_capacity(start, Base::get_capacity());
+		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX capacity = Base::default_capacity()) const noexcept {
+			return tracked.find_first_bit<false, true, true>(0, capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX find_first_tracked_and_capacity(INDEX start, INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return tracked.find_first_bit_and_capacity<true, true, true>(start, capacity);
-		}
-
-		[[nodiscard]] constexpr INDEX find_last_tracked()
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return find_last_tracked_and_capacity(Base::get_capacity());
-		}
-
-		[[nodiscard]] constexpr INDEX find_last_tracked_and_capacity(INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return tracked.find_first_bit_and_capacity<false, true, true>(0, capacity);
-		}
-
-		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX start)
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return find_last_tracked_and_capacity(start, Base::get_capacity());
-		}
-
-		[[nodiscard]] constexpr INDEX find_last_tracked_and_capacity(INDEX start, INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return tracked.find_first_bit_and_capacity<false, true, true>(start, capacity);
+		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX start, INDEX capacity = Base::default_capacity()) const noexcept {
+			return tracked.find_first_bit_after<false, true, true>(start, capacity);
 		}
 
 		[[nodiscard]] constexpr bool is_tracking(INDEX index) const noexcept {
@@ -250,52 +179,27 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			double_capacity(Base::get_capacity() << 1);
-		}
-
-		void double_capacity(INDEX oldCapacity)
+		void double_capacity(INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
 			grow(oldCapacity << 1);
 		}
 
-		constexpr void empty() noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
-
-			tracked.zero(Base::get_capacity());
+		constexpr void empty(INDEX capacity = Base::default_capacity()) noexcept {
+			destroy(capacity);
+			tracked.zero_raw(capacity);
 			Base::set_size(0);
 		}
 
-		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			grow(newCapacity, Base::get_capacity());
-		}
-
-		void grow(INDEX newCapacity, INDEX oldCapacity)
+		void grow(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize<true>(newCapacity, oldCapacity);
 		}
 
-		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			const INDEX capacity = Base::get_capacity();
-			if (newCapacity > capacity)
-				reserve(newCapacity, capacity);
-		}
-
-		void reserve(INDEX newCapacity, INDEX oldCapacity)
+		void reserve(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
@@ -303,14 +207,7 @@ namespace DSA {
 				grow(newCapacity, oldCapacity);
 		}
 
-		void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			resize(newCapacity, Base::get_capacity());
-		}
-
-		void resize(INDEX newCapacity, INDEX oldCapacity)
+		void resize(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
@@ -320,14 +217,7 @@ namespace DSA {
 				shrink(newCapacity);
 		}
 
-		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			shrink(newCapacity, Base::get_capacity());
-		}
-
-		void shrink(INDEX newCapacity, INDEX oldCapacity)
+		void shrink(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{

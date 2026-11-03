@@ -1,3 +1,5 @@
+#pragma once
+
 #if defined(_MSC_VER)
 /* Microsoft Visual Studio / MSVC */
 #include <malloc.h>

@@ -108,6 +108,10 @@ namespace DSA {
 
 #pragma region Getters
 
+			[[nodiscard]] constexpr INDEX default_capacity() const noexcept {
+				return get_capacity();
+			}
+
 			[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
 				return capacity;
 			}
@@ -223,6 +227,10 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Getters
+
+			[[nodiscard]] constexpr INDEX default_capacity() const noexcept {
+				return get_capacity();
+			}
 
 			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
 				return get_data()[index];

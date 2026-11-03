@@ -14,10 +14,10 @@ namespace DSA {
 
 	};
 
-	template <typename ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
-	using AVLTreeNodeContainer = IncrementalContainer<ContainerConfiguration, AVLTreeNode<KeyValuePair, ContainerConfiguration::template CONTAINER<KeyValuePair>::INDEX>>;
+	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	using AVLTreeNodeContainer = Collection<ContainerConfiguration, AVLTreeNode<KeyValuePair, ContainerConfiguration::template STRUCTURE<KeyValuePair>::INDEX>>;
 
-	template <typename ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
 		requires std::is_nothrow_destructible_v<KeyValuePair>
 	class AVLTree : public AVLTreeNodeContainer<ContainerConfiguration, KeyValuePair> {
 	public:
@@ -114,9 +114,22 @@ namespace DSA {
 			return currentIndex;
 		}
 
+		/*
+		void helper_destroy() {}
+		
+		template <bool GROW>
+		void helper_resize() {}
+		*/
+
 #pragma endregion
 
 	public:
+
+#pragma region Constructors & Destructors
+
+		// too lazy rn
+
+#pragma endregion
 
 #pragma region Methods
 
@@ -485,6 +498,12 @@ namespace DSA {
 
 #pragma endregion
 
+#pragma region Memory Management
+
+		// ugh...
+
+#pragma endregion
+
 #pragma region Traversal
 
 		[[nodiscard]] constexpr bool can_traverse() const noexcept {
@@ -661,6 +680,8 @@ namespace DSA {
 			}
 			return candidateIndex;
 		}
+
+#pragma endregion
 
 #pragma endregion
 

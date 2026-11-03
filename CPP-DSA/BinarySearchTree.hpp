@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IncrementalContainer.hpp"
+#include "Collection.hpp"
 #include "KeyValuePair.hpp"
 
 namespace DSA {
@@ -14,10 +14,10 @@ namespace DSA {
 
 	};
 
-	template <typename ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
-	using BinarySearchTreeNodeContainer = IncrementalContainer<ContainerConfiguration, BinarySearchTreeNode<KeyValuePair, ContainerConfiguration::template CONTAINER<KeyValuePair>::INDEX>>;
+	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	using BinarySearchTreeNodeContainer = Collection<ContainerConfiguration, BinarySearchTreeNode<KeyValuePair, ContainerConfiguration::INDEX>>;
 
-	template <typename ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
 		requires std::is_nothrow_destructible_v<KeyValuePair>
 	class BinarySearchTree : public BinarySearchTreeNodeContainer<ContainerConfiguration, KeyValuePair> {
 	public:
@@ -33,20 +33,33 @@ namespace DSA {
 
 	protected:
 
-		using Base::size;
-
 		INDEX root = 0;
 		INDEX free_root = 0;
 		INDEX top = 0;
 
+#pragma region Methods
+
+		// void helper_destroy() {}
+		// 
+		// template <bool GROW>
+		// void helper_resize() {}
+
+#pragma endregion
+
 	public:
+
+#pragma region Constructors & Destructors
+		
+		// too lazy rn
+
+#pragma endregion
 
 #pragma region Methods
 
 #pragma region Add & Remove
 
 		[[nodiscard]] constexpr bool can_add(INDEX count = 1) const noexcept {
-			return (count < invalid_index - size) && Base::can_add(count);
+			return (count < invalid_index - Base::size) && Base::can_add(count);
 		}
 
 		[[nodiscard]] INDEX add(const T& keyValuePair) 
@@ -167,7 +180,7 @@ namespace DSA {
 				index = top++;
 			}
 
-			size++;
+			++Base::size;
 
 			return index;
 		}
@@ -192,7 +205,7 @@ namespace DSA {
 				index = top++;
 			}
 
-			size++;
+			++Base::size;
 
 			return index;
 		}
@@ -207,7 +220,7 @@ namespace DSA {
 			node.left = invalid_index;
 			node.right = free_root;
 			free_root = index;
-			size--;
+			--Base::size;
 		}
 
 #pragma endregion
@@ -246,10 +259,10 @@ namespace DSA {
 			return can_add(count);
 		}
 
-		[[nodiscard]] INDEX upsert(const T& keyValuePair) noexcept(
-			std::is_nothrow_copy_assignable_v<T>
-			&& std::is_nothrow_copy_constructible_v<T>
-		) {
+		[[nodiscard]] INDEX upsert(const T& keyValuePair)
+			noexcept(std::is_nothrow_copy_assignable_v<T>
+				&& std::is_nothrow_copy_constructible_v<T>)
+		{
 			INDEX index = root;
 			if (index == invalid_index) {
 				root = allocate(keyValuePair);
@@ -286,10 +299,10 @@ namespace DSA {
 			}
 		}
 
-		[[nodiscard]] INDEX upsert(T&& keyValuePair) noexcept(
-			std::is_nothrow_move_assignable_v<T>
-			&& std::is_nothrow_move_constructible_v<T>
-		) {
+		[[nodiscard]] INDEX upsert(T&& keyValuePair)
+			noexcept(std::is_nothrow_move_assignable_v<T>
+				&& std::is_nothrow_move_constructible_v<T>)
+		{
 			INDEX index = root;
 			if (index == invalid_index) {
 				root = allocate(std::move(keyValuePair));
@@ -328,6 +341,12 @@ namespace DSA {
 
 #pragma endregion
 
+#pragma region Memory Management
+
+		// ugh...
+
+#pragma endregion
+
 #pragma region Traversal
 
 		[[nodiscard]] constexpr bool can_traverse() const noexcept {
@@ -350,18 +369,18 @@ namespace DSA {
 
 			while (head <= top) {
 				callback(index);
-				top++;
+				++top;
 
 				INDEX left = Base::get(index).left;
 				if (left != invalid_index) {
 					callback(left);
-					top++;
+					++top;
 				}
 
 				INDEX right = Base::get(index).right;
 				if (right != invalid_index) {
 					callback(right);
-					top++;
+					++top;
 				}
 
 				index = Base::get(++head);
@@ -386,13 +405,13 @@ namespace DSA {
 				INDEX right = Base::get(rootIndex).right;
 				if (right != invalid_index) {
 					callback(right);
-					top++;
+					++top;
 				}
 
 				INDEX left = Base::get(rootIndex).left;
 				if (left != invalid_index) {
 					callback(left);
-					top++;
+					++top;
 				}
 
 				rootIndex = Base::get(--top);
@@ -417,13 +436,13 @@ namespace DSA {
 				INDEX left = Base::get(rootIndex).left;
 				if (left != invalid_index) {
 					callback(left);
-					top++;
+					++top;
 				}
 
 				INDEX right = Base::get(rootIndex).right;
 				if (right != invalid_index) {
 					callback(right);
-					top++;
+					++top;
 				}
 
 				rootIndex = Base::get(--top);
@@ -504,6 +523,8 @@ namespace DSA {
 			}
 			return candidateIndex;
 		}
+
+#pragma endregion
 
 #pragma endregion
 

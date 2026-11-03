@@ -12,6 +12,7 @@ namespace DSA {
 			typename T::INDEX;
 			typename T::T;
 
+			{ t.default_capacity() } -> std::same_as<typename T::INDEX>;
 			{ t.get(index) } -> std::same_as<typename T::T&>;
 			{ std::as_const(t).get(index) } -> std::same_as<const typename T::T&>;
 			{ t.get_data() } -> std::same_as<typename T::T*>;
@@ -98,7 +99,9 @@ namespace DSA {
 
 			STRUCTURE() noexcept = default;
 
-			STRUCTURE(INDEX initialCapacity) {
+			STRUCTURE(INDEX initialCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+			{
 				data = reinterpret_cast<std::byte*>(ALLOCATOR::allocate(initialCapacity));
 			}
 
@@ -114,11 +117,19 @@ namespace DSA {
 				ALLOCATOR::deallocate(get_data());
 			}
 
+			void destroy() noexcept {
+				ALLOCATOR::deallocate(get_data());
+			}
+
 #pragma endregion
 
 #pragma region Methods
 
 #pragma region Getters
+
+			[[nodiscard]] constexpr INDEX default_capacity() const noexcept {
+				return 0;
+			}
 
 			[[nodiscard]] constexpr T& get(INDEX index) noexcept {
 				return get_data()[index];
@@ -210,19 +221,35 @@ namespace DSA {
 			}
 
 			constexpr void one(INDEX count) noexcept {
-				std::memset(get_raw_data(), 0xFF, count * sizeof(T));
+				std::memset(get_data(), 0xFF, count * sizeof(T));
 			}
 
 			constexpr void one(INDEX begin, INDEX count) noexcept {
-				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
+				std::memset(get_data() + begin, 0xFF, count * sizeof(T));
+			}
+
+			constexpr void one_raw(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0xFF, count);
+			}
+
+			constexpr void one_raw(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0xFF, count);
 			}
 
 			constexpr void zero(INDEX count) noexcept {
-				std::memset(get_raw_data(), 0, count * sizeof(T));
+				std::memset(get_data(), 0, count * sizeof(T));
 			}
 
 			constexpr void zero(INDEX begin, INDEX count) noexcept {
-				std::memset(get_raw_data() + begin, 0, count * sizeof(T));
+				std::memset(get_data() + begin, 0, count * sizeof(T));
+			}
+
+			constexpr void zero_raw(INDEX count) noexcept {
+				std::memset(get_raw_data(), 0, count);
+			}
+
+			constexpr void zero_raw(INDEX begin, INDEX count) noexcept {
+				std::memset(get_raw_data() + begin, 0, count);
 			}
 
 #pragma endregion

@@ -19,48 +19,42 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_destroy()
-			noexcept
+		void helper_destroy() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
 			destroy_range_backward(Base::get_data(), Base::get_data() + Base::get_size());
 		}
 
 		template <bool GROW>
-		void helper_resize(INDEX newCapacity) noexcept(
-			std::is_nothrow_move_constructible_v<T>
-		) requires (
-			concepts::DynamicStorage<Base>
-		) {
-			if constexpr (concepts::ResizableContainer<Base>)
-				Base::resize(newCapacity);
-			else {
-				using ALLOCATOR = Base::ALLOCATOR;
+		void helper_resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			using ALLOCATOR = Base::ALLOCATOR;
 
-				T* const oldData = Base::get_data();
-				T* const newData = ALLOCATOR::allocate(newCapacity);
+			T* const oldData = Base::get_data();
+			T* const newData = ALLOCATOR::allocate(newCapacity);
 
-				try {
-					if constexpr (GROW)
-						reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
-					else {
-						const INDEX size = Base::get_size();
-						reconstruct_range_backward(newData, newData + newCapacity, oldData);
-						destroy_range_backward(oldData + newCapacity, oldData + size);
-						Base::set_size(newCapacity);
-					}
+			try {
+				if constexpr (GROW)
+					reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
+				else {
+					const INDEX size = Base::get_size();
+					reconstruct_range_backward(newData, newData + newCapacity, oldData);
+					destroy_range_backward(oldData + newCapacity, oldData + size);
+					Base::set_size(newCapacity);
 				}
-				catch (...) {
-					ALLOCATOR::deallocate(newData);
-					throw;
-				}
-
-				ALLOCATOR::deallocate(oldData);
-
-				Base::set_data(newData);
-				if constexpr (concepts::DynamicContainer<Base>)
-					Base::set_capacity(newCapacity);
 			}
+			catch (...) {
+				ALLOCATOR::deallocate(newData);
+				throw;
+			}
+
+			ALLOCATOR::deallocate(oldData);
+
+			Base::set_data(newData);
+			if constexpr (concepts::DynamicContainer<Base>)
+				Base::set_capacity(newCapacity);
 		}
 
 #pragma endregion
@@ -71,8 +65,7 @@ namespace DSA {
 
 		using Base::Base;
 
-		~Stack()
-			noexcept
+		~Stack() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
 			helper_destroy();
@@ -212,18 +205,11 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity()
+		void double_capacity(INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
 		{
-			double_capacity(Base::get_capacity());
-		}
-
-		void double_capacity(INDEX oldCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			grow(oldCapacity << 1, oldCapacity);
+			grow(oldCapacity << 1);
 		}
 
 		constexpr void empty() noexcept {
@@ -234,19 +220,12 @@ namespace DSA {
 
 		void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
+			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize<true>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			reserve(newCapacity, Base::get_capacity());
-		}
-
-		void reserve(INDEX newCapacity, INDEX oldCapacity)
+		void reserve(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
@@ -254,14 +233,7 @@ namespace DSA {
 				grow(newCapacity, oldCapacity);
 		}
 
-		void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
-		{
-			resize(newCapacity, Base::get_capacity());
-		}
-
-		void resize(INDEX newCapacity, INDEX oldCapacity)
+		void resize(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{

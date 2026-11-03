@@ -41,18 +41,7 @@ namespace DSA {
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit()
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return find_first_bit_and_capacity(Base::get_capacity());
-		}
-
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_and_capacity(INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
+		constexpr BitIndex find_first_bit(INDEX capacity = Base::default_capacity()) const noexcept {
 			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
 
 			int bitOffset;
@@ -104,18 +93,7 @@ namespace DSA {
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit(BitIndex bitIndex)
-			const noexcept
-			requires concepts::Container<Base>
-		{
-			return find_first_bit_and_capacity(bitIndex, Base::get_capacity());
-		}
-
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_and_capacity(BitIndex bitIndex, INDEX capacity)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
+		constexpr BitIndex find_first_bit_after(BitIndex bitIndex, INDEX capacity = Base::default_capacity()) const noexcept {
 			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
 
 			int bitOffset;
@@ -187,48 +165,16 @@ namespace DSA {
 #pragma region Iteration
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> begin()
-			noexcept
-			requires concepts::Container<Base>
-		{
-			return begin<ONES>(Base::get_capacity());
-		}
-
-		template <bool ONES>
-		BitsetIterator<INDEX, ONES> begin(INDEX capacity)
-			noexcept
-			requires concepts::Storage<Base>
-		{
+		BitsetIterator<INDEX, ONES> begin(INDEX capacity = Base::default_capacity()) noexcept {
 			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, false);
 		}
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> end()
-			noexcept
-			requires concepts::Container<Base>
-		{
-			return end<ONES>(Base::get_capacity());
-		}
-
-		template <bool ONES>
-		BitsetIterator<INDEX, ONES> end(INDEX capacity)
-			noexcept
-			requires concepts::Storage<Base>
-		{
+		BitsetIterator<INDEX, ONES> end(INDEX capacity = Base::default_capacity()) noexcept {
 			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, true);
 		}
 
-		auto ones()
-			noexcept
-			requires concepts::Container<Base>
-		{
-			return ones(Base::get_capacity());
-		}
-
-		auto ones(INDEX capacity)
-			noexcept
-			requires concepts::Storage<Base>
-		{
+		auto ones(INDEX capacity = Base::default_capacity()) noexcept {
 			struct Proxy {
 				Bitset* self;
 
@@ -238,17 +184,7 @@ namespace DSA {
 			return Proxy{ this };
 		}
 
-		auto zeros()
-			noexcept
-			requires concepts::Container<Base>
-		{
-			return zeros(Base::get_capacity());
-		}
-
-		auto zeros(INDEX capacity)
-			noexcept
-			requires concepts::Storage<Base>
-		{
+		auto zeros(INDEX capacity = Base::default_capacity()) noexcept {
 			struct Proxy {
 				Bitset* self;
 

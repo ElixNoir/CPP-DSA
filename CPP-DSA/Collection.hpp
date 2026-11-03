@@ -76,15 +76,7 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool can_add(INDEX count = 1)
-			const
-			noexcept
-			requires concepts::Container<Base>
-		{
-			return count <= Base::get_capacity() - size;
-		}
-
-		[[nodiscard]] constexpr bool can_add(INDEX capacity, INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_add(INDEX count = 1, INDEX capacity = Base::default_capacity()) const noexcept {
 			return count <= capacity - size;
 		}
 
@@ -96,15 +88,7 @@ namespace DSA {
 			return size == 0;
 		}
 
-		[[nodiscard]] constexpr bool is_full()
-			const
-			noexcept
-			requires concepts::Container<Base>
-		{
-			return size == Base::get_capacity();
-		}
-
-		[[nodiscard]] constexpr bool is_full(INDEX capacity) const noexcept {
+		[[nodiscard]] constexpr bool is_full(INDEX capacity = Base::default_capacity()) const noexcept {
 			return size == capacity;
 		}
 
@@ -112,10 +96,7 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		constexpr void empty()
-			noexcept
-			requires std::is_trivial_v<T>
-		{
+		constexpr void empty() noexcept {
 			size = 0;
 		}
 

@@ -1,54 +1,50 @@
 #pragma once
 
-#include "IncrementalContainer.hpp"
+#include "Collection.hpp"
 
 namespace DSA {
 
-	template <typename ContainerConfiguration, typename T>
+	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class BumpAllocator : IncrementalContainer<ContainerConfiguration, T> {
+	class BumpAllocator : Collection<ContainerConfiguration, T> {
 	public:
 
-		using Base = IncrementalContainer<ContainerConfiguration, T>;
+		using Base = Collection<ContainerConfiguration, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
-	protected:
-
-		using Base::data;
-		using Base::size;
-
-	public:
-
 #pragma region Constructors & Destructors
 
-		/*~BumpAllocator() {
-			// lookup destructor by class (also vtables??)
-		}*/
+		~BumpAllocator() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<T>) {
+				T* const data = Base::get_data();
+				destroy_range_forward(data, data + Base::get_size());
+			}
+		}
 
 #pragma endregion
 
 #pragma region Methods
 
-#pragma region BumpAllocator
+#pragma region Allocate
 
-		[[nodiscard]] constexpr bool can_allocate() const noexcept {
-			return size <= Base::get_capacity();
+		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1, INDEX capacity = Base::default_capacity()) const noexcept {
+			return Base::can_add(capacity, count);
 		}
 
-		[[nodiscard]] INDEX allocate() {
-			return size++;
+		[[nodiscard]] constexpr INDEX allocate() noexcept {
+			return ++Base::size;
 		}
 
-		[[nodiscard]] constexpr bool can_allocate(size_t count) const noexcept {
-			return size * count <= Base::get_capacity();
-		}
-
-		[[nodiscard]] INDEX allocate(size_t count) {
-			INDEX index = size;
-			size += count;
+		[[nodiscard]] constexpr INDEX allocate(size_t count) noexcept {
+			INDEX index = Base::get_size();
+			Base::size += count;
 			return index;
 		}
+
+#pragma endregion
+
+#pragma region Memory Management
 
 #pragma endregion
 
