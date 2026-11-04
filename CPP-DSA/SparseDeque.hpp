@@ -57,7 +57,7 @@ namespace DSA {
 				return;
 			}
 
-			const INDEX skipped = distance(front, static_cast<INDEX>(next), capacity);
+			const INDEX skipped = distance(front, next, capacity);
 
 			front = static_cast<INDEX>(next);
 			span -= skipped;

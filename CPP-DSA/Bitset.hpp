@@ -42,10 +42,7 @@ namespace DSA {
 
 		template <bool FRONT, bool TRAILING, bool ONES>
 		constexpr BitIndex find_first_bit(INDEX capacity = Base::default_capacity()) const noexcept {
-			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
-
 			int bitOffset;
-
 			if constexpr (FRONT) {
 				BitIndex bitIndex = 0;
 				while (bitIndex < capacity) {

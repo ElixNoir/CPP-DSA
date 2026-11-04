@@ -22,7 +22,7 @@ protected:
 private:
 
     size_t physical_size = 0; // Current size backed by physical RAM
-    const size_t maximum_capacity; // Upper bound of virtual reservation
+    const size_t maximum_index; // Upper bound of virtual reservation
 
 #pragma region Methods
 
@@ -45,11 +45,11 @@ private:
         std::byte* address;
 #if PLATFORM_WINDOWS
         // Reserve virtual address space; no physical memory or page file is used.
-        address = VirtualAlloc(NULL, maximum_capacity, MEM_RESERVE, PAGE_NOACCESS);
+        address = VirtualAlloc(NULL, maximum_index, MEM_RESERVE, PAGE_NOACCESS);
         return address;
 #elif PLATFORM_POSIX
         // Reserve via PROT_NONE mapping.
-        address = mmap(NULL, maximum_capacity, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        address = mmap(NULL, maximum_index, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (address == MAP_FAILED)
             address = NULL;
         return address;
@@ -61,7 +61,7 @@ private:
         // MEM_RELEASE requires size parameter to be 0 to release the entire region
         VirtualFree(data, 0, MEM_RELEASE);
 #elif PLATFORM_POSIX
-        munmap(data, maximum_capacity);
+        munmap(data, maximum_index);
 #endif
     }
 
@@ -84,12 +84,12 @@ public:
 
     Buffer() = delete;
 
-    Buffer(size_t maximumCapacity) : maximum_capacity(align_to_page(maximumCapacity * sizeof(T), system_page_size())), data(map()) {}
+    Buffer(size_t maximumCapacity) : maximum_index(align_to_page(maximumCapacity * sizeof(T), system_page_size())), data(map()) {}
 
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
-    Buffer(Buffer&& other) noexcept : data(other.data), physical_size(other.physical_size), maximum_capacity(other.maximum_capacity) {
+    Buffer(Buffer&& other) noexcept : data(other.data), physical_size(other.physical_size), maximum_index(other.maximum_index) {
         other.data = nullptr;
     }
 
@@ -153,7 +153,7 @@ public:
         size_t alignedNewSize = align_to_page(newSize * sizeof(T), system_page_size());
 
         // Cannot grow beyond what we initially claimed virtual space for
-        if (alignedNewSize > maximum_capacity) return false;
+        if (alignedNewSize > maximum_index) return false;
         if (alignedNewSize <= physical_size) return true; // Already large enough
 
         // Calculate how many more bytes need to be committed

@@ -31,7 +31,42 @@ namespace DSA {
 		constexpr INDEX left(INDEX i) const noexcept { return (i << 1) + 1; }
 		constexpr INDEX right(INDEX i) const noexcept { return (i << 1) + 2; }
 
-		// need the memory helpers lol
+		void helper_destroy() noexcept
+			requires (!std::is_trivially_destructible_v<T>)
+		{
+			destroy_range_backward(Base::get_data(), Base::get_data() + Base::get_size());
+		}
+
+		template <bool GROW>
+		void helper_resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			using ALLOCATOR = Base::ALLOCATOR;
+
+			T* const oldData = Base::get_data();
+			T* const newData = ALLOCATOR::allocate(newCapacity);
+
+			try {
+				if constexpr (GROW)
+					reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
+				else {
+					reconstruct_range_backward(newData, newData + newCapacity, oldData);
+					destroy_range_backward(oldData + newCapacity, oldData + Base::get_size());
+					Base::set_size(newCapacity);
+				}
+			}
+			catch (...) {
+				ALLOCATOR::deallocate(newData);
+				throw;
+			}
+
+			ALLOCATOR::deallocate(oldData);
+
+			Base::set_data(newData);
+			if constexpr (concepts::DynamicContainer<Base>)
+				Base::set_capacity(newCapacity);
+		}
 
 #pragma endregion
 
@@ -41,29 +76,60 @@ namespace DSA {
 
 		using Base::Base;
 
+		~Heap() noexcept = default;
+
+		~Heap() noexcept
+			requires (!std::is_trivially_destructible_v<T>)
+		{
+			destroy();
+		}
+
+		void destroy() noexcept
+			requires (!std::is_trivially_destructible_v<T>)
+		{
+			helper_destroy();
+		}
+
 #pragma endregion
 
 #pragma region Methods
 
 #pragma region Add & Remove
 
-		constexpr void add(const T& value) noexcept {
-			INDEX index = Base::get_size();
+		constexpr void add(const T& value)
+			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		{
+			const INDEX index = Base::get_size();
 			Base::get(index) = value;
 
 			++Base::size;
 			bubble_up(index);
 		}
 
-		constexpr void add(T&& value) noexcept {
-			INDEX index = Base::get_size();
+		constexpr void add(T&& value)
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
+			const INDEX index = Base::get_size();
 			Base::get(index) = std::move(value);
 
 			++Base::size;
 			bubble_up(index);
 		}
 
-		constexpr void remove(INDEX index) noexcept {
+		template <typename... Arguments>
+		constexpr void emplace(Arguments&&... arguments)
+			noexcept (std::is_nothrow_constructible_v<T, Arguments...>)
+		{
+			const INDEX index = Base::get_size();
+			construct_at<T>(Base::get_data() + index, forward<Arguments>(arguments)...);
+
+			++Base::size;
+			bubble_up(index);
+		}
+
+		constexpr void remove(INDEX index)
+			noexcept (concepts::is_nothrow_swappable_v<T>)
+		{
 			const INDEX size = Base::get_size();
 
 			destroy_at(Base::get_data() + index);
@@ -85,19 +151,25 @@ namespace DSA {
 
 #pragma region Bubble Up, Extract, Heapify, & Insert
 
-		constexpr void bubble_up(INDEX index) noexcept {
+		constexpr void bubble_up(INDEX index)
+			noexcept (concepts::is_nothrow_swappable_v<T>)
+		{
 			if constexpr (HEAP_TYPE == MAX_HEAP) {
-				while (index != 0 && Base::get(parent(index)) < Base::get(index)) {
-					const INDEX newIndex = parent(index);
-					swap(Base::get(index), Base::get(newIndex));
-					index = newIndex;
+				while (index != 0) {
+					const INDEX parentIndex = parent(index);
+					if (Base::get(parentIndex) < Base::get(index))
+						return;
+					swap(Base::get(index), Base::get(parentIndex));
+					index = parentIndex;
 				}
 			}
 			else {
-				while (index != 0 && Base::get(parent(index)) > Base::get(index)) {
-					const INDEX newIndex = parent(index);
-					swap(Base::get(index), Base::get(newIndex));
-					index = newIndex;
+				while (index != 0) {
+					const INDEX parentIndex = parent(index);
+					if (Base::get(parentIndex) < Base::get(index))
+						return;
+					swap(Base::get(index), Base::get(parentIndex));
+					index = parentIndex;
 				}
 			}
 		}
@@ -106,7 +178,9 @@ namespace DSA {
 			return !Base::is_empty();
 		}
 
-		constexpr T extract() noexcept {
+		constexpr T extract()
+			noexcept (concepts::is_nothrow_swappable_v<T>)
+		{
 			const INDEX size = Base::get_size();
 
 			T root = std::move(Base::get(0));
@@ -125,7 +199,9 @@ namespace DSA {
 			return root;
 		}
 
-		constexpr void heapify(INDEX i) noexcept {
+		constexpr void heapify(INDEX i)
+			noexcept (concepts::is_nothrow_swappable_v<T>)
+		{
 			const INDEX size = Base::get_size();
 
 			INDEX l = left(i);
@@ -155,18 +231,67 @@ namespace DSA {
 			return Base::can_add(count);
 		}
 
-		constexpr void insert(const T& value) noexcept {
+		constexpr void insert(const T& value)
+			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		{
 			add(value);
 		}
 
-		constexpr void insert(T&& value) noexcept {
+		constexpr void insert(T&& value)
+			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		{
 			add(std::move(value));
 		}
 
 #pragma endregion
 
 #pragma region Memory Management
-		
+
+		void double_capacity(INDEX oldCapacity = Base::default_capacity())
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicContainer<Base>
+		{
+			grow(oldCapacity << 1);
+		}
+
+		constexpr void empty() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
+			Base::set_size(0);
+		}
+
+		void grow(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			helper_resize<true>(newCapacity);
+		}
+
+		void reserve(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
+				grow(newCapacity, oldCapacity);
+		}
+
+		void resize(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			if (newCapacity > oldCapacity)
+				grow(newCapacity, oldCapacity);
+			else
+				shrink(newCapacity);
+		}
+
+		void shrink(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			helper_resize<false>(newCapacity);
+		}
+
 #pragma endregion
 
 #pragma region Operators
@@ -186,6 +311,26 @@ namespace DSA {
 
 			return ostream;
 		}
+
+#pragma endregion
+
+#pragma region Iteration
+
+		/*StackIterator<T> begin() noexcept {
+			return StackIterator<T>(Base::get_data());
+		}
+
+		StackIterator<const T> begin() const noexcept {
+			return StackIterator<const T>(Base::get_data());
+		}
+
+		StackIterator<T> end() noexcept {
+			return StackIterator<T>(Base::get_data() + Base::get_size());
+		}
+
+		StackIterator<const T> end() const noexcept {
+			return StackIterator<const T>(Base::get_data() + Base::get_size());
+		}*/
 
 #pragma endregion
 

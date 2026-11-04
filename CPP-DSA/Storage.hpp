@@ -28,7 +28,7 @@ namespace DSA {
 			typename T::INDEX;
 			//typename T::STRUCTURE;
 
-			{ T::maximum_capacity } -> std::convertible_to<std::size_t>;
+			{ T::maximum_index } -> std::convertible_to<std::size_t>;
 
 		};
 
@@ -63,7 +63,7 @@ namespace DSA {
 
 		using INDEX = _INDEX;
 
-		constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
+		constexpr static INDEX maximum_index = std::numeric_limits<INDEX>::max();
 
 		template <typename _T>
 			requires concepts::Allocator<ALLOCATOR_TEMPLATE<_T, INDEX>>
@@ -75,7 +75,7 @@ namespace DSA {
 
 			using ALLOCATOR = ALLOCATOR_TEMPLATE<T, INDEX>;
 
-			constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
+			constexpr static INDEX maximum_index = std::numeric_limits<INDEX>::max();
 
 		protected:
 

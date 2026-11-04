@@ -39,9 +39,8 @@ namespace DSA {
 				if constexpr (GROW)
 					reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
 				else {
-					const INDEX size = Base::get_size();
 					reconstruct_range_backward(newData, newData + newCapacity, oldData);
-					destroy_range_backward(oldData + newCapacity, oldData + size);
+					destroy_range_backward(oldData + newCapacity, oldData + Base::get_size());
 					Base::set_size(newCapacity);
 				}
 			}
@@ -68,10 +67,16 @@ namespace DSA {
 		~Stack() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
-			helper_destroy();
+			destroy();
 		}
 
 		~Stack() noexcept = default;
+
+		void destroy() noexcept
+			requires (!std::is_trivially_destructible_v<T>)
+		{
+			helper_destroy();
+		}
 
 #pragma endregion
 
@@ -111,7 +116,7 @@ namespace DSA {
 
 		template <typename... Arguments>
 		constexpr void emplace(Arguments&&... arguments)
-			noexcept(std::is_nothrow_constructible_v<T, Arguments...>)
+			noexcept (std::is_nothrow_constructible_v<T, Arguments...>)
 		{
 			construct_at<T>(Base::get_data() + Base::get_size(), forward<Arguments>(arguments)...);
 			++Base::size;
@@ -213,8 +218,7 @@ namespace DSA {
 		}
 
 		constexpr void empty() noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
+			destroy();
 			Base::set_size(0);
 		}
 

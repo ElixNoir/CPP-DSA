@@ -52,7 +52,7 @@ namespace DSA {
 
 		using INDEX = _INDEX;
 
-		constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
+		constexpr static INDEX maximum_index = std::numeric_limits<INDEX>::max();
 
 		template <typename _T>
 			requires concepts::Allocator<ALLOCATOR_TEMPLATE<_T, INDEX>>
@@ -65,7 +65,7 @@ namespace DSA {
 
 			using ALLOCATOR = ALLOCATOR_TEMPLATE<T, INDEX>;
 
-			constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
+			constexpr static INDEX maximum_index = std::numeric_limits<INDEX>::max();
 
 		protected:
 
@@ -178,7 +178,7 @@ namespace DSA {
 
 		using INDEX = _INDEX;
 
-		constexpr static INDEX maximum_capacity = CAPACITY;
+		constexpr static INDEX maximum_index = std::numeric_limits<INDEX>::max();
 
 		template <typename _T>
 		class alignas(_T) STRUCTURE {
@@ -187,7 +187,7 @@ namespace DSA {
 			using INDEX = _INDEX;
 			using T = _T;
 
-			constexpr static INDEX maximum_capacity = CAPACITY;
+			constexpr static INDEX maximum_index = std::numeric_limits<INDEX>::max();
 
 		protected:
 

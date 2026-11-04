@@ -29,7 +29,7 @@ namespace DSA {
 		using KEY = T::KEY;
 		using VALUE = T::VALUE;
 
-		constexpr static INDEX invalid_index = ContainerConfiguration::maximum_capacity;
+		constexpr static INDEX invalid_index = ContainerConfiguration::maximum_index;
 
 	protected:
 

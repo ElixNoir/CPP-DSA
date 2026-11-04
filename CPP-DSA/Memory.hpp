@@ -6,6 +6,20 @@
 #include <concepts>
 #include <memory>
 
+namespace DSA {
+
+	namespace concepts {
+
+		template <typename T>
+		concept is_nothrow_copyable_v = std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_assignable_v<T>;
+
+		template <typename T>
+		concept is_nothrow_moveable_v = std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_assignable_v<T>;
+
+	}
+
+}
+
 namespace Algorithms {
 
 	namespace Memory {

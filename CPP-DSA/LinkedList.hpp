@@ -1,17 +1,10 @@
 #pragma once
 
 #include "Collection.hpp"
+#include "LinkedListIterator.hpp"
 #include "Math.hpp"
 
 namespace DSA {
-
-	template <typename T, std::unsigned_integral INDEX = size_t>
-	struct LinkedListNode {
-
-		INDEX next;
-		T value;
-
-	};
 
 	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
@@ -22,9 +15,22 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		using VALUE = typename T::T;
+
 	protected:
 
+		INDEX free_head = Base::maximum_index;
+
 #pragma region Methods
+
+		constexpr INDEX helper_allocate() noexcept {
+			INDEX index = free_head;
+			if (index != Base::maximum_index)
+				free_head = Base::get(index).next;
+			else
+				index = Base::size++;
+			return index;
+		}
 
 		void helper_destroy() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
@@ -98,6 +104,21 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
+		LinkedList() noexcept
+			requires (!concepts::DynamicStorage<Base>)
+		{
+			Base::get(0).next = Base::maximum_index;
+		};
+
+		// `initialCapacity` must be at least 1, since the head node is always allocated.
+		LinkedList(INDEX initialCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		: Base(initialCapacity)
+		{
+			Base::get(0).next = Base::maximum_index;
+		};
+
 		~LinkedList() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
@@ -115,9 +136,75 @@ namespace DSA {
 
 #pragma region Methods
 
+#pragma region Getters
+
+		constexpr INDEX get_free_head_index() const noexcept {
+			return free_head;
+		}
+
+		constexpr INDEX get_head_index() const noexcept {
+			return 0;
+		}
+
+#pragma endregion
+
 #pragma region Add & Remove
 
-		//constexpr void add(const T& value) noexcept {}
+		constexpr INDEX add(const VALUE& value)
+			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
+		{
+			INDEX index = helper_allocate();
+			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
+			T& head = Base::get(0);
+			head.value = value;
+			head.next = index;
+			return index;
+		}
+
+		constexpr INDEX add(VALUE&& value)
+			noexcept (concepts::is_nothrow_moveable_v<T>)
+		{
+			INDEX index = helper_allocate();
+			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
+			T& head = Base::get(0);
+			head.value = std::move(value);
+			head.next = index;
+			return index;
+		}
+
+		/*
+		template <typename... Arguments>
+		constexpr INDEX emplace(Arguments&&... arguments)
+			noexcept(std::is_nothrow_constructible_v<T, Arguments...>)
+		{
+			INDEX index = helper_allocate();
+			reconstruct_at(Base::get_data() + index, std::move(Base::get(0)));
+			construct_at(Base::get_data(), std::forward<Arguments>(arguments)...);
+			return index;
+		}
+		*/
+
+		constexpr void remove(const INDEX index) noexcept {
+			destroy_at(&Base::get(index).value);
+			Base::get(index).next = free_head;
+			free_head = index;
+		}
+
+#pragma endregion
+
+#pragma region Prepend
+
+		constexpr INDEX prepend(const VALUE& value)
+			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
+		{
+			return add(value);
+		}
+
+		constexpr INDEX prepend(VALUE&& value)
+			noexcept (concepts::is_nothrow_moveable_v<T>)
+		{
+			return add(std::move(value));
+		}
 
 #pragma endregion
 
@@ -188,6 +275,20 @@ namespace DSA {
 			requires concepts::DynamicContainer<Base>
 		{
 
+		}
+		*/
+
+#pragma endregion
+
+#pragma region Iteration
+		
+		/*
+		LinkedListIterator<T> begin() {
+			return LinkedListIterator<T>(Base::get_data(), 0, Base::get_size());
+		}
+
+		LinkedListIterator<const T> end() {
+			return LinkedListIterator<const T>(Base::get_data(), 0, Base::get_size());
 		}
 		*/
 

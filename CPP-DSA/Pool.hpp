@@ -17,7 +17,7 @@ namespace DSA {
 		using BitsetConfiguration = std::conditional_t<
 			concepts::DynamicStorageConfiguration<ContainerConfiguration>,
 			HeapStorageConfiguration<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
-			StaticContainerConfiguration<ContainerConfiguration::maximum_capacity>
+			StaticContainerConfiguration<ContainerConfiguration::maximum_index>
 		>;
 
 	protected:

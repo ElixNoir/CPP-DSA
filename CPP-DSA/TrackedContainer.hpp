@@ -21,7 +21,7 @@ namespace DSA {
 			std::conditional_t<
 				concepts::DynamicStorageConfiguration<ContainerConfiguration>,
 				HeapStorageConfiguration<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
-				StaticContainerConfiguration<((Base::maximum_capacity + BitCount - 1) >> BitShift)>
+				StaticContainerConfiguration<((Base::maximum_index + BitCount - 1) >> BitShift)>
 			>
 		>;
 
@@ -53,7 +53,6 @@ namespace DSA {
 
 			const INDEX size = Base::get_size();
 
-			const INDEX newBitsetCapacity = get_bitset_capacity(newCapacity);
 			const INDEX oldBitsetCapacity = get_bitset_capacity(oldCapacity);
 
 			T* const oldData = Base::get_data();
@@ -100,9 +99,9 @@ namespace DSA {
 			Base::set_capacity(newCapacity);
 
 			if constexpr (GROW)
-				tracked.grow(newBitsetCapacity, oldBitsetCapacity);
+				tracked.grow(get_bitset_capacity(newCapacity), oldBitsetCapacity);
 			else
-				tracked.shrink(newBitsetCapacity);
+				tracked.shrink(get_bitset_capacity(newCapacity));
 		}
 
 #pragma endregion
@@ -148,7 +147,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX capacity = Base::default_capacity()) const noexcept {
-			return tracked.find_first_bit<true, true, true>(0, capacity);
+			return tracked.find_first_bit<true, true, true>(capacity);
 		}
 
 		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX start, INDEX capacity = Base::default_capacity()) const noexcept {
@@ -156,7 +155,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX capacity = Base::default_capacity()) const noexcept {
-			return tracked.find_first_bit<false, true, true>(0, capacity);
+			return tracked.find_first_bit<false, true, true>(capacity);
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX start, INDEX capacity = Base::default_capacity()) const noexcept {
