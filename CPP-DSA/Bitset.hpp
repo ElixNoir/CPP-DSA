@@ -5,7 +5,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration>
+	template <concepts::StoragePolicy ContainerConfiguration>
 	class Bitset : public ContainerConfiguration::template STRUCTURE<Bitmask<>> {
 	public:
 

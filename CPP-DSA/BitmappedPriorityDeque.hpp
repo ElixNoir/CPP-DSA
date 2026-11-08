@@ -6,7 +6,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename Deque_ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename Deque_ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class BitmappedPriorityDeque : public TrackedContainer<ContainerConfiguration, Deque<Deque_ContainerConfiguration, T>> {
 	public:

@@ -141,6 +141,61 @@ namespace Algorithms {
 		}
 
 		template <typename T>
+		constexpr static void move_assign_at(T* destination, T&& source) noexcept(
+			std::is_nothrow_move_constructible_v<T>
+			|| std::is_trivially_copyable_v<T>
+		) {
+			if constexpr (std::is_trivially_copyable_v<T>)
+				std::memcpy(destination, &source, sizeof(T));
+			else
+				*destination = std::move(source);
+		}
+
+		template <bool DESTINATION_LEFT_INCLUSIVE = true, bool SOURCE_LEFT_INCLUSIVE = true, typename T>
+		constexpr static void move_assign_range_backward(T* begin, T* end, T* source)
+			noexcept(std::is_nothrow_move_constructible_v<T>
+				|| std::is_trivially_copyable_v<T>)
+		{
+			if constexpr (std::is_trivially_copyable_v<T>)
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+			else {
+				T* const e = end + !DESTINATION_LEFT_INCLUSIVE;
+				try {
+					while (begin != end)
+						move_assign_at(
+							DESTINATION_LEFT_INCLUSIVE ? --end : end--,
+							std::move(*(SOURCE_LEFT_INCLUSIVE ? --source : source--)));
+				}
+				catch (...) {
+					destroy_range_backward<DESTINATION_LEFT_INCLUSIVE>(end, e);
+					throw;
+				}
+			}
+		}
+
+		template <bool DESTINATION_LEFT_INCLUSIVE = true, bool SOURCE_LEFT_INCLUSIVE = true, typename T>
+		constexpr static void move_assign_range_forward(T* begin, T* end, T* source)
+			noexcept(std::is_nothrow_move_constructible_v<T>
+				|| std::is_trivially_copyable_v<T>)
+		{
+			if constexpr (std::is_trivially_copyable_v<T>)
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+			else {
+				T* const b = begin + !DESTINATION_LEFT_INCLUSIVE;
+				try {
+					while (begin != end)
+						move_assign_at(
+							DESTINATION_LEFT_INCLUSIVE ? begin++ : ++begin,
+							std::move(*(SOURCE_LEFT_INCLUSIVE ? source++ : ++source)));
+				}
+				catch (...) {
+					destroy_range_forward<DESTINATION_LEFT_INCLUSIVE>(b, begin);
+					throw;
+				}
+			}
+		}
+
+		template <typename T>
 		constexpr static void move_construct_at(T* destination, T&& source) noexcept(
 			std::is_nothrow_move_constructible_v<T>
 			|| std::is_trivially_copyable_v<T>

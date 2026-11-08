@@ -1,6 +1,7 @@
 #pragma once
 
 #include "binary_search.hpp"
+#include "compare.hpp"
 #include "rotate.hpp"
 
 namespace Algorithms {

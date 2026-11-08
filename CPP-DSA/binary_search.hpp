@@ -7,9 +7,11 @@ namespace Algorithms {
   namespace Search {
 
     enum BinarySearchType {
+
       DEFAULT,
       LEFT,
       RIGHT
+
     };
 
     template <BinarySearchType SEARCH_TYPE = DEFAULT, DSA::concepts::Comparable T>

@@ -4,7 +4,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class GapBuffer : public ContainerConfiguration::template STRUCTURE<T> {
 	public:

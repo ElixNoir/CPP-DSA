@@ -14,10 +14,10 @@ namespace DSA {
 
 	};
 
-	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
 	using AVLTreeNodeContainer = Collection<ContainerConfiguration, AVLTreeNode<KeyValuePair, ContainerConfiguration::template STRUCTURE<KeyValuePair>::INDEX>>;
 
-	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
 		requires std::is_nothrow_destructible_v<KeyValuePair>
 	class AVLTree : public AVLTreeNodeContainer<ContainerConfiguration, KeyValuePair> {
 	public:

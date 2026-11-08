@@ -5,7 +5,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class TrackedContainer : public Collection<ContainerConfiguration, T> {
 	public:
@@ -19,8 +19,8 @@ namespace DSA {
 
 		using TRACKED = Bitset<
 			std::conditional_t<
-				concepts::DynamicStorageConfiguration<ContainerConfiguration>,
-				HeapStorageConfiguration<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
+				concepts::DynamicStoragePolicy<ContainerConfiguration>,
+				HeapStoragePolicy<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
 				StaticContainerConfiguration<((Base::maximum_index + BitCount - 1) >> BitShift)>
 			>
 		>;

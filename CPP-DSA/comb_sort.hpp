@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Comparable.hpp"
+#include "compare.hpp"
 #include "swap.hpp"
 
 namespace Algorithms {
@@ -8,12 +8,11 @@ namespace Algorithms {
 	namespace Sorting {
 
 		template <bool ASCENDING = true, DSA::concepts::Comparable T>
-		constexpr static void comb_sort(T* const begin, T* end)
-			noexcept(noexcept(swap(
-				std::declval<T&>(),
-				std::declval<T&>())))
+			requires std::is_swappable_v<T>
+		constexpr static void comb_sort(T* const begin, T* const end)
+			noexcept (std::is_nothrow_swappable_v<T>)
 		{
-			size_t gap = (end - begin);
+			size_t gap = (end - begin) + 1;
 			bool swapped = true;
 			while ((gap > 1) | swapped) {
 				gap /= 1.3;
@@ -21,39 +20,13 @@ namespace Algorithms {
 					gap = 1;
 				swapped = false;
 				for (T* cursor = begin; cursor < end - gap; cursor++) {
-					if constexpr (ASCENDING) {
-						if (*cursor > *(cursor + gap)) {
-							swap(*cursor, *(cursor + gap));
-							swapped = true;
-						}
-					}
-					else {
-						if (*cursor < *(cursor + gap)) {
-							swap(*cursor, *(cursor + gap));
-							swapped = true;
-						}
-					}
-				}
-			}
-		}
-
-		/*template <DSA::concepts::Comparable T, std::unsigned_integral Index = size_t>
-		constexpr static void comb_sort(T* data, Index length) {
-			Index gap = length;
-			bool swapped = true;
-			while ((gap > 1) | swapped) {
-				gap /= 1.3;
-				if (gap == 0)
-					gap = 1;
-				swapped = false;
-				for (Index index = 0; index < length - gap; index++) {
-					if (data[index] > data[index + gap]) {
-						swap(data[index], data[index + gap]);
+					if (compare<ASCENDING>(*cursor, *(cursor + gap))) {
+						swap(*cursor, *(cursor + gap));
 						swapped = true;
 					}
 				}
 			}
-		}*/
+		}
 
 	}
 

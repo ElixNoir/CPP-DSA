@@ -14,10 +14,10 @@ namespace DSA {
 
 	};
 
-	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
 	using BinarySearchTreeNodeContainer = Collection<ContainerConfiguration, BinarySearchTreeNode<KeyValuePair, ContainerConfiguration::INDEX>>;
 
-	template <concepts::StorageConfiguration ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
 		requires std::is_nothrow_destructible_v<KeyValuePair>
 	class BinarySearchTree : public BinarySearchTreeNodeContainer<ContainerConfiguration, KeyValuePair> {
 	public:

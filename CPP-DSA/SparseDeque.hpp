@@ -5,7 +5,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class SparseDeque : public TrackedContainer<ContainerConfiguration, T> {
 	public:

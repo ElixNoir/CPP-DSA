@@ -5,7 +5,7 @@
 
 namespace Algorithms {
 
-	namespace Math {
+	namespace Aggregation {
 
 		const static uint64_t Factorials[] = {
 			1, 1, 2, 6, 24, 120, 720, 5040, 40320,
@@ -14,28 +14,28 @@ namespace Algorithms {
 			20922789888000, 355687428096000, 6402373705728000
 		};
 
-		template <typename T>
+		template <DSA::concepts::Comparable T>
 		constexpr static T& maximum(T& a, T& b)
 			noexcept(noexcept(a > b))
 		{
 			return a > b ? a : b;
 		}
 
-		template <typename T>
+		template <DSA::concepts::Comparable T>
 		constexpr static const T& maximum(const T& a, const T& b)
 			noexcept(noexcept(a > b))
 		{
 			return a > b ? a : b;
 		}
 
-		template <typename T>
+		template <DSA::concepts::Comparable T>
 		constexpr static T& minimum(T& a, T& b)
 			noexcept(noexcept(a < b))
 		{
 			return a < b ? a : b;
 		}
 
-		template <typename T>
+		template <DSA::concepts::Comparable T>
 		constexpr static const T& minimum(const T& a, const T& b)
 			noexcept(noexcept(a < b))
 		{

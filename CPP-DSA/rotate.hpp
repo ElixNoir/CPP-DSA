@@ -5,7 +5,10 @@
 namespace Algorithms {
 
   template <typename T>
-  constexpr void rotate(T* first, size_t left, size_t right) noexcept {
+    requires std::is_swappable_v<T>
+  constexpr void rotate(T* first, const size_t left, const size_t right)
+      noexcept (std::is_nothrow_swappable<T>)
+  {
     while (left && right) {
       if (left <= right) {
         const size_t other = first + left;

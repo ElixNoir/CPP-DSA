@@ -1,49 +1,31 @@
 #pragma once
 
-#include "Comparable.hpp"
+#include "compare.hpp"
 #include "swap.hpp"
 
 namespace Algorithms {
 
 	namespace Sorting {
 
-		template <DSA::concepts::Comparable T>
+		template <bool ASCENDING = true, DSA::concepts::Comparable T>
+			requires std::is_swappable_v<T>
 		constexpr static void bubble_sort(T* const begin, T* end)
-			noexcept(noexcept(swap(
-				std::declval<T&>(),
-				std::declval<T&>())))
+			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			bool swapped;
 			do {
 				swapped = false;
 				T* j = begin + 1;
-				for (T* cursor = begin; cursor < end; cursor++) {
-					if (*cursor > *j) {
+				for (T* cursor = begin; cursor < end; ++cursor) {
+					if (compare<ASCENDING>(*j, *cursor)) {
 						swap(*cursor, *j);
 						swapped = true;
 					}
-					j++;
+					++j;
 				}
-				end--;
+				--end;
 			} while (swapped);
 		}
-
-		/*template <DSA::concepts::Comparable T, std::unsigned_integral Index = size_t>
-		constexpr static void bubble_sort(T* data, Index length) {
-			bool swapped;
-			do {
-				swapped = false;
-				Index jndex = 1;
-				for (Index index = 0; index < length; index++) {
-					if (data[index] > data[jndex]) {
-						swap(data[index], data[jndex]);
-						swapped = true;
-					}
-					jndex++;
-				}
-				length--;
-			} while (swapped);
-		}*/
 
 	}
 

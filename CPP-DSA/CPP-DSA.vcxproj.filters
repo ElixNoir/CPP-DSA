@@ -16,115 +16,49 @@
     <Filter Include="Header Files\Algorithms">
       <UniqueIdentifier>{2201784d-4b22-4700-b61e-e164b17c59f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Policies">
+      <UniqueIdentifier>{7700a457-1210-43b8-82fd-38ca04c1390c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Lists">
+      <UniqueIdentifier>{e6829978-4753-43de-93a3-61e64d7fbcea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Trees">
+      <UniqueIdentifier>{c1aa68e5-6133-40a1-9de1-e7c92558e0f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Maps">
+      <UniqueIdentifier>{630adf9e-db66-4d01-9c1c-852eb23208cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\General">
+      <UniqueIdentifier>{6d19755d-80d3-4acc-a287-91dfe15ac8db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Iterators">
+      <UniqueIdentifier>{edb45c0a-2bc7-4e12-8c02-eaf3cdac067f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Concepts">
+      <UniqueIdentifier>{6b86042f-8b9e-497e-9304-e6a8a1493cfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories">
+      <UniqueIdentifier>{aba7611c-1a75-464e-94f5-0b8dabb1fca3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="StandardAllocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Traits.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Container.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DSA.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Stack.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StackIterator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Collection.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Buffer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Alloca.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Benchmark.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Bitmask.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TrackedContainer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BitmappedTrie.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Bitset.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BitsetIterator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Pool.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Hashmap.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Hashes.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GapBuffer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BumpAllocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Deque.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BinarySearchTree.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyValuePair.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BitmappedPriorityDeque.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Test.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AVLTree.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="quad_sort.hpp">
       <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
-    <ClInclude Include="Math.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="Memory.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="Sorting.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="Comparable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="insertion_sort.hpp">
       <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="Hashable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Primitive.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Swappable.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="repeat.hpp">
       <Filter>Header Files\Algorithms</Filter>
@@ -147,21 +81,6 @@
     <ClInclude Include="rank_sort.hpp">
       <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
-    <ClInclude Include="Scheduler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SparseDeque.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Heap.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LinkedList.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Storage.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rotate.hpp">
       <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
@@ -169,37 +88,160 @@
       <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="grail_sort.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="heap_sort.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="radix_sort.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="heap_sort.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="AVLTree.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="BinarySearchTree.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmappedTrie.hpp">
+      <Filter>Header Files\Trees</Filter>
     </ClInclude>
     <ClInclude Include="BloomFilter.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Maps</Filter>
     </ClInclude>
-    <ClInclude Include="SegmentTree.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Bitset.hpp">
+      <Filter>Header Files\Lists</Filter>
     </ClInclude>
-    <ClInclude Include="FenwickTree.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Buffer.hpp">
+      <Filter>Header Files\Lists</Filter>
     </ClInclude>
     <ClInclude Include="DoublyLinkedList.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="Deque.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmappedPriorityDeque.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="FenwickTree.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseDeque.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="Pool.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="Heap.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="TrackedContainer.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="Hashmap.hpp">
+      <Filter>Header Files\Maps</Filter>
+    </ClInclude>
+    <ClInclude Include="SegmentTree.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="Scheduler.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="GapBuffer.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="LinkedList.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitive.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Bitmask.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Stack.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="benchmark.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="Alloca.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="StackIterator.hpp">
+      <Filter>Header Files\Iterators</Filter>
     </ClInclude>
     <ClInclude Include="LinkedListIterator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LinkedListNode.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DoublyLinkedListNode.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Iterators</Filter>
     </ClInclude>
     <ClInclude Include="DoublyLinkedListIterator.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="Comparable.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Swappable.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Hashable.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="BitsetIterator.hpp">
+      <Filter>Header Files\Iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="BumpAllocator.hpp">
+      <Filter>Header Files\Lists</Filter>
+    </ClInclude>
+    <ClInclude Include="StandardAllocator.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyValuePair.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Storage.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Collection.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Container.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="LinkedListNode.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="DoublyLinkedListNode.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocator.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Sorting.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="Statistics.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="Arithmetic.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="Multipliable.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Addable.hpp">
+      <Filter>Header Files\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="Aggregation.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="compare.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="Parameter.hpp">
+      <Filter>Header Files\General</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

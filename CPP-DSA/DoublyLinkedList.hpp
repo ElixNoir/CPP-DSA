@@ -6,7 +6,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class DoublyLinkedList : public Collection<ContainerConfiguration, DoublyLinkedListNode<T, typename ContainerConfiguration::INDEX>> {
 	public:
@@ -195,9 +195,31 @@ namespace DSA {
 		}
 		*/
 
+		constexpr void remove_head() noexcept {
+			T& head = Base::get(0);
+			const INDEX nextIndex = head.next;
+			destroy_at(&head.value);
+			if (nextIndex == Base::maximum_index)
+				return;
+			const INDEX nextNode = Base::get(nextIndex);
+			reconstruct_at(Base::get_data(), std::move(nextNode));
+			Base::get(nextNode.next).previous = 0;
+		}
+
 		constexpr void remove(const INDEX index) noexcept {
-			destroy_at(&Base::get(index).value);
-			Base::get(index).next = free_head;
+			if (index == 0) {
+				remove_head();
+				return;
+			}
+
+			T& node = Base::get(index);
+			destroy_at(&node.value);
+			Base::get(node.previous).next = node.next;
+			if (index == tail_index) {
+				Base::get(node.next).previous = node.previous;
+				tail_index = node.previous;
+			}
+			node.next = free_head;
 			free_head = index;
 		}
 

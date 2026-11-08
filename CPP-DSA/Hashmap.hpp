@@ -49,7 +49,7 @@ namespace Algorithms {
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = Algorithms::Hashing::default_hash>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = Algorithms::Hashing::default_hash>
 		requires std::is_nothrow_destructible_v<T>
 	class Hashmap : public TrackedContainer<ContainerConfiguration, T> {
 	public:

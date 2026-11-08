@@ -6,7 +6,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class LinkedList : public Collection<ContainerConfiguration, LinkedListNode<T, typename ContainerConfiguration::INDEX>> {
 	public:
@@ -184,10 +184,38 @@ namespace DSA {
 		}
 		*/
 
-		constexpr void remove(const INDEX index) noexcept {
-			destroy_at(&Base::get(index).value);
-			Base::get(index).next = free_head;
-			free_head = index;
+		constexpr void remove_head() noexcept {
+			const INDEX nextIndex = Base::get(0).next;
+			destroy_at(&Base::get(0).value);
+			if (nextIndex == Base::maximum_index)
+				return;
+			reconstruct_at(Base::get_data(), std::move(Base::get(nextIndex)));
+		}
+
+		constexpr void remove(const INDEX index, const INDEX start = 0) noexcept {
+			if (index == 0) {
+				remove_head();
+				return;
+			}
+				
+			for (INDEX jndex = start; jndex != Base::maximum_index;) {
+				T& node = Base::get(jndex);
+				if (node.next == index) {
+					remove_after(jndex);
+					return;
+				}
+				jndex = node.next;
+			}
+		}
+
+		constexpr void remove_after(const INDEX index) noexcept {
+			T& node = Base::get(index);
+			const INDEX nextIndex = node.next;
+			T& nextNode = Base::get(nextIndex);
+			destroy_at(&nextNode.value);
+			node.next = nextNode.next;
+			nextNode.next = free_head;
+			free_head = nextIndex;
 		}
 
 #pragma endregion

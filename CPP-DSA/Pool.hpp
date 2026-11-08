@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Bitset.hpp"
+#include "heap_sort.hpp"
 #include "Stack.hpp"
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T>
 		requires std::is_nothrow_destructible_v<T>
 	class Pool : public Collection<ContainerConfiguration, T> {
 	public:
@@ -15,8 +16,8 @@ namespace DSA {
 		using typename Base::T;
 
 		using BitsetConfiguration = std::conditional_t<
-			concepts::DynamicStorageConfiguration<ContainerConfiguration>,
-			HeapStorageConfiguration<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
+			concepts::DynamicStoragePolicy<ContainerConfiguration>,
+			HeapStoragePolicy<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
 			StaticContainerConfiguration<ContainerConfiguration::maximum_index>
 		>;
 
@@ -27,10 +28,10 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_destroy(INDEX oldCapacity = Base::default_capacity()) noexcept
+		void helper_destroy(INDEX capacity = Base::default_capacity()) noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
-			constexpr INDEX bitsetCapacity = (oldCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
+			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
 
 			Bitset<BitsetConfiguration> bitset;
 			if constexpr (concepts::DynamicStorage<Base>) {
@@ -40,8 +41,22 @@ namespace DSA {
 					try {
 						bitset = Bitset<BitsetConfiguration>(bitsetCapacity);
 					}
-					catch (...) {
-						// TO-DO: destroy without needing bitset
+					catch (...) { // destroy as efficiently as possible without needing to heap-allocate memory
+						const INDEX freeStackSize = free_stack.get_size();
+						Sorting::heap_sort(free_stack.get_data(), 0, freeStackSize);
+
+						INDEX top = 0;
+						INDEX startIndex = 0;
+						while (top < freeStackSize) {
+							const INDEX excludedIndex = free_stack.get(top);
+							for (INDEX index = startIndex; index < excludedIndex; ++index)
+								destroy_at(Base::get_data() + index);
+							startIndex = excludedIndex + 1;
+							++top;
+						}
+
+						destroy_range_forward(Base::get_data() + freeStackSize, Base::get_data() + free_top);
+
 						return;
 					}
 				}

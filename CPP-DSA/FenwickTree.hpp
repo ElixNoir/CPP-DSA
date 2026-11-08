@@ -6,7 +6,7 @@
 
 namespace DSA {
 
-	template <concepts::StorageConfiguration ContainerConfiguration>
+	template <concepts::StoragePolicy ContainerConfiguration>
 	class FenwickTree : public Collection<ContainerConfiguration, uintmax_t> {
 	public:
 

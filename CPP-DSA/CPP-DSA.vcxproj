@@ -139,9 +139,11 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Addable.hpp" />
+    <ClInclude Include="Aggregation.hpp" />
     <ClInclude Include="Allocator.hpp" />
     <ClInclude Include="AVLTree.hpp" />
-    <ClInclude Include="Benchmark.hpp" />
+    <ClInclude Include="benchmark.hpp" />
     <ClInclude Include="BinarySearchTree.hpp" />
     <ClInclude Include="binary_search.hpp" />
     <ClInclude Include="BitmappedPriorityDeque.hpp" />
@@ -154,6 +156,7 @@
     <ClInclude Include="BumpAllocator.hpp" />
     <ClInclude Include="comb_sort.hpp" />
     <ClInclude Include="Comparable.hpp" />
+    <ClInclude Include="compare.hpp" />
     <ClInclude Include="DoublyLinkedList.hpp" />
     <ClInclude Include="DoublyLinkedListIterator.hpp" />
     <ClInclude Include="DoublyLinkedListNode.hpp" />
@@ -161,6 +164,8 @@
     <ClInclude Include="FenwickTree.hpp" />
     <ClInclude Include="LinkedListIterator.hpp" />
     <ClInclude Include="LinkedListNode.hpp" />
+    <ClInclude Include="Multipliable.hpp" />
+    <ClInclude Include="Parameter.hpp" />
     <ClInclude Include="SegmentTree.hpp" />
     <ClInclude Include="GapBuffer.hpp" />
     <ClInclude Include="grail_sort.hpp" />
@@ -186,6 +191,7 @@
     <ClInclude Include="shell_sort.hpp" />
     <ClInclude Include="Sorting.hpp" />
     <ClInclude Include="SparseDeque.hpp" />
+    <ClInclude Include="Statistics.hpp" />
     <ClInclude Include="Storage.hpp" />
     <ClInclude Include="swap.hpp" />
     <ClInclude Include="Swappable.hpp" />
@@ -199,7 +205,7 @@
     <ClInclude Include="Container.hpp" />
     <ClInclude Include="Stack.hpp" />
     <ClInclude Include="Traits.hpp" />
-    <ClInclude Include="Math.hpp" />
+    <ClInclude Include="Arithmetic.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />

@@ -14,7 +14,7 @@ namespace DSA {
 
 	};
 
-	template <concepts::StorageConfiguration ContainerConfiguration, typename T, HeapType HEAP_TYPE = HeapType::MAX_HEAP>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T, HeapType HEAP_TYPE = HeapType::MAX_HEAP>
 		requires std::is_nothrow_destructible_v<T>
 	class Heap : public Collection<ContainerConfiguration, T> {
 	public:
