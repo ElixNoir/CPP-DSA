@@ -152,19 +152,19 @@ namespace DSA {
 			return tracked.find_first_bit<true, true, true>(capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX find_first_tracked(INDEX start, Base::Capacity explicitCapacity = {}) const noexcept {
+		[[nodiscard]] constexpr INDEX find_first_tracked_after(INDEX start, Base::Capacity explicitCapacity = {}) const noexcept {
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return tracked.find_first_bit_after<true, true, true>(start, capacity);
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_tracked(Base::Capacity explicitCapacity = {}) const noexcept {
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			return tracked.find_first_bit<false, true, true>(capacity);
+			return tracked.find_first_bit<false, false, true>(capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX find_last_tracked(INDEX start, Base::Capacity explicitCapacity = {}) const noexcept {
+		[[nodiscard]] constexpr INDEX find_last_tracked_after(INDEX start, Base::Capacity explicitCapacity = {}) const noexcept {
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			return tracked.find_first_bit_after<false, true, true>(start, capacity);
+			return tracked.find_first_bit_after<false, false, true>(start, capacity);
 		}
 
 		[[nodiscard]] constexpr bool is_tracking(INDEX index) const noexcept {
