@@ -6,12 +6,12 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename Deque_ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy StoragePolicy, typename Deque_StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class BitmappedPriorityDeque : public TrackedContainer<ContainerConfiguration, Deque<Deque_ContainerConfiguration, T>> {
+	class BitmappedPriorityDeque : public TrackedContainer<StoragePolicy, Deque<Deque_StoragePolicy, T>> {
 	public:
 
-		using Base = TrackedContainer<ContainerConfiguration, Deque<Deque_ContainerConfiguration, T>>;
+		using Base = TrackedContainer<StoragePolicy, Deque<Deque_StoragePolicy, T>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -27,11 +27,10 @@ namespace DSA {
 			return Base::get(priority).can_dequeue(count);
 		}
 
-		[[nodiscard]] constexpr T dequeue_greatest(INDEX capacity = Base::default_capacity())
+		[[nodiscard]] constexpr T dequeue_greatest(Base::Capacity explicitCapacity = {})
 			noexcept (std::is_nothrow_move_constructible_v<T>)
-			requires concepts::Storage<Base>
 		{
-			const INDEX priority = Base::tracked.last_leading_one(capacity);
+			const INDEX priority = Base::find_last_tracked(explicitCapacity);
 			auto& deque = Base::get(priority);
 			T data = deque.dequeue_front();
 			if (deque.is_empty())
@@ -40,11 +39,10 @@ namespace DSA {
 			return data;
 		}
 
-		[[nodiscard]] constexpr T dequeue_least(INDEX capacity = Base::default_capacity())
+		[[nodiscard]] constexpr T dequeue_least(Base::Capacity explicitCapacity = {})
 			noexcept (std::is_nothrow_move_constructible_v<T>)
-			requires concepts::Storage<Base>
 		{
-			const INDEX priority = Base::find_first_tracked_and_capacity(0, capacity);
+			const INDEX priority = Base::find_first_tracked(explicitCapacity);
 			auto& deque = Base::get(priority);
 			T data = deque.dequeue_front();
 			if (deque.is_empty())
@@ -64,24 +62,23 @@ namespace DSA {
 			return data;
 		}
 
-		[[nodiscard]] constexpr bool can_enqueue(INDEX priority, INDEX count = 1, INDEX capacity = Base::default_capacity()) const noexcept {
-			return priority < capacity && Base::get(priority).can_enqueue(capacity, count);
+		[[nodiscard]] constexpr bool can_enqueue(INDEX priority, INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			return priority < capacity && Base::get(priority).can_enqueue(count, explicitCapacity);
 		}
 
-		constexpr void enqueue(INDEX priority, const T& data, INDEX capacity = Base::default_capacity())
-
-			requires concepts::Storage<Base>
+		constexpr void enqueue(INDEX priority, const T& data, Base::Capacity explicitCapacity = {})
+			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			Base::get(priority).enqueue_back(data, capacity);
+			Base::get(priority).enqueue_back(data, explicitCapacity);
 			Base::track(priority);
 			++Base::size;
 		}
 
-		constexpr void enqueue(INDEX priority, T&& data, INDEX capacity = Base::default_capacity())
-
-			requires concepts::Storage<Base>
+		constexpr void enqueue(INDEX priority, T&& data, Base::Capacity explicitCapacity = {})
+			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			Base::get(priority).enqueue_back(std::move(data), capacity);
+			Base::get(priority).enqueue_back(std::move(data), explicitCapacity);
 			Base::track(priority);
 			++Base::size;
 		}
