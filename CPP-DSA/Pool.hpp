@@ -28,9 +28,10 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_destroy(INDEX capacity = Base::default_capacity()) noexcept
+		void helper_destroy(Base::Capacity explicitCapacity = {}) noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
 
 			Bitset<BitsetConfiguration> bitset;
@@ -61,7 +62,7 @@ namespace DSA {
 					}
 				}
 			}
-			bitset.zero_raw(oldCapacity);
+			bitset.zero_raw(explicitCapacity);
 
 			for (INDEX index : free_stack)
 				bitset.set_bit_at(index);
@@ -75,20 +76,22 @@ namespace DSA {
 			}
 		}
 
-		void helper_resize(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void helper_resize(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
 
-			constexpr INDEX bitsetCapacity = (oldCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
+			free_stack.grow(newCapacity);
+			
+			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
 
 			Bitset<BitsetConfiguration> bitset(bitsetCapacity);
-			bitset.zero_raw(oldCapacity);
+			bitset.zero_raw(explicitCapacity);
 
 			const INDEX size = Base::get_size();
 
-			bitset.zero_raw(oldCapacity);
+			bitset.zero_raw(explicitCapacity);
 			for (INDEX index : free_stack)
 				bitset.set_bit_at(index);
 
@@ -134,7 +137,8 @@ namespace DSA {
 			ALLOCATOR::deallocate(oldData);
 
 			Base::set_data(newData);
-			Base::set_capacity(newCapacity);
+			if (concepts::HasMutableCapacity<Base>)
+				Base::set_capacity(newCapacity);
 		}
 
 #pragma endregion
@@ -156,9 +160,9 @@ namespace DSA {
 				helper_destroy();
 		}
 
-		constexpr void destroy(INDEX capacity = Base::default_capacity()) noexcept {
+		constexpr void destroy(Base::Capacity explicitCapacity = {}) noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy(capacity);
+				helper_destroy(explicitCapacity);
 		}
 
 #pragma endregion
@@ -247,36 +251,37 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity(INDEX oldCapacity = Base::default_capacity())
+		void double_capacity(Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			grow(oldCapacity << 1, oldCapacity);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity << 1, explicitCapacity);
 		}
 
-		constexpr void empty(INDEX capacity = Base::default_capacity())
+		constexpr void empty(Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 		{
-			helper_destroy(capacity);
+			helper_destroy(explicitCapacity);
 			free_stack.empty();
 			free_top = 0;
 			Base::set_size(0);
 		}
 
-		void grow(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			helper_resize(newCapacity, oldCapacity);
-			free_stack.grow(newCapacity, oldCapacity);
+			helper_resize(newCapacity, explicitCapacity);
 		}
 
-		void reserve(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			if (newCapacity > oldCapacity)
-				grow(newCapacity);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			if (newCapacity > capacity)
+				grow(explicitCapacity);
 		}
 
 #pragma endregion
