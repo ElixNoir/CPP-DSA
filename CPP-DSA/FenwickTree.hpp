@@ -6,11 +6,11 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration>
-	class FenwickTree : public Collection<ContainerConfiguration, uintmax_t> {
+	template <concepts::StoragePolicy StoragePolicy>
+	class FenwickTree : public Collection<StoragePolicy, uintmax_t> {
 	public:
 
-		using Base = Collection<ContainerConfiguration, uintmax_t>;
+		using Base = Collection<StoragePolicy, uintmax_t>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -19,23 +19,25 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
-		FenwickTree(T* a, size_t size) noexcept {
+		FenwickTree(T* data, size_t size) noexcept
+			requires (!Base::is_dynamic)
+		{
 			for (size_t index = 0; index < size; ++index) {
 				while (index < size) {
-					Base::get(index) += a[index];
+					Base::get(index) += data[index];
 					index += index & -index;
 				}
 			}
 			Base::set_size(size);
 		}
 
-		FenwickTree(T* a, size_t size)
+		FenwickTree(T* data, size_t size)
 			noexcept (concepts::NothrowAllocatedStorage<Base, T>)
-			requires (concepts::DynamicStorage<Base>)
+			requires Base::is_dynamic
 		: Base(size) {
 			for (size_t index = 0; index < size; ++index) {
 				while (index < size) {
-					Base::get(index) += a[index];
+					Base::get(index) += data[index];
 					index += index & -index;
 				}
 			}
