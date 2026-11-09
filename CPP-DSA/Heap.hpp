@@ -14,12 +14,12 @@ namespace DSA {
 
 	};
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T, HeapType HEAP_TYPE = HeapType::MAX_HEAP>
+	template <concepts::StoragePolicy StoragePolicy, typename T, HeapType HEAP_TYPE = HeapType::MAX_HEAP>
 		requires std::is_nothrow_destructible_v<T>
-	class Heap : public Collection<ContainerConfiguration, T> {
+	class Heap : public Collection<StoragePolicy, T> {
 	public:
 
-		using Base = Collection<ContainerConfiguration, T>;
+		using Base = Collection<StoragePolicy, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -27,9 +27,9 @@ namespace DSA {
 
 #pragma region Methods
 
-		constexpr INDEX parent(INDEX i) const noexcept { return (i - 1) >> 1; }
-		constexpr INDEX left(INDEX i) const noexcept { return (i << 1) + 1; }
-		constexpr INDEX right(INDEX i) const noexcept { return (i << 1) + 2; }
+		constexpr INDEX parent(INDEX index) const noexcept { return (index - 1) >> 1; }
+		constexpr INDEX left(INDEX index) const noexcept { return (index << 1) + 1; }
+		constexpr INDEX right(INDEX index) const noexcept { return (index << 1) + 2; }
 
 		void helper_destroy() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
@@ -247,11 +247,12 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity(INDEX oldCapacity = Base::default_capacity())
+		void double_capacity(Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
+			requires concepts::DynamicStorage<Base>
 		{
-			grow(oldCapacity << 1);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity << 1);
 		}
 
 		constexpr void empty() noexcept {
@@ -267,20 +268,22 @@ namespace DSA {
 			helper_resize<true>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			if (newCapacity > oldCapacity)
-				grow(newCapacity, oldCapacity);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			if (newCapacity > capacity)
+				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void resize(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			if (newCapacity > oldCapacity)
-				grow(newCapacity, oldCapacity);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			if (newCapacity > capacity)
+				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
