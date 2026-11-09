@@ -6,25 +6,25 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class Pool : public Collection<ContainerConfiguration, T> {
+	class Pool : public Collection<StoragePolicy, T> {
 	public:
 
-		using Base = Collection<ContainerConfiguration, T>;
+		using Base = Collection<StoragePolicy, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using BitsetConfiguration = std::conditional_t<
-			concepts::DynamicStoragePolicy<ContainerConfiguration>,
-			HeapStoragePolicy<INDEX, typename ContainerConfiguration::ALLOCATOR_TEMPLATE>,
-			StaticContainerConfiguration<ContainerConfiguration::maximum_index>
+			concepts::DynamicStoragePolicy<StoragePolicy>,
+			HeapStoragePolicy<INDEX, typename StoragePolicy::ALLOCATOR_TEMPLATE>,
+			StaticStoragePolicy<StoragePolicy::maximum_index>
 		>;
 
 	protected:
 
 		INDEX free_top = 0;
-		Stack<ContainerConfiguration, INDEX> free_stack;
+		Stack<StoragePolicy, INDEX> free_stack;
 
 #pragma region Methods
 
