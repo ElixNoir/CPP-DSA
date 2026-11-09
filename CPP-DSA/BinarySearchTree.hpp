@@ -14,22 +14,22 @@ namespace DSA {
 
 	};
 
-	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
-	using BinarySearchTreeNodeContainer = Collection<ContainerConfiguration, BinarySearchTreeNode<KeyValuePair, ContainerConfiguration::INDEX>>;
+	template <concepts::StoragePolicy StoragePolicy, concepts::KeyValuePair KeyValuePair>
+	using BinarySearchTreeNodeContainer = Collection<StoragePolicy, BinarySearchTreeNode<KeyValuePair, StoragePolicy::INDEX>>;
 
-	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StoragePolicy StoragePolicy, concepts::KeyValuePair KeyValuePair>
 		requires std::is_nothrow_destructible_v<KeyValuePair>
-	class BinarySearchTree : public BinarySearchTreeNodeContainer<ContainerConfiguration, KeyValuePair> {
+	class BinarySearchTree : public BinarySearchTreeNodeContainer<StoragePolicy, KeyValuePair> {
 	public:
 		
-		using Base = BinarySearchTreeNodeContainer<ContainerConfiguration, KeyValuePair>;
+		using Base = BinarySearchTreeNodeContainer<StoragePolicy, KeyValuePair>;
 
 		using typename Base::INDEX;
 		using typename Base::T;
 		using KEY = T::KEY;
 		using VALUE = T::VALUE;
 
-		constexpr static INDEX invalid_index = ContainerConfiguration::maximum_index;
+		constexpr static INDEX invalid_index = StoragePolicy::maximum_index;
 
 	protected:
 
@@ -58,8 +58,8 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		[[nodiscard]] constexpr bool can_add(INDEX count = 1) const noexcept {
-			return (count < invalid_index - Base::size) && Base::can_add(count);
+		[[nodiscard]] constexpr bool can_add(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			return (count < invalid_index - Base::get_size()) && Base::can_add(count, explicitCapacity);
 		}
 
 		[[nodiscard]] INDEX add(const T& keyValuePair) 
@@ -156,8 +156,8 @@ namespace DSA {
 
 #pragma region Allocate & Deallocate
 
-		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1) const noexcept {
-			return Base::can_add(count);
+		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			return Base::can_add(count, explicitCapacity);
 		}
 
 		[[nodiscard]] constexpr INDEX allocate(const T& keyValuePair) 
@@ -227,8 +227,8 @@ namespace DSA {
 
 #pragma region Insert, & Upsert
 
-		[[nodiscard]] constexpr bool can_insert(INDEX count = 1) const noexcept {
-			return can_add(count);
+		[[nodiscard]] constexpr bool can_insert(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			return can_add(count, explicitCapacity);
 		}
 
 		[[nodiscard]] INDEX insert(const T& keyValuePair) 
@@ -255,8 +255,8 @@ namespace DSA {
 			return add(std::move(keyValuePair), rootIndex);
 		}
 
-		[[nodiscard]] constexpr bool can_upsert(INDEX count = 1) const noexcept {
-			return can_add(count);
+		[[nodiscard]] constexpr bool can_upsert(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			return can_add(count, explicitCapacity);
 		}
 
 		[[nodiscard]] INDEX upsert(const T& keyValuePair)
