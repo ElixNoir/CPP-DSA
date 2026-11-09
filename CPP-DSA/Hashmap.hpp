@@ -7,21 +7,21 @@ namespace Algorithms {
 	namespace Hashing {
 
 		template <typename T>
-		constexpr static uintmax_t default_hash(const T& value) noexcept {
+		constexpr static uintmax_t default_hash(const T& data) noexcept {
 			constexpr size_t size = sizeof(T);
 			constexpr size_t chunkSize = sizeof(uintmax_t);
 
 			if constexpr (size <= chunkSize) {
 				if constexpr (std::is_trivially_copyable_v<T>)
-					return *reinterpret_cast<const uintmax_t*>(reinterpret_cast<const std::byte*>(&value));
+					return *reinterpret_cast<const uintmax_t*>(reinterpret_cast<const std::byte*>(&data));
 				else {
 					uintmax_t hash = 0;
-					std::memcpy(&hash, &value, size);
+					std::memcpy(&hash, &data, size);
 					return hash;
 				}
 			}
 			else {
-				const std::byte* address = reinterpret_cast<const std::byte*>(&value);
+				const std::byte* address = reinterpret_cast<const std::byte*>(&data);
 				uintmax_t hash = 0;
 				size_t bytes_left = size;
 

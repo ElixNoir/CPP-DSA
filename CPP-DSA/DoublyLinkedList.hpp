@@ -42,7 +42,7 @@ namespace DSA {
 			for (INDEX counter = 0; counter < size; ++counter) {
 				T& node = Base::get(next);
 				next = node.next;
-				destroy_at(&node.value);
+				destroy_at(&node.data);
 			}
 		}
 
@@ -159,25 +159,25 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr INDEX add(const VALUE& value)
+		constexpr INDEX add(const VALUE& data)
 			noexcept (concepts::is_nothrow_copyable_v<VALUE>&& concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
 			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
 			T& head = Base::get(0);
-			head.value = value;
+			head.data = data;
 			head.next = index;
 			tail_index = index;
 			return index;
 		}
 
-		constexpr INDEX add(VALUE&& value)
+		constexpr INDEX add(VALUE&& data)
 			noexcept (concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
 			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
 			T& head = Base::get(0);
-			head.value = std::move(value);
+			head.data = std::move(data);
 			head.next = index;
 			tail_index = index;
 			return index;
@@ -198,7 +198,7 @@ namespace DSA {
 		constexpr void remove_head() noexcept {
 			T& head = Base::get(0);
 			const INDEX nextIndex = head.next;
-			destroy_at(&head.value);
+			destroy_at(&head.data);
 			if (nextIndex == Base::maximum_index)
 				return;
 			const INDEX nextNode = Base::get(nextIndex);
@@ -213,7 +213,7 @@ namespace DSA {
 			}
 
 			T& node = Base::get(index);
-			destroy_at(&node.value);
+			destroy_at(&node.data);
 			Base::get(node.previous).next = node.next;
 			if (index == tail_index) {
 				Base::get(node.next).previous = node.previous;
@@ -227,38 +227,38 @@ namespace DSA {
 
 #pragma region Append & Prepend
 
-		constexpr INDEX append(const VALUE& value)
+		constexpr INDEX append(const VALUE& data)
 			noexcept (concepts::is_nothrow_copyable_v<VALUE>&& concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
-			copy_construct_at(Base::get_data() + index, value);
+			copy_construct_at(Base::get_data() + index, data);
 			T& tail = Base::get(tail_index);
 			tail.next = index;
 			tail_index = index;
 			return index;
 		}
 
-		constexpr INDEX append(VALUE&& value)
+		constexpr INDEX append(VALUE&& data)
 			noexcept (concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
-			move_construct_at(Base::get_data() + index, std::move(value));
+			move_construct_at(Base::get_data() + index, std::move(data));
 			T& tail = Base::get(tail_index);
 			tail.next = index;
 			tail_index = index;
 			return index;
 		}
 
-		constexpr INDEX prepend(const VALUE& value)
+		constexpr INDEX prepend(const VALUE& data)
 			noexcept (concepts::is_nothrow_copyable_v<VALUE>&& concepts::is_nothrow_moveable_v<T>)
 		{
-			return add(value);
+			return add(data);
 		}
 
-		constexpr INDEX prepend(VALUE&& value)
+		constexpr INDEX prepend(VALUE&& data)
 			noexcept (concepts::is_nothrow_moveable_v<T>)
 		{
-			return add(std::move(value));
+			return add(std::move(data));
 		}
 
 #pragma endregion

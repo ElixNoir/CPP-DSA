@@ -96,21 +96,21 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr void add(const T& value)
+		constexpr void add(const T& data)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			const INDEX index = Base::get_size();
-			Base::get(index) = value;
+			Base::get(index) = data;
 
 			++Base::size;
 			bubble_up(index);
 		}
 
-		constexpr void add(T&& value)
+		constexpr void add(T&& data)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX index = Base::get_size();
-			Base::get(index) = std::move(value);
+			Base::get(index) = std::move(data);
 
 			++Base::size;
 			bubble_up(index);
@@ -231,16 +231,16 @@ namespace DSA {
 			return Base::can_add(count);
 		}
 
-		constexpr void insert(const T& value)
+		constexpr void insert(const T& data)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			add(value);
+			add(data);
 		}
 
-		constexpr void insert(T&& value)
+		constexpr void insert(T&& data)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			add(std::move(value));
+			add(std::move(data));
 		}
 
 #pragma endregion
@@ -298,11 +298,11 @@ namespace DSA {
 
 		friend std::ostream& operator<<(std::ostream& ostream, const Heap& heap) {
 			INDEX power = 0;
-			INDEX value = 1;
+			INDEX data = 1;
 			for (INDEX index = 0; index < heap.get_size(); ++index) {
-				if (index == value) {
+				if (index == data) {
 					ostream << '\n';
-					value += (1 << ++power);
+					data += (1 << ++power);
 				}
 				ostream << heap.get(index) << "  ";
 			}

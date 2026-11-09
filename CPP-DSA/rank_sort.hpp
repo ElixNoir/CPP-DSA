@@ -28,22 +28,22 @@ namespace Algorithms {
 			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			for (T* cursor = begin; cursor != end; cursor++) {
-				T& value = *cursor;
+				T& data = *cursor;
 				while (true) {
 					T* rank = begin;
 					
 					for (T* other = begin; other != end; other++) {
 						const T& otherValue = *other;
-						if (compare<ASCENDING>(otherValue, value))
+						if (compare<ASCENDING>(otherValue, data))
 							rank++;
-						else if ((otherValue == value) & (other < cursor))
+						else if ((otherValue == data) & (other < cursor))
 							rank++;
 					}
 
 					if (rank == cursor)
 						break;
 
-					swap(value, *rank);
+					swap(data, *rank);
 				}
 			}
 		}

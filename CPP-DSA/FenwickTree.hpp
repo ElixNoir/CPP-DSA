@@ -60,9 +60,9 @@ namespace DSA {
 			INDEX index = 0;
 			while (bit > 0) {
 				INDEX next = index + bit;
-				T value = Base::get(next);
-				if (next <= length && value < k) {
-					k -= value;
+				T data = Base::get(next);
+				if (next <= length && data < k) {
+					k -= data;
 					index = next;
 				}
 				bit >>= 1;
@@ -87,8 +87,8 @@ namespace DSA {
 			return range_sum(index, index);
 		}
 
-		constexpr void set_value(size_t index, T value) noexcept {
-			update(index, value - point_query(index));
+		constexpr void set_value(size_t index, T data) noexcept {
+			update(index, data - point_query(index));
 		}
 
 		constexpr void update(size_t index, T delta) noexcept {

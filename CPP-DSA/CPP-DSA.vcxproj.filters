@@ -243,10 +243,25 @@
     <ClInclude Include="Parameter.hpp">
       <Filter>Header Files\General</Filter>
     </ClInclude>
+    <ClInclude Include="Geometry.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Selection.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClCompile>
+    <ClCompile Include="Combinatorics.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClCompile>
+    <ClCompile Include="random.hpp">
+      <Filter>Header Files\Algorithms</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -13,7 +13,7 @@ namespace DSA {
 			typename T::T;
 
 			{ t.next } -> std::convertible_to<typename T::INDEX>;
-			{ t.value } -> std::same_as<typename T::T>;
+			{ t.data } -> std::same_as<typename T::T>;
 
 		};
 
@@ -26,7 +26,7 @@ namespace DSA {
 		using T = _T;
 
 		INDEX next;
-		T value;
+		T data;
 
 	};
 

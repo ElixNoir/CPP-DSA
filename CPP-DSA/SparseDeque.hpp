@@ -127,12 +127,12 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		[[nodiscard]] constexpr INDEX add_back(const T& value, INDEX capacity = Base::default_capacity())
+		[[nodiscard]] constexpr INDEX add_back(const T& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			const INDEX index = back;
 
-			copy_construct_at(Base::get_data() + index, value);
+			copy_construct_at(Base::get_data() + index, data);
 			Base::track(index);
 
 			++Base::size;
@@ -142,12 +142,12 @@ namespace DSA {
 			return index;
 		}
 
-		[[nodiscard]] constexpr INDEX add_back(T&& value, INDEX capacity = Base::default_capacity())
+		[[nodiscard]] constexpr INDEX add_back(T&& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX index = back;
 
-			move_construct_at(Base::get_data() + index, std::move(value));
+			move_construct_at(Base::get_data() + index, std::move(data));
 			Base::track(index);
 
 			++Base::size;
@@ -157,12 +157,12 @@ namespace DSA {
 			return index;
 		}
 
-		[[nodiscard]] constexpr INDEX add_front(const T& value, INDEX capacity = Base::default_capacity())
+		[[nodiscard]] constexpr INDEX add_front(const T& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			const INDEX newFront = previous_index(front, capacity);
 
-			copy_construct_at(Base::get_data() + newFront, value);
+			copy_construct_at(Base::get_data() + newFront, data);
 			Base::track(newFront);
 
 			front = newFront;
@@ -172,12 +172,12 @@ namespace DSA {
 			return newFront;
 		}
 
-		[[nodiscard]] constexpr INDEX add_front(T&& value, INDEX capacity = Base::default_capacity())
+		[[nodiscard]] constexpr INDEX add_front(T&& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX newFront = previous_index(front, capacity);
 
-			move_construct_at(Base::get_data() + newFront, std::move(value));
+			move_construct_at(Base::get_data() + newFront, std::move(data));
 			Base::track(newFront);
 
 			front = newFront;
@@ -246,9 +246,9 @@ namespace DSA {
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 			requires concepts::Storage<Base>
 		{
-			T value = std::move(Base::get(front));
+			T data = std::move(Base::get(front));
 			remove_front(capacity);
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr T dequeue_back()
@@ -262,9 +262,9 @@ namespace DSA {
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 			requires concepts::Storage<Base>
 		{
-			T value = std::move(Base::get(previous_index(back, capacity)));
+			T data = std::move(Base::get(previous_index(back, capacity)));
 			remove_back(capacity);
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr bool can_enqueue(INDEX count = 1)
@@ -281,60 +281,60 @@ namespace DSA {
 			return Base::can_add(capacity, count);
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_back(const T& value)
+		[[nodiscard]] constexpr INDEX enqueue_back(const T& data)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 			requires concepts::Container<Base>
 		{
-			return enqueue_back(value, Base::get_capacity());
+			return enqueue_back(data, Base::get_capacity());
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_back(const T& value, INDEX capacity)
+		[[nodiscard]] constexpr INDEX enqueue_back(const T& data, INDEX capacity)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 			requires concepts::Storage<Base>
 		{
-			return add_back(value, capacity);
+			return add_back(data, capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_back(T&& value)
+		[[nodiscard]] constexpr INDEX enqueue_back(T&& data)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 			requires concepts::Container<Base>
 		{
-			return enqueue_back(std::move(value), Base::get_capacity());
+			return enqueue_back(std::move(data), Base::get_capacity());
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_back(T&& value, INDEX capacity)
+		[[nodiscard]] constexpr INDEX enqueue_back(T&& data, INDEX capacity)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 			requires concepts::Storage<Base>
 		{
-			return add_back(std::move(value), capacity);
+			return add_back(std::move(data), capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_front(const T& value)
+		[[nodiscard]] constexpr INDEX enqueue_front(const T& data)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 			requires concepts::Container<Base>
 		{
-			return enqueue_front(value, Base::get_capacity());
+			return enqueue_front(data, Base::get_capacity());
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_front(const T& value, INDEX capacity)
+		[[nodiscard]] constexpr INDEX enqueue_front(const T& data, INDEX capacity)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 			requires concepts::Storage<Base>
 		{
-			return add_front(value, capacity);
+			return add_front(data, capacity);
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_front(T&& value)
+		[[nodiscard]] constexpr INDEX enqueue_front(T&& data)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 			requires concepts::Container<Base>
 		{
-			return enqueue_front(std::move(value), Base::get_capacity());
+			return enqueue_front(std::move(data), Base::get_capacity());
 		}
 
-		[[nodiscard]] constexpr INDEX enqueue_front(T&& value, INDEX capacity)
+		[[nodiscard]] constexpr INDEX enqueue_front(T&& data, INDEX capacity)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 			requires concepts::Storage<Base>
 		{
-			return add_front(std::move(value), capacity);
+			return add_front(std::move(data), capacity);
 		}
 
 		[[nodiscard]] constexpr bool can_peek() const noexcept {

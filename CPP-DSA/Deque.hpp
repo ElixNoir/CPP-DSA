@@ -71,36 +71,36 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr void add_back(const T& value, INDEX capacity = Base::default_capacity())
+		constexpr void add_back(const T& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			copy_construct_at(Base::get_data() + back, value);
+			copy_construct_at(Base::get_data() + back, data);
 			back = (back + 1 == capacity) ? 0 : back + 1;
 			++Base::size;
 		}
 
-		constexpr void add_back(T&& value, INDEX capacity = Base::default_capacity())
+		constexpr void add_back(T&& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			move_construct_at(Base::get_data() + back, std::move(value));
+			move_construct_at(Base::get_data() + back, std::move(data));
 			back = (back + 1 == capacity) ? 0 : back + 1;
 			++Base::size;
 		}
 
-		constexpr void add_front(const T& value, INDEX capacity = Base::default_capacity())
+		constexpr void add_front(const T& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			const INDEX newFront = (front == 0) ? capacity - 1 : front - 1;
-			move_construct_at(Base::get_data() + newFront, value);
+			move_construct_at(Base::get_data() + newFront, data);
 			front = newFront;
 			++Base::size;
 		}
 
-		constexpr void add_front(T&& value, INDEX capacity = Base::default_capacity())
+		constexpr void add_front(T&& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX newFront = (front == 0) ? capacity - 1 : front - 1;
-			move_construct_at(Base::get_data() + newFront, std::move(value));
+			move_construct_at(Base::get_data() + newFront, std::move(data));
 			front = newFront;
 			++Base::size;
 		}
@@ -163,9 +163,9 @@ namespace DSA {
 			back = (back == 0) ? capacity - 1 : back - 1;
 			T* const address = Base::get_data() + back;
 			--Base::size;
-			T value = std::move(*address);
+			T data = std::move(*address);
 			destroy_at(address);
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr void dequeue_back_many(T* const destination, INDEX count, INDEX capacity = Base::default_capacity()) // TO-DO: TEST
@@ -196,9 +196,9 @@ namespace DSA {
 			T* const address = Base::get_data() + front;
 			front = (front + 1 == capacity) ? 0 : front + 1;
 			--Base::size;
-			T value = std::move(*address);
+			T data = std::move(*address);
 			destroy_at(address);
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr void dequeue_front_many(T* const destination, INDEX count, INDEX capacity = Base::default_capacity()) // TO-DO: TEST
@@ -228,28 +228,28 @@ namespace DSA {
 			return Base::can_add(capacity, count);
 		}
 
-		constexpr void enqueue_back(const T& value, INDEX capacity = Base::default_capacity())
+		constexpr void enqueue_back(const T& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			add_back(value, capacity);
+			add_back(data, capacity);
 		}
 
-		constexpr void enqueue_back(T&& value, INDEX capacity = Base::default_capacity())
+		constexpr void enqueue_back(T&& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			add_back(std::move(value), capacity);
+			add_back(std::move(data), capacity);
 		}
 
-		constexpr void enqueue_front(const T& value, INDEX capacity = Base::default_capacity())
+		constexpr void enqueue_front(const T& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			add_front(value, capacity);
+			add_front(data, capacity);
 		}
 
-		constexpr void enqueue_front(T&& value, INDEX capacity = Base::default_capacity())
+		constexpr void enqueue_front(T&& data, INDEX capacity = Base::default_capacity())
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			add_front(std::move(value), capacity);
+			add_front(std::move(data), capacity);
 		}
 
 		[[nodiscard]] constexpr bool can_peek() const noexcept {

@@ -13,9 +13,9 @@ struct Parameter<T, false> {
 template <typename T>
 struct Parameter<T, true> {
 
-    T value;
+    T data;
 
     Parameter() = delete;
-    constexpr Parameter(T val) noexcept : value(val) {}
+    constexpr Parameter(T val) noexcept : data(val) {}
 
 };

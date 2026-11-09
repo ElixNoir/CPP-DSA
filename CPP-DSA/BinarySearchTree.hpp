@@ -273,7 +273,7 @@ namespace DSA {
 				T& node = Base::get(index);
 				KEY& currentKey = node.key_value_pair.key;
 				if (currentKey == keyValuePair.key) {
-					node.key_value_pair.value = keyValuePair.value;
+					node.key_value_pair.data = keyValuePair.data;
 					return index;
 				}
 				else if (currentKey > keyValuePair.key) {
@@ -313,7 +313,7 @@ namespace DSA {
 				T& node = Base::get(index);
 				KEY& currentKey = node.key_value_pair.key;
 				if (currentKey == keyValuePair.key) {
-					node.key_value_pair.value = keyValuePair.value;
+					node.key_value_pair.data = keyValuePair.data;
 					return index;
 				}
 				else if (currentKey > keyValuePair.key) {

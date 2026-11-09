@@ -13,10 +13,10 @@ namespace Algorithms {
 	}
 
 	template <typename T>
-	constexpr static void repeat(T* const begin, const T* const end, const T& value) noexcept
+	constexpr static void repeat(T* const begin, const T* const end, const T& data) noexcept
 		requires std::is_trivially_copyable_v<T>
 	{
-		repeat(begin, static_cast<size_t>(end - begin), value);
+		repeat(begin, static_cast<size_t>(end - begin), data);
 	}
 
 	template <typename T>
@@ -29,10 +29,10 @@ namespace Algorithms {
 	}
 
 	template <typename T>
-	constexpr static void repeat(T* const destination, const size_t count, const T& value) noexcept
+	constexpr static void repeat(T* const destination, const size_t count, const T& data) noexcept
 		requires std::is_trivially_copyable_v<T>
 	{
-		std::memcpy(destination, &value, sizeof(T));
+		std::memcpy(destination, &data, sizeof(T));
 		repeat(destination, count);
 	}
 

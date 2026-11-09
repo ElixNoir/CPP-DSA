@@ -98,17 +98,17 @@ namespace DSA {
 			return get_gap_size(capacity) >= count;
 		}
 
-		constexpr void add(const T& value)
+		constexpr void add(const T& data)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			copy_construct_at(Base::get_data() + start, value);
+			copy_construct_at(Base::get_data() + start, data);
 			++start;
 		}
 
-		constexpr void add(T&& value)
+		constexpr void add(T&& data)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			move_construct_at(Base::get_data() + start, std::move(value));
+			move_construct_at(Base::get_data() + start, std::move(data));
 			++start;
 		}
 

@@ -14,7 +14,7 @@ namespace DSA {
 
 			{ node.next } -> std::convertible_to<typename T::INDEX>;
 			{ node.previous } -> std::convertible_to<typename T::INDEX>;
-			{ node.value } -> std::same_as<typename T::T>;
+			{ node.data } -> std::same_as<typename T::T>;
 
 		};
 
@@ -28,7 +28,7 @@ namespace DSA {
 
 		INDEX next;
 		INDEX previous;
-		T value;
+		T data;
 
 	};
 

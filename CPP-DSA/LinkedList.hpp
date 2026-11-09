@@ -41,7 +41,7 @@ namespace DSA {
 			for (INDEX counter = 0; counter < size; ++counter) {
 				T& node = Base::get(next);
 				next = node.next;
-				destroy_at(&node.value);
+				destroy_at(&node.data);
 			}
 		}
 
@@ -150,24 +150,24 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr INDEX add(const VALUE& value)
+		constexpr INDEX add(const VALUE& data)
 			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
 			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
 			T& head = Base::get(0);
-			head.value = value;
+			head.data = data;
 			head.next = index;
 			return index;
 		}
 
-		constexpr INDEX add(VALUE&& value)
+		constexpr INDEX add(VALUE&& data)
 			noexcept (concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
 			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
 			T& head = Base::get(0);
-			head.value = std::move(value);
+			head.data = std::move(data);
 			head.next = index;
 			return index;
 		}
@@ -186,7 +186,7 @@ namespace DSA {
 
 		constexpr void remove_head() noexcept {
 			const INDEX nextIndex = Base::get(0).next;
-			destroy_at(&Base::get(0).value);
+			destroy_at(&Base::get(0).data);
 			if (nextIndex == Base::maximum_index)
 				return;
 			reconstruct_at(Base::get_data(), std::move(Base::get(nextIndex)));
@@ -212,7 +212,7 @@ namespace DSA {
 			T& node = Base::get(index);
 			const INDEX nextIndex = node.next;
 			T& nextNode = Base::get(nextIndex);
-			destroy_at(&nextNode.value);
+			destroy_at(&nextNode.data);
 			node.next = nextNode.next;
 			nextNode.next = free_head;
 			free_head = nextIndex;
@@ -222,16 +222,16 @@ namespace DSA {
 
 #pragma region Prepend
 
-		constexpr INDEX prepend(const VALUE& value)
+		constexpr INDEX prepend(const VALUE& data)
 			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
 		{
-			return add(value);
+			return add(data);
 		}
 
-		constexpr INDEX prepend(VALUE&& value)
+		constexpr INDEX prepend(VALUE&& data)
 			noexcept (concepts::is_nothrow_moveable_v<T>)
 		{
-			return add(std::move(value));
+			return add(std::move(data));
 		}
 
 #pragma endregion

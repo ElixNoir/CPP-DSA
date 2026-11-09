@@ -33,11 +33,11 @@ namespace DSA {
 		{
 			const INDEX priority = Base::tracked.last_leading_one(capacity);
 			auto& deque = Base::get(priority);
-			T value = deque.dequeue_front();
+			T data = deque.dequeue_front();
 			if (deque.is_empty())
 				Base::tracked.reset_bit_at(priority);
 			--Base::size;
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr T dequeue_least(INDEX capacity = Base::default_capacity())
@@ -46,42 +46,42 @@ namespace DSA {
 		{
 			const INDEX priority = Base::find_first_tracked_and_capacity(0, capacity);
 			auto& deque = Base::get(priority);
-			T value = deque.dequeue_front();
+			T data = deque.dequeue_front();
 			if (deque.is_empty())
 				Base::untrack(priority);
 			--Base::size;
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr T dequeue(INDEX priority)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			auto& deque = Base::get(priority);
-			T value = deque.dequeue_front();
+			T data = deque.dequeue_front();
 			if (deque.is_empty())
 				Base::untrack(priority);
 			--Base::size;
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr bool can_enqueue(INDEX priority, INDEX count = 1, INDEX capacity = Base::default_capacity()) const noexcept {
 			return priority < capacity && Base::get(priority).can_enqueue(capacity, count);
 		}
 
-		constexpr void enqueue(INDEX priority, const T& value, INDEX capacity = Base::default_capacity())
+		constexpr void enqueue(INDEX priority, const T& data, INDEX capacity = Base::default_capacity())
 
 			requires concepts::Storage<Base>
 		{
-			Base::get(priority).enqueue_back(value, capacity);
+			Base::get(priority).enqueue_back(data, capacity);
 			Base::track(priority);
 			++Base::size;
 		}
 
-		constexpr void enqueue(INDEX priority, T&& value, INDEX capacity = Base::default_capacity())
+		constexpr void enqueue(INDEX priority, T&& data, INDEX capacity = Base::default_capacity())
 
 			requires concepts::Storage<Base>
 		{
-			Base::get(priority).enqueue_back(std::move(value), capacity);
+			Base::get(priority).enqueue_back(std::move(data), capacity);
 			Base::track(priority);
 			++Base::size;
 		}

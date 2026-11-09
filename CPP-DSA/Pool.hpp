@@ -167,14 +167,14 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr INDEX add(const T& value) 
+		constexpr INDEX add(const T& data) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			INDEX index;
 			if (!free_stack.is_empty()) {
 				index = free_stack.pop();
 				try {
-					copy_construct_at(Base::get_data() + index, value);
+					copy_construct_at(Base::get_data() + index, data);
 				}
 				catch (...) {
 					free_stack.push(index);
@@ -183,7 +183,7 @@ namespace DSA {
 			}
 			else {
 				index = free_top;
-				copy_construct_at(Base::get_data() + index, value);
+				copy_construct_at(Base::get_data() + index, data);
 				++free_top;
 			}
 
@@ -192,14 +192,14 @@ namespace DSA {
 			return index;
 		}
 
-		constexpr INDEX add(T&& value) 
+		constexpr INDEX add(T&& data) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			INDEX index;
 			if (!free_stack.is_empty()) {
 				index = free_stack.pop();
 				try {
-					move_construct_at(Base::get_data() + index, std::move(value));
+					move_construct_at(Base::get_data() + index, std::move(data));
 				}
 				catch (...) {
 					free_stack.push(index);
@@ -208,7 +208,7 @@ namespace DSA {
 			}
 			else {
 				index = free_top;
-				move_construct_at(Base::get_data() + index, std::move(value));
+				move_construct_at(Base::get_data() + index, std::move(data));
 				++free_top;
 			}
 
@@ -227,16 +227,16 @@ namespace DSA {
 
 #pragma region Allocate & Deallocate
 
-		constexpr INDEX allocate(const T& value) 
+		constexpr INDEX allocate(const T& data) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			return add(value);
+			return add(data);
 		}
 
-		constexpr INDEX allocate(T&& value) 
+		constexpr INDEX allocate(T&& data) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			return add(std::move(value));
+			return add(std::move(data));
 		}
 
 		constexpr void deallocate(INDEX index) noexcept {

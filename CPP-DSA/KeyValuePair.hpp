@@ -9,10 +9,10 @@ namespace DSA {
         using VALUE = _VALUE;
 
         KEY key;
-        [[no_unique_address]] VALUE value;
+        [[no_unique_address]] VALUE data;
 
         constexpr KeyValuePair(KEY key) : key(key) {}
-        constexpr KeyValuePair(KEY key, VALUE value) : key(key), value(value) {}
+        constexpr KeyValuePair(KEY key, VALUE data) : key(key), data(data) {}
 
     };
 
@@ -25,7 +25,7 @@ namespace DSA {
             typename T::VALUE;
 
             t.key;
-            t.value;
+            t.data;
 
         };
 

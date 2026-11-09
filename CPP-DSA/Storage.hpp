@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DSA.hpp"
+#include "Parameter.hpp"
 
 #include <cstring>
 
@@ -14,7 +15,7 @@ namespace DSA {
 			typename T::INDEX;
 			typename T::T;
 
-			{ T::is_dynamic } -> std::same_as<bool>;
+			{ T::is_dynamic } -> std::same_as<const bool&>;
 			{ T::maximum_capacity } -> std::convertible_to<size_t>;
 			{ T::maximum_index } -> std::convertible_to<size_t>;
 
@@ -27,11 +28,15 @@ namespace DSA {
 
 		};
 
-		template <typename T, typename U = void*>
+		template <typename T, typename U = T>
 		concept StoragePolicy = requires(T t) {
 
 			typename T::INDEX;
 			typename T::template STRUCTURE<U>;
+
+			{ T::is_dynamic } -> std::same_as<const bool&>;
+			{ T::maximum_capacity } -> std::convertible_to<size_t>;
+			{ T::maximum_index } -> std::convertible_to<size_t>;
 
 		};
 
@@ -51,10 +56,19 @@ namespace DSA {
 
 		using INDEX = _INDEX;
 
+		template <concepts::AllocatorConfiguration Configuration>
+		using ALLOCATOR_TEMPLATE = StandardAllocator<Configuration>;
+
 		template <typename T>
-		using ALLOCATOR = _ALLOCATOR_TEMPLATE<
+		using ALLOCATOR = ALLOCATOR_TEMPLATE<
 			AllocatorConfiguration<T, INDEX>
 		>;
+
+		using This = HeapStoragePolicy<INDEX, ALLOCATOR_TEMPLATE>;
+
+		constexpr static bool is_dynamic = true;
+		constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
+		constexpr static INDEX maximum_index = maximum_capacity - 1;
 
 		template <typename _T>
 		class STRUCTURE {
@@ -64,15 +78,27 @@ namespace DSA {
 			using ALLOCATOR = ALLOCATOR<T>;
 			using INDEX = _INDEX;
 
-			constexpr static bool is_dynamic = true;
-			constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
-			constexpr static INDEX maximum_index = maximum_capacity - 1;
+			using This = STRUCTURE<T>;
+
+			constexpr static bool is_dynamic = is_dynamic;
+			constexpr static INDEX maximum_capacity = maximum_capacity;
+			constexpr static INDEX maximum_index = maximum_index;
 
 		protected:
+
+			using Capacity = Parameter<INDEX, !concepts::HasCapacity<This>>;
+			using NonExplicitCapacity = Parameter<INDEX, concepts::HasCapacity<This>>;
 
 			std::byte* data = nullptr;
 
 #pragma region Methods
+
+			[[nodiscard]] constexpr INDEX extract_capacity(Capacity explicitCapacity = {}) const noexcept {
+				if constexpr (concepts::HasCapacity<This>)
+					return this->get_capacity();
+				else
+					return explicitCapacity.data;
+			}
 
 			constexpr void set_data(T* newData) noexcept {
 				data = reinterpret_cast<std::byte*>(newData);
@@ -98,8 +124,8 @@ namespace DSA {
 			{
 				set_data(ALLOCATOR::allocate(initializerList.size()));
 				T* data = get_data();
-				for (auto& value : initializerList)
-					*(data++) = value;
+				for (auto& data : initializerList)
+					*(data++) = data;
 			}
 
 			explicit STRUCTURE(INDEX initialCapacity)
@@ -263,11 +289,17 @@ namespace DSA {
 
 		using INDEX = _INDEX;
 
-		template <typename T>
+		template <concepts::AllocatorConfiguration Configuration>
 		using ALLOCATOR_TEMPLATE = void;
 
 		template <typename T>
 		using ALLOCATOR = void;
+
+		using This = InlineStoragePolicy<CAPACITY, INDEX>;
+
+		constexpr static bool is_dynamic = false;
+		constexpr static INDEX maximum_capacity = CAPACITY;
+		constexpr static INDEX maximum_index = maximum_capacity - 1;
 
 		template <typename _T>
 		class STRUCTURE {
@@ -277,13 +309,26 @@ namespace DSA {
 			using INDEX = _INDEX;
 			using T = _T;
 
-			constexpr static bool is_dynamic = true;
-			constexpr static INDEX maximum_capacity = CAPACITY;
-			constexpr static INDEX maximum_index = maximum_capacity - 1;
+			using This = STRUCTURE<T>;
+
+			constexpr static bool is_dynamic = is_dynamic;
+			constexpr static INDEX maximum_capacity = maximum_capacity;
+			constexpr static INDEX maximum_index = maximum_index;
 
 		protected:
 
+			using Capacity = Parameter<INDEX, !concepts::HasCapacity<This>>;
+			using NonExplicitCapacity = Parameter<INDEX, concepts::HasCapacity<This>>;
+
 			alignas(T) std::byte data[CAPACITY * sizeof(T)];
+
+#pragma region Methods
+
+			[[nodiscard]] constexpr INDEX extract_capacity(NonExplicitCapacity explicitCapacity = {}) const noexcept {
+				return this->get_capacity();
+			}
+
+#pragma endregion
 
 		public:
 
@@ -303,8 +348,8 @@ namespace DSA {
 				requires !std::is_trivial_v<T>
 			{
 				T* data = get_data();
-				for (auto& value : initializerList)
-					*(data++) = value;
+				for (auto& data : initializerList)
+					*(data++) = data;
 			}
 
 #pragma endregion

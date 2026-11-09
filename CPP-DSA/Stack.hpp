@@ -23,7 +23,8 @@ namespace DSA {
 		void helper_destroy() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
-			destroy_range_backward(Base::get_data(), Base::get_data() + Base::get_size());
+			const T* data = Base::get_data();
+			destroy_range_backward(data, data + Base::get_size());
 		}
 
 		template <bool GROW>
@@ -85,17 +86,17 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr void add(const T& value) 
+		constexpr void add(const T& data) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			copy_construct_at(Base::get_data() + Base::get_size(), value);
+			copy_construct_at(Base::get_data() + Base::get_size(), data);
 			++Base::size;
 		}
 
-		constexpr void add(T&& value) 
+		constexpr void add(T&& data) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			move_construct_at(Base::get_data() + Base::get_size(), std::move(value));
+			move_construct_at(Base::get_data() + Base::get_size(), std::move(data));
 			++Base::size;
 		}
 
@@ -165,9 +166,9 @@ namespace DSA {
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			T* const address = Base::get_data() + --Base::size;
-			T value = std::move(*address);
+			T data = std::move(*address);
 			destroy_at(address);
-			return value;
+			return data;
 		}
 
 		[[nodiscard]] constexpr void pop_many(T* destination, INDEX count) 
@@ -183,16 +184,16 @@ namespace DSA {
 			return Base::can_add(count, explicitCapacity);
 		}
 
-		constexpr void push(const T& value) 
+		constexpr void push(const T& data) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			add(value);
+			add(data);
 		}
 
-		constexpr void push(T&& value) 
+		constexpr void push(T&& data) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			add(std::move(value));
+			add(std::move(data));
 		}
 
 		constexpr void push_copy_construct_many(const T* source, INDEX count) 

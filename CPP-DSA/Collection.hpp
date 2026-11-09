@@ -8,9 +8,9 @@ namespace DSA {
 	namespace concepts {
 
 		template <typename T>
-		concept Collection = Container<T> && requires(T t, typename T::INDEX index, typename T::T value) {
+		concept Collection = Container<T> && requires(T t, typename T::INDEX index, typename T::T data) {
 
-			{ t.add(value) };
+			{ t.add(data) };
 			{ t.remove(index) };
 
 			{ t.can_add(index) } -> std::same_as<bool>;
@@ -41,20 +41,11 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		constexpr static bool has_capacity = concepts::HasCapacity<Base>;
-
 	protected:
 
 		INDEX size = 0;
 
 #pragma region Methods
-
-		[[nodiscard]] constexpr INDEX extract_capacity(Parameter<INDEX, !has_capacity> explicitCapacity = {}) const noexcept {
-			if constexpr (has_capacity)
-				return this->get_capacity();
-			else
-				return explicitCapacity.value;
-		}
 
 		constexpr void set_size(INDEX newSize) noexcept {
 			size = newSize;
@@ -113,8 +104,8 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool can_add(INDEX count = 1, Parameter<INDEX, !has_capacity> explicitCapacity = {}) const noexcept {
-			const INDEX capacity = extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr bool can_add(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return count <= capacity - get_size();
 		}
 
@@ -126,8 +117,9 @@ namespace DSA {
 			return get_size() == 0;
 		}
 
-		[[nodiscard]] constexpr bool is_full() const noexcept {
-			return get_size() == Base::get_capacity();
+		[[nodiscard]] constexpr bool is_full(Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			return get_size() == capacity;
 		}
 
 #pragma endregion

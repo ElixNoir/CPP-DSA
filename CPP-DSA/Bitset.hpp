@@ -5,11 +5,11 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration>
-	class Bitset : public ContainerConfiguration::template STRUCTURE<Bitmask<>> {
+	template <concepts::StoragePolicy StoragePolicy>
+	class Bitset : public StoragePolicy::template STRUCTURE<Bitmask<>> {
 	public:
 
-		using Base = ContainerConfiguration::template STRUCTURE<Bitmask<>>;
+		using Base = StoragePolicy::template STRUCTURE<Bitmask<>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -41,7 +41,8 @@ namespace DSA {
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit(INDEX capacity = Base::default_capacity()) const noexcept {
+		constexpr BitIndex find_first_bit(Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			int bitOffset;
 			if constexpr (FRONT) {
 				BitIndex bitIndex = 0;
@@ -90,7 +91,8 @@ namespace DSA {
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_after(BitIndex bitIndex, INDEX capacity = Base::default_capacity()) const noexcept {
+		constexpr BitIndex find_first_bit_after(BitIndex bitIndex, Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
 
 			int bitOffset;
@@ -162,16 +164,19 @@ namespace DSA {
 #pragma region Iteration
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> begin(INDEX capacity = Base::default_capacity()) noexcept {
+		BitsetIterator<INDEX, ONES> begin(Base::Capacity explicitCapacity = {}) noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, false);
 		}
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> end(INDEX capacity = Base::default_capacity()) noexcept {
+		BitsetIterator<INDEX, ONES> end(Base::Capacity explicitCapacity = {}) noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, true);
 		}
 
-		auto ones(INDEX capacity = Base::default_capacity()) noexcept {
+		auto ones(Base::Capacity explicitCapacity = {}) noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			struct Proxy {
 				Bitset* self;
 
@@ -181,7 +186,8 @@ namespace DSA {
 			return Proxy{ this };
 		}
 
-		auto zeros(INDEX capacity = Base::default_capacity()) noexcept {
+		auto zeros(Base::Capacity explicitCapacity = {}) noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			struct Proxy {
 				Bitset* self;
 
