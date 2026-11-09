@@ -4,12 +4,12 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class GapBuffer : public ContainerConfiguration::template STRUCTURE<T> {
+	class GapBuffer : public StoragePolicy::template STRUCTURE<T> {
 	public:
 
-		using Base = ContainerConfiguration::template STRUCTURE<T>;
+		using Base = StoragePolicy::template STRUCTURE<T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -20,9 +20,10 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_destroy(INDEX capacity = Base::default_capacity()) noexcept
+		void helper_destroy(Base::Capacity explicitCapacity = {}) noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			T* const data = Base::get_data();
 			destroy_range_forward(data, data + start);
 			destroy_range_forward(data + end, data + capacity);
@@ -36,15 +37,17 @@ namespace DSA {
 
 		using Base::Base;
 
+		~GapBuffer() noexcept = default;
+
 		~GapBuffer() noexcept
-			requires concepts::Container<Base>
+			requires concepts::HasCapacity<Base>
 		{
 			destroy();
 		}
 
-		constexpr void destroy(INDEX capacity = Base::default_capacity()) noexcept {
+		constexpr void destroy(Base::Capacity explicitCapacity = {}) noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy(capacity);
+				helper_destroy(explicitCapacity);
 		}
 
 #pragma endregion
@@ -61,7 +64,8 @@ namespace DSA {
 			return end - start;
 		}
 
-		[[nodiscard]] constexpr INDEX get_size(INDEX capacity = Base::default_capacity()) const noexcept {
+		[[nodiscard]] constexpr INDEX get_size(Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return capacity - get_gap_size();
 		}
 
@@ -73,28 +77,21 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool is_empty(INDEX capacity = Base::default_capacity())
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return get_size(capacity) == 0;
+		[[nodiscard]] constexpr bool is_empty(Base::Capacity explicitCapacity = {}) const noexcept {
+			return get_size(explicitCapacity) == 0;
 		}
 
-		[[nodiscard]] constexpr bool is_full(INDEX capacity = Base::default_capacity())
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return get_size(capacity) == capacity;
+		[[nodiscard]] constexpr bool is_full(Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			return get_size(explicitCapacity) == capacity;
 		}
 
 #pragma endregion
 
 #pragma region Add & Remove
 
-		[[nodsicard]] constexpr bool can_add(INDEX count = 1, INDEX capacity = Base::default_capacity())
-			const noexcept
-			requires concepts::Storage<Base>
-		{
+		[[nodsicard]] constexpr bool can_add(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return get_gap_size(capacity) >= count;
 		}
 
@@ -135,11 +132,8 @@ namespace DSA {
 			return can_remove(Base::get_capacity(), count);
 		}
 
-		[[nodsicard]] constexpr bool can_remove(INDEX capacity, INDEX count = 1)
-			const noexcept
-			requires concepts::Storage<Base>
-		{
-			return get_size(capacity) >= count;
+		[[nodsicard]] constexpr bool can_remove(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			return get_size(explicitCapacity) >= count;
 		}
 
 		constexpr void remove_end() noexcept {
@@ -210,19 +204,20 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity(INDEX oldCapacity = Base::default_capacity())
+		void double_capacity(Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			grow(oldCapacity << 1);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity << 1, explicitCapacity);
 		}
 
-		void grow(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
-
+			
 			T* oldData = Base::get_data();
 			T* newData = ALLOCATOR::allocate(newCapacity);
 
@@ -236,7 +231,8 @@ namespace DSA {
 				throw;
 			}
 			destroy_range_forward(oldData, oldData + start);
-			destroy_range_forward(oldData + end, oldData + oldCapacity);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			destroy_range_forward(oldData + end, oldData + capacity);
 
 			ALLOCATOR::deallocate(oldData);
 
@@ -246,12 +242,13 @@ namespace DSA {
 				Base::set_capacity(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity, INDEX oldCapacity = Base::default_capacity())
+		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			if (newCapacity > oldCapacity)
-				grow(newCapacity, oldCapacity);
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			if (newCapacity > capacity)
+				grow(newCapacity, explicitCapacity);
 		}
 
 #pragma endregion
