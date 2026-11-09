@@ -6,27 +6,29 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class DoublyLinkedList : public Collection<ContainerConfiguration, DoublyLinkedListNode<T, typename ContainerConfiguration::INDEX>> {
+	class DoublyLinkedList : public Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>> {
 	public:
 
-		using Base = Collection<ContainerConfiguration, DoublyLinkedListNode<T, typename ContainerConfiguration::INDEX>>;
+		using Base = Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using VALUE = typename T::T;
 
+		constexpr static INDEX invalid_index = Base::maximum_index;
+
 	protected:
 
-		INDEX free_head = Base::maximum_index;
+		INDEX free_head = invalid_index;
 		INDEX tail_index = 0;
 
 #pragma region Methods
 
 		constexpr INDEX helper_allocate() noexcept {
 			INDEX index = free_head;
-			if (index != Base::maximum_index)
+			if (index != invalid_index)
 				free_head = Base::get(index).next;
 			else
 				index = Base::size++;
@@ -106,31 +108,31 @@ namespace DSA {
 #pragma region Constructors & Destructors
 
 		DoublyLinkedList() noexcept
-			requires (!concepts::DynamicStorage<Base>)
+			requires (!Base::is_dynamic)
 		{
 			T& head = Base::get(0);
-			head.next = Base::maximum_index;
+			head.next = invalid_index;
 			head.previous = 0;
 		};
 
 		// `initialCapacity` must be at least 1, since the head node is always allocated.
 		DoublyLinkedList(INDEX initialCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires Base::is_dynamic
 		: Base(initialCapacity)
 		{
 			T& head = Base::get(0);
-			head.next = Base::maximum_index;
+			head.next = invalid_index;
 			head.previous = 0;
 		};
+
+		~DoublyLinkedList() noexcept = default;
 
 		~DoublyLinkedList() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
 			destroy();
 		}
-
-		~DoublyLinkedList() noexcept = default;
 
 		void destroy() noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
@@ -160,7 +162,7 @@ namespace DSA {
 #pragma region Add & Remove
 
 		constexpr INDEX add(const VALUE& data)
-			noexcept (concepts::is_nothrow_copyable_v<VALUE>&& concepts::is_nothrow_moveable_v<T>)
+			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
 			move_construct_at(Base::get_data() + index, std::move(Base::get(0)));
@@ -199,7 +201,7 @@ namespace DSA {
 			T& head = Base::get(0);
 			const INDEX nextIndex = head.next;
 			destroy_at(&head.data);
-			if (nextIndex == Base::maximum_index)
+			if (nextIndex == invalid_index)
 				return;
 			const INDEX nextNode = Base::get(nextIndex);
 			reconstruct_at(Base::get_data(), std::move(nextNode));
@@ -228,7 +230,7 @@ namespace DSA {
 #pragma region Append & Prepend
 
 		constexpr INDEX append(const VALUE& data)
-			noexcept (concepts::is_nothrow_copyable_v<VALUE>&& concepts::is_nothrow_moveable_v<T>)
+			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
 		{
 			INDEX index = helper_allocate();
 			copy_construct_at(Base::get_data() + index, data);
@@ -250,7 +252,7 @@ namespace DSA {
 		}
 
 		constexpr INDEX prepend(const VALUE& data)
-			noexcept (concepts::is_nothrow_copyable_v<VALUE>&& concepts::is_nothrow_moveable_v<T>)
+			noexcept (concepts::is_nothrow_copyable_v<VALUE> && concepts::is_nothrow_moveable_v<T>)
 		{
 			return add(data);
 		}
@@ -273,7 +275,7 @@ namespace DSA {
 
 		constexpr void normalize()
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires Base::is_dynamic
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
 
@@ -327,7 +329,7 @@ namespace DSA {
 		/*
 		void trim()
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicContainer<Base>
+			requires concepts::HasCapacity<Base>
 		{
 
 		}
