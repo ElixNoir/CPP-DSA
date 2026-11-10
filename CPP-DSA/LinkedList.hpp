@@ -2,7 +2,6 @@
 
 #include "Collection.hpp"
 #include "LinkedListIterator.hpp"
-#include "Math.hpp"
 
 namespace DSA {
 
@@ -45,6 +44,7 @@ namespace DSA {
 			}
 		}
 
+		// To-Do: shrink
 		void helper_resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicContainer<Base>
@@ -238,10 +238,34 @@ namespace DSA {
 
 #pragma region Memory Management
 
+		void double_capacity(Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity << 1, explicitCapacity);
+		}
+
 		constexpr void empty() noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
 				helper_destroy();
 			Base::empty();
+		}
+
+		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity * ratio + 1, explicitCapacity);
+		}
+
+		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			helper_resize(newCapacity);
 		}
 
 		constexpr void normalize()
@@ -295,6 +319,15 @@ namespace DSA {
 			Base::set_data(newData);
 			if constexpr (concepts::Container<Base>)
 				Base::set_capacity(size);
+		}
+
+		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			if (newCapacity > capacity)
+				grow(newCapacity, explicitCapacity);
 		}
 
 		/*

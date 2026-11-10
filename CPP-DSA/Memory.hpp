@@ -78,7 +78,7 @@ namespace Algorithms {
 		}
 
 		template <bool DESTINATION_LEFT_INCLUSIVE = true, bool SOURCE_LEFT_INCLUSIVE = true, typename T>
-		constexpr static void copy_construct_range_backward(T* begin, T* end, T* source)
+		constexpr static void copy_construct_range_backward(T* begin, T* end, const T* source)
 			noexcept(std::is_nothrow_copy_constructible_v<T>
 				|| std::is_trivially_copyable_v<T>)
 		{
@@ -100,7 +100,7 @@ namespace Algorithms {
 		}
 
 		template <bool DESTINATION_LEFT_INCLUSIVE = true, bool SOURCE_LEFT_INCLUSIVE = true, typename T>
-		constexpr static void copy_construct_range_forward(T* begin, T* end, T* source)
+		constexpr static void copy_construct_range_forward(T* begin, T* end, const T* source)
 			noexcept(std::is_nothrow_copy_constructible_v<T>
 				|| std::is_trivially_copyable_v<T>)
 		{

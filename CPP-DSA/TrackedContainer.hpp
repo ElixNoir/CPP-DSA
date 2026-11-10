@@ -198,6 +198,14 @@ namespace DSA {
 			Base::set_size(0);
 		}
 
+		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity * ratio + 1, explicitCapacity);
+		}
+
 		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>

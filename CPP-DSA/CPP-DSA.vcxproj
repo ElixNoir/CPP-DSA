@@ -182,7 +182,7 @@
     <ClInclude Include="Heap.hpp" />
     <ClInclude Include="Pool.hpp" />
     <ClInclude Include="Deque.hpp" />
-    <ClInclude Include="Primitive.hpp" />
+    <ClInclude Include="SIMD.hpp" />
     <ClInclude Include="quad_sort.hpp" />
     <ClInclude Include="radix_sort.hpp" />
     <ClInclude Include="rank_sort.hpp" />
@@ -210,10 +210,14 @@
     <ClInclude Include="Arithmetic.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bitwise.hpp" />
     <ClCompile Include="Combinatorics.hpp" />
+    <ClCompile Include="hash.hpp" />
+    <ClCompile Include="Iterator.hpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="random.hpp" />
     <ClCompile Include="Selection.hpp" />
+    <ClCompile Include="unroll.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

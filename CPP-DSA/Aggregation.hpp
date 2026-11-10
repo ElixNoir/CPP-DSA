@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Comparable.hpp"
+
 namespace Algorithms {
 
 	namespace Aggregation {

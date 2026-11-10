@@ -1,55 +1,11 @@
 #pragma once
 
+#include "hash.hpp"
 #include "TrackedContainer.hpp"
-
-namespace Algorithms {
-
-	namespace Hashing {
-
-		template <typename T>
-		constexpr static uintmax_t default_hash(const T& data) noexcept {
-			constexpr size_t size = sizeof(T);
-			constexpr size_t chunkSize = sizeof(uintmax_t);
-
-			if constexpr (size <= chunkSize) {
-				if constexpr (std::is_trivially_copyable_v<T>)
-					return *reinterpret_cast<const uintmax_t*>(reinterpret_cast<const std::byte*>(&data));
-				else {
-					uintmax_t hash = 0;
-					std::memcpy(&hash, &data, size);
-					return hash;
-				}
-			}
-			else {
-				const std::byte* address = reinterpret_cast<const std::byte*>(&data);
-				uintmax_t hash = 0;
-				size_t bytes_left = size;
-
-				while (bytes_left >= chunkSize) {
-					uintmax_t chunk;
-					std::memcpy(&chunk, address, chunkSize);
-					hash ^= chunk;
-					address += chunkSize;
-					bytes_left -= chunkSize;
-				}
-
-				if (bytes_left > 0) {
-					uintmax_t chunk = 0;
-					std::memcpy(&chunk, address, bytes_left);
-					hash ^= chunk;
-				}
-
-				return hash;
-			}
-		}
-
-	}
-
-}
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = Algorithms::Hashing::default_hash>
+	template <concepts::StoragePolicy ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = hash>
 		requires std::is_nothrow_destructible_v<T>
 	class Hashmap : public TrackedContainer<ContainerConfiguration, T> {
 	public:
@@ -223,6 +179,14 @@ namespace DSA {
 			grow(capacity << 1);
 		}
 
+		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity * ratio + 1, explicitCapacity);
+		}
+
 		[[nodiscard]] constexpr bool should_grow(Base::Capacity explicitCapacity = {}) const noexcept {
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			return static_cast<double>(Base::get_size()) / capacity > 0.8;
@@ -240,7 +204,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			if (newCapacity > oldCapacity)
+			if (newCapacity > capacity)
 				grow(newCapacity);
 		}
 
@@ -249,7 +213,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			if (newCapacity > oldCapacity)
+			if (newCapacity > capacity)
 				grow(newCapacity);
 			else
 				shrink(newCapacity);

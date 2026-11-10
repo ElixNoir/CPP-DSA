@@ -93,3 +93,15 @@ using smallest_sum_t = std::conditional_t<
 >;
 
 #pragma endregion
+
+#pragma region Interpretation
+
+template <typename T>
+using cast_pointer_t = std::conditional_t<std::is_pointer_v<T>, T, std::add_pointer_t<T>>;
+
+template <typename TO, typename FROM>
+constexpr TO* reinterpret_cast_single_pointer(FROM source) noexcept {
+	return reinterpret_cast<cast_pointer_t<TO>>(source);
+}
+
+#pragma endregion

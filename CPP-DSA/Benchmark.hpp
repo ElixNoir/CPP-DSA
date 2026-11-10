@@ -2,28 +2,46 @@
 
 #include <algorithm>
 #include <chrono>
-
+#include <iostream>
 
 namespace Algorithms {
 
-    template <size_t ITERATIONS, typename F, size_t RUNS = 10>
-    [[nodiscard]] double benchmark(F&& function) {
-        using Clock = std::chrono::steady_clock;
+	template <auto OPERATION, typename... ARGUMENTS>
+	volatile void benchmark(ARGUMENTS&&... arguments) {
+		double minimumPerIteration = 999999.0;
+		OPERATION(std::forward<ARGUMENTS>(arguments)...);
 
-        function(); // Warm up
+		for (int run = 0; run < 100; ++run) {
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < 10000; ++i)
+				OPERATION(std::forward<ARGUMENTS>(arguments)...);
+			auto end = std::chrono::high_resolution_clock::now();
 
-        double results[RUNS]{};
+			std::chrono::duration<double, std::nano> elapsed = end - start;
+			double timePerIteration = elapsed.count() / 10000;
+			minimumPerIteration = std::min(minimumPerIteration, timePerIteration);
+		}
 
-        for (size_t run = 0; run < RUNS; ++run) {
-            auto start = Clock::now();
-            function();
-            auto end = Clock::now();
-            results[run] = std::chrono::duration<double, std::nano>(end - start).count() / ITERATIONS;
-        }
+		std::cout << "Time: " << minimumPerIteration << " ns\n";
+	}
 
-        std::sort(results.begin(), results.end());
+	template <typename OPERATION, typename... ARGUMENTS>
+	volatile void benchmark(OPERATION&& operation, ARGUMENTS&&... arguments) {
+		double minimumPerIteration = 999999.0;
+		operation(std::forward<ARGUMENTS>(arguments)...);
 
-        return results[RUNS / 2];
-    }
+		for (int run = 0; run < 100; ++run) {
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < 10000; ++i)
+				operation(std::forward<ARGUMENTS>(arguments)...);
+			auto end = std::chrono::high_resolution_clock::now();
+
+			std::chrono::duration<double, std::nano> elapsed = end - start;
+			double timePerIteration = elapsed.count() / 10000;
+			minimumPerIteration = std::min(minimumPerIteration, timePerIteration);
+		}
+
+		std::cout << "Time: " << minimumPerIteration << " ns\n";
+	}
 
 }

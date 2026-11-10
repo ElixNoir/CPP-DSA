@@ -27,9 +27,9 @@ namespace DSA {
 
 #pragma region Methods
 
-		constexpr INDEX parent(INDEX index) const noexcept { return (index - 1) >> 1; }
-		constexpr INDEX left(INDEX index) const noexcept { return (index << 1) + 1; }
-		constexpr INDEX right(INDEX index) const noexcept { return (index << 1) + 2; }
+		constexpr INDEX parent_of(INDEX index) const noexcept { return (index - 1) >> 1; }
+		constexpr INDEX left_of(INDEX index) const noexcept { return (index << 1) + 1; }
+		constexpr INDEX right_of(INDEX index) const noexcept { return (index << 1) + 2; }
 
 		void helper_destroy() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
@@ -204,21 +204,21 @@ namespace DSA {
 		{
 			const INDEX size = Base::get_size();
 
-			INDEX l = left(i);
-			INDEX r = right(i);
+			INDEX leftIndex = left_of(i);
+			INDEX rightIndex = right_of(i);
 			INDEX extremeIndex = i;
 
 			if constexpr (HEAP_TYPE == MAX_HEAP) {
-				if ((l < size) && (Base::get(l) > Base::get(extremeIndex)))
-					extremeIndex = l;
-				if ((r < size) && (Base::get(r) > Base::get(extremeIndex)))
-					extremeIndex = r;
+				if ((leftIndex < size) && (Base::get(leftIndex) > Base::get(extremeIndex)))
+					extremeIndex = leftIndex;
+				if ((rightIndex < size) && (Base::get(rightIndex) > Base::get(extremeIndex)))
+					extremeIndex = rightIndex;
 			}
 			else {
-				if ((l < size) && (Base::get(l) < Base::get(extremeIndex)))
-					extremeIndex = l;
-				if ((r < size) && (Base::get(r) < Base::get(extremeIndex)))
-					extremeIndex = r;
+				if ((leftIndex < size) && (Base::get(leftIndex) < Base::get(extremeIndex)))
+					extremeIndex = leftIndex;
+				if ((rightIndex < size) && (Base::get(rightIndex) < Base::get(extremeIndex)))
+					extremeIndex = rightIndex;
 			}
 
 			if (extremeIndex != i) {
@@ -259,6 +259,14 @@ namespace DSA {
 			if constexpr (!std::is_trivially_destructible_v<T>)
 				helper_destroy();
 			Base::set_size(0);
+		}
+
+		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			grow(capacity * ratio + 1, explicitCapacity);
 		}
 
 		void grow(INDEX newCapacity)

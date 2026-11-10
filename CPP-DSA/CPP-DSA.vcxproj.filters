@@ -153,7 +153,7 @@
     <ClInclude Include="LinkedList.hpp">
       <Filter>Header Files\Lists</Filter>
     </ClInclude>
-    <ClInclude Include="Primitive.hpp">
+    <ClInclude Include="SIMD.hpp">
       <Filter>Header Files\General</Filter>
     </ClInclude>
     <ClInclude Include="Bitmask.hpp">
@@ -262,6 +262,18 @@
     </ClCompile>
     <ClCompile Include="random.hpp">
       <Filter>Header Files\Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="hash.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="unroll.hpp">
+      <Filter>Header Files\Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="Bitwise.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClCompile>
+    <ClCompile Include="Iterator.hpp">
+      <Filter>Header Files\Concepts</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

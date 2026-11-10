@@ -59,12 +59,16 @@ namespace DSA {
 
 		Collection() : Base() {}
 
+		Collection(INDEX initialCapacity)
+			requires Base::is_dynamic
+		: Base(initialCapacity) {}
+
 		Collection(std::initializer_list<T> initializerList) noexcept : Base(initializerList), size(initializerList.size()) {}
 
 		Collection& operator=(const Collection& other)
 			requires (Base::is_dynamic && std::is_trivial_v<T>)
 		{
-			const T* const data = Base::get_data();
+			T* const data = Base::get_data();
 			const INDEX size = get_size();
 			const T* const otherData = other.get_data();
 			const INDEX otherSize = other.get_size();

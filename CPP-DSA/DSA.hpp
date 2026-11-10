@@ -21,7 +21,7 @@ namespace DSA {
 		template <typename T, typename INDEX = size_t>
 		concept HasMutableCapacity = HasCapacity<T, INDEX> && requires(T t, INDEX newCapacity) {
 
-			{ t.set_capacity() };
+			{ t.set_capacity(newCapacity) };
 
 		};
 

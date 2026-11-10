@@ -14,8 +14,6 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		constexpr static bool has_capacity = Base::has_capacity;
-
 	protected:
 
 #pragma region Methods
@@ -54,7 +52,7 @@ namespace DSA {
 			ALLOCATOR::deallocate(oldData);
 
 			Base::set_data(newData);
-			if constexpr (concepts::DynamicContainer<Base>)
+			if constexpr (concepts::HasMutableCapacity<Base>)
 				Base::set_capacity(newCapacity);
 		}
 
@@ -66,18 +64,17 @@ namespace DSA {
 
 		using Base::Base;
 
+		~Stack() noexcept = default;
+
 		~Stack() noexcept
 			requires (!std::is_trivially_destructible_v<T>)
 		{
 			destroy();
 		}
 
-		~Stack() noexcept = default;
-
-		void destroy() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			helper_destroy();
+		void destroy() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<T>)
+				helper_destroy();
 		}
 
 #pragma endregion
@@ -120,7 +117,7 @@ namespace DSA {
 		constexpr void emplace(Arguments&&... arguments)
 			noexcept (std::is_nothrow_constructible_v<T, Arguments...>)
 		{
-			construct_at<T>(Base::get_data() + Base::get_size(), forward<Arguments>(arguments)...);
+			construct_at<T>(Base::get_data() + Base::get_size(), std::forward<Arguments>(arguments)...);
 			++Base::size;
 		}
 
@@ -180,7 +177,7 @@ namespace DSA {
 			Base::size -= count;
 		}
 
-		[[nodiscard]] constexpr bool can_push(INDEX count = 1, Parameter<INDEX, !has_capacity> explicitCapacity = {}) const noexcept {
+		[[nodiscard]] constexpr bool can_push(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
 			return Base::can_add(count, explicitCapacity);
 		}
 
@@ -199,20 +196,20 @@ namespace DSA {
 		constexpr void push_copy_construct_many(const T* source, INDEX count) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
-			add_copy_construct_many(source, count);
+			add_many(source, count);
 		}
 
-		constexpr void push_move_construct_many(const T* source, INDEX count) 
+		constexpr void push_move_construct_many(T* source, INDEX count) 
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
-			add_move_construct_many(source, count);
+			add_many(source, count);
 		}
 
 #pragma endregion
 
 #pragma region Memory Management
 
-		void double_capacity(Parameter<INDEX, !has_capacity> explicitCapacity = {})
+		void double_capacity(Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
@@ -224,6 +221,14 @@ namespace DSA {
 			Base::set_size(0);
 		}
 
+		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires concepts::DynamicStorage<Base>
+		{
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			helper_resize<true>(capacity * ratio + 1);
+		}
+
 		void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
@@ -231,22 +236,22 @@ namespace DSA {
 			helper_resize<true>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity, Parameter<INDEX, !has_capacity> explicitCapacity = {})
+		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			if (newCapacity > capacity)
-				grow(newCapacity, capacity);
+				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity, Parameter<INDEX, !has_capacity> explicitCapacity = {})
+		void resize(INDEX newCapacity, Base::Capacity explicitCapacity = {})
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			if (newCapacity > capacity)
-				grow(newCapacity, capacity);
+				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
