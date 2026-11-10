@@ -3,6 +3,7 @@
 #include "Allocator.hpp"
 
 #include <cstdlib>
+#include <exception>
 
 namespace DSA {
 
@@ -21,7 +22,7 @@ namespace DSA {
 			T* block = reinterpret_cast<T*>(std::malloc(size * sizeof(T)));
 			if constexpr (!IGNORE_FAILED_ALLOCATION)
 				if (block == nullptr)
-					throw;
+					throw std::bad_alloc();
 			return block;
 		}
 
@@ -35,7 +36,7 @@ namespace DSA {
 			block = reinterpret_cast<T*>(std::realloc(reinterpret_cast<void*>(block), size * sizeof(T)));
 			if constexpr (!IGNORE_FAILED_ALLOCATION)
 				if (block == nullptr)
-					throw;
+					throw std::bad_alloc();
 			return block;
 		}
 

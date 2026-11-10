@@ -1,15 +1,15 @@
 #pragma region Dependencies
 
-//#include "SIMD.hpp"
+#include "Statistics.hpp"
 
-#include "Stack.hpp"
-
-#include <vector>
+#include <iostream>
 
 #pragma endregion
 
-using namespace DSA;
+using namespace Algorithms::Statistics;
+//using namespace DSA;
 
-volatile int main() {
+int main() {
+    std::cout << uniform_expected_value(0, 3);
     return 0;
 }

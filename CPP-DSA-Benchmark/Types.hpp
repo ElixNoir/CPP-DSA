@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <cstddef>
+#include <chrono>
 #include <type_traits>
 
 struct LargeTrivial {
@@ -11,7 +13,11 @@ struct LargeTrivial {
 struct NonTrivial {
     std::uint64_t data[8];
 
-    NonTrivial() noexcept = default;
+    NonTrivial() noexcept {
+        const auto seed = static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+        for (std::size_t i = 0; i < 8; ++i)
+            data[i] = seed + i;
+    };
 
     NonTrivial(const NonTrivial& other) noexcept
         : data{}

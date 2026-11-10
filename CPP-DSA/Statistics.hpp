@@ -13,6 +13,78 @@ namespace Algorithms {
 
 	namespace Statistics {
 
+#pragma region General
+
+		template <typename T>
+		constexpr static T deviation(double data, double expectedValue) noexcept {
+			return data - expectedValue;
+		}
+
+		template <typename T, std::input_iterator ITERATOR>
+		constexpr static T mean_of(ITERATOR begin, ITERATOR end) noexcept {
+			T count = 0;
+			T sum = 0;
+			while (begin != end) {
+				sum += *(begin++);
+				++count;
+			}
+			return sum / count;
+		}
+
+		template <typename T, std::input_iterator ITERATOR>
+		constexpr static T mean_of(ITERATOR begin, ITERATOR end, size_t count) noexcept {
+			T sum = Arithmetic::sum(begin, end);
+			return sum / count;
+		}
+
+		template <DSA::concepts::Comparable T>
+			requires std::is_swappable_v<T>
+		constexpr static T median_of(T* data, size_t count)
+			noexcept (std::is_nothrow_swappable_v<T>)
+		{
+			return Selection::quick_select(data, 0, count, (count + 1) >> 1);
+		}
+
+		constexpr static double z_score(double deviation, double standardDeviation) noexcept {
+			return deviation / standardDeviation;
+		}
+
+		constexpr static double standardize(double deviation, double standardDeviation) noexcept {
+			return z_score(deviation * Constants::square_root_of_2, standardDeviation);
+		}
+
+		constexpr static double standard_deviation(double variance) noexcept {
+			return Arithmetic::square_root(variance);
+		}
+
+		template <typename T, std::input_iterator ITERATOR>
+		constexpr static T variance_of(ITERATOR begin, ITERATOR end, size_t count) noexcept {
+			T mean = mean_of(begin, end, count);
+			T squareDifference = 0;
+			while (begin != end)
+				squareDifference += Arithmetic::square(*(begin++) - mean);
+			return squareDifference / count;
+		}
+
+		template <typename T, std::input_iterator ITERATOR>
+		constexpr static T welford_variance_of(ITERATOR begin, ITERATOR end) noexcept {
+			T mean = 0;
+			T mean2 = 0;
+			T count = 0;
+
+			while (begin != end) {
+				++count;
+				const T data = *(begin++);
+				const T delta = data - mean;
+				mean += delta / count;
+				mean2 += delta * (data - mean);
+			}
+
+			return mean2 / count;
+		}
+
+#pragma endregion
+
 #pragma region Exponential Distribution
 
 		constexpr static double exponential_cdf(double data, double rate) noexcept {
@@ -163,78 +235,6 @@ namespace Algorithms {
 
 		constexpr static double uniform_variance(double minimumX, double maximumX) noexcept {
 			return Arithmetic::square(maximumX - minimumX) / 12;
-		}
-
-#pragma endregion
-
-#pragma region General
-
-		template <typename T>
-		constexpr static T deviation(double data, double expectedValue) noexcept {
-			return data - expectedValue;
-		}
-
-		template <typename T, std::input_iterator ITERATOR>
-		constexpr static T mean_of(ITERATOR begin, ITERATOR end) noexcept {
-			T count = 0;
-			T sum = 0;
-			while (begin != end) {
-				sum += *(begin++);
-				++count;
-			}
-			return sum / count;
-		}
-
-		template <typename T, std::input_iterator ITERATOR>
-		constexpr static T mean_of(ITERATOR begin, ITERATOR end, size_t count) noexcept {
-			T sum = Arithmetic::sum(begin, end);
-			return sum / count;
-		}
-
-		template <DSA::concepts::Comparable T>
-			requires std::is_swappable_v<T>
-		constexpr static T median_of(T* data, size_t count)
-			noexcept (std::is_nothrow_swappable_v<T>)
-		{
-			return Selection::quick_select(data, 0, count, (count + 1) >> 1);
-		}
-
-		constexpr static double standardize(double deviation, double standardDeviation) noexcept {
-			return z_score(deviation * Constants::square_root_of_2, standardDeviation);
-		}
-
-		constexpr static double standard_deviation(double variance) noexcept {
-			return Arithmetic::square_root(variance);
-		}
-
-		template <typename T, std::input_iterator ITERATOR>
-		constexpr static T variance_of(ITERATOR begin, ITERATOR end, size_t count) noexcept {
-			T mean = mean_of(begin, end, count);
-			T squareDifference = 0;
-			while (begin != end)
-				squareDifference += Arithmetic::square(*(begin++) - mean);
-			return squareDifference / count;
-		}
-
-		template <typename T, std::input_iterator ITERATOR>
-		constexpr static T welford_variance_of(ITERATOR begin, ITERATOR end) noexcept {
-			T mean = 0;
-			T mean2 = 0;
-			T count = 0;
-
-			while (begin != end) {
-				++count;
-				const T data = *(begin++);
-				const T delta = data - mean;
-				mean += delta / count;
-				mean2 += delta * (data - mean);
-			}
-
-			return mean2 / count;
-		}
-
-		constexpr static double z_score(double deviation, double standardDeviation) noexcept {
-			return deviation / standardDeviation;
 		}
 
 #pragma endregion

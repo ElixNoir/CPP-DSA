@@ -9,7 +9,7 @@ using namespace DSA;
 
 template <typename T>
 using CustomStack =
-DSA::Stack<DSA::ContainerPolicy<DSA::HeapStoragePolicy<>>, T>;
+Stack<ContainerPolicy<HeapStoragePolicy<>>, T>;
 
 // ============================================================
 // Preallocated: no allocation or growth during the benchmark
@@ -26,7 +26,11 @@ static void BM_Stack_Preallocated(benchmark::State& state)
     for (auto _ : state)
     {
         for (std::size_t i = 0; i < count; ++i)
+        {
+            if (!stack.can_push())
+                stack.expand();
             stack.push(value);
+        }
 
         benchmark::ClobberMemory();
 
@@ -139,13 +143,13 @@ static void BM_Vector_Growing(benchmark::State& state)
         ->RangeMultiplier(2)->Range(16, 65536);                        \
     BENCHMARK_TEMPLATE(BM_Vector_Preallocated, TYPE)                   \
         ->RangeMultiplier(2)->Range(16, 65536);                        \
-    BENCHMARK_TEMPLATE(BM_Stack_Growing, TYPE)                         \
+    //BENCHMARK_TEMPLATE(BM_Stack_Growing, TYPE)                         \
         ->RangeMultiplier(2)->Range(16, 65536);                        \
     BENCHMARK_TEMPLATE(BM_Vector_Growing, TYPE)                        \
-        ->RangeMultiplier(2)->Range(16, 65536);
+        ->RangeMultiplier(2)->Range(16, 65536)
 
-REGISTER_BENCHMARKS(int)
-REGISTER_BENCHMARKS(LargeTrivial)
+//REGISTER_BENCHMARKS(int)
+//REGISTER_BENCHMARKS(LargeTrivial)
 REGISTER_BENCHMARKS(NonTrivial)
 
 #undef REGISTER_BENCHMARKS

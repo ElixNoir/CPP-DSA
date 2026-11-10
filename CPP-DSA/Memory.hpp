@@ -83,7 +83,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copy_constructible_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const e = end + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -105,7 +105,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copy_constructible_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const b = begin + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -157,7 +157,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const e = end + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -179,7 +179,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const b = begin + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -212,7 +212,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const e = end + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -234,7 +234,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const b = begin + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -265,7 +265,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const e = end + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -288,7 +288,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const b = begin + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -320,7 +320,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const e = end + !DESTINATION_LEFT_INCLUSIVE;
 				try {
@@ -343,7 +343,7 @@ namespace Algorithms {
 				|| std::is_trivially_copyable_v<T>)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>)
-				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE) * sizeof(T), source + (!SOURCE_LEFT_INCLUSIVE) * sizeof(T), (end - begin) * sizeof(T));
+				std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), source + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
 			else {
 				T* const b = begin + !DESTINATION_LEFT_INCLUSIVE;
 				try {
