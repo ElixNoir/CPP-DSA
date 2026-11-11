@@ -6,6 +6,18 @@
 #include <limits>
 #include <type_traits>
 
+#pragma region Evaluation
+
+template <auto VALUE>
+concept is_const_evaluable = true;
+
+template <typename OPERATION, typename... ARGUMENTS>
+concept is_const_invocable = requires(OPERATION&& operation, ARGUMENTS&&... arguments) {
+	typename std::integral_constant<bool, (operation(arguments...), true)>;
+};
+
+#pragma endregion
+
 #pragma region Integral Types
 
 template <typename T, typename U>

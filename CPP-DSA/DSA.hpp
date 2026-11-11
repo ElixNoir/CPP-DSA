@@ -11,6 +11,8 @@ namespace DSA {
 
 	namespace concepts {
 
+#pragma region Capacity
+
 		template <typename T, typename INDEX = size_t>
 		concept HasCapacity = std::is_fundamental_v<INDEX> && requires(T t) {
 
@@ -25,6 +27,10 @@ namespace DSA {
 
 		};
 
+#pragma endregion
+
+#pragma region Data
+
 		template <typename T>
 		concept HasData = requires(T t) {
 
@@ -38,6 +44,8 @@ namespace DSA {
 			{ t.set_data(newData) };
 
 		};
+
+#pragma endregion
 
 	}
 

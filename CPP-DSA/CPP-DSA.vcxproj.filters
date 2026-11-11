@@ -249,6 +249,12 @@
     <ClInclude Include="Constants.hpp">
       <Filter>Header Files\Algorithms\Categories</Filter>
     </ClInclude>
+    <ClInclude Include="TransitionMatrix.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="A.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -274,6 +280,9 @@
     </ClCompile>
     <ClCompile Include="Iterator.hpp">
       <Filter>Header Files\Concepts</Filter>
+    </ClCompile>
+    <ClCompile Include="NumberTheory.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

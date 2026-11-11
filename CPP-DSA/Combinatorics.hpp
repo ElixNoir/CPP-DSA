@@ -7,18 +7,6 @@
 
 namespace Algorithms {
 
-	namespace Constants {
-
-		constexpr static double square_root_of_5 = 2.23606797749979;
-
-		const static uint64_t Factorials[] = {
-			1, 1, 2, 6, 24, 120, 720, 5040, 40320,
-			362880, 3628800, 39916800, 479001600,
-			6227020800, 87178291200, 1307674368000,
-			20922789888000, 355687428096000, 6402373705728000
-		};
-
-	}
 
 	namespace Combinatorics {
 
@@ -27,13 +15,48 @@ namespace Algorithms {
 		}
 
 		template <typename T>
-		constexpr static double gamma(T data) noexcept {
+		constexpr static double ln_abs_gamma(T data) noexcept {
+			if constexpr (std::same_as<T, double>)
+				return lgamma(data);
+			else if constexpr (std::same_as<T, float>)
+				return lgammaf(data);
+			else
+				return lgammal(data);
+		}
+
+		template <typename T>
+		constexpr static double true_gamma(T data) noexcept {
 			if constexpr (std::same_as<T, double>)
 				return tgamma(data);
 			else if constexpr (std::same_as<T, float>)
 				return tgammaf(data);
 			else
 				return tgammal(data);
+		}
+
+		constexpr static double upper_incomplete_gamma_integer(int alpha, double rate) noexcept {
+			if (alpha <= 0 || rate < 0) return 0.0; // Domain protection
+
+			double sum = 0;
+			for (int k = 0; k < alpha; ++k) {
+				double log_term = k * Arithmetic::natural_logarithm(rate) - ln_abs_gamma(k + 1);
+				sum += Arithmetic::exponential(log_term);
+			}
+
+			return Arithmetic::exponential(ln_abs_gamma(alpha) - rate) * sum;
+		}
+
+		constexpr static uint64_t choose(uint32_t n, uint32_t r) noexcept { //. pascal table next?
+			if (r == 0 || r == n)
+				return 1;
+			if (r > (n >> 1))
+				r = n - r;
+
+			uint64_t result = 1;
+			for (int i = 1; i <= r; ++i)
+				result *= (n - i + 1) / i;
+
+			return result;
 		}
 
 		template <DSA::concepts::Comparable T>
