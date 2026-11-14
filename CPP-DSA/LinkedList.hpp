@@ -5,12 +5,12 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class LinkedList : public Collection<ContainerConfiguration, LinkedListNode<T, typename ContainerConfiguration::INDEX>> {
+	class LinkedList : public Collection<StoragePolicy, LinkedListNode<T, typename StoragePolicy::INDEX>> {
 	public:
 
-		using Base = Collection<ContainerConfiguration, LinkedListNode<T, typename ContainerConfiguration::INDEX>>;
+		using Base = Collection<StoragePolicy, LinkedListNode<T, typename StoragePolicy::INDEX>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -257,7 +257,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(capacity * ratio + 1, explicitCapacity);
+			grow(Math::ceiling(capacity * ratio), explicitCapacity);
 		}
 
 		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})

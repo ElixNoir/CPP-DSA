@@ -1,20 +1,28 @@
 #pragma once
 
-#include "Memory.hpp"
+#include "Comparable.hpp"
+#include "Iterator.hpp"
 
 namespace Algorithms {
 
 	namespace Sorting {
 
-		constexpr static bool is_sorted(const auto* const begin, const auto* const end) {
-			if (begin == end)
-				return true;
-			const auto* cursor = begin;
-			while (++cursor != end)
-				if (*cursor < *(cursor - 1))
-					return false;
-			return true;
-		}
+        template <DSA::concepts::Comparable T, DSA::concepts::InputIterator<T> ITERATOR>
+        [[nodiscard]] constexpr static bool is_sorted(ITERATOR begin, ITERATOR end) noexcept {
+            if (begin == end)
+                return true;
+
+            ITERATOR previous = begin++;
+
+            while (begin != end) {
+                if (*begin < *previous)
+                    return false;
+
+                previous = begin++;
+            }
+
+            return true;
+        }
 
 	}
 

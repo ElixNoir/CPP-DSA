@@ -14,8 +14,8 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		constexpr static T BitCount = std::numeric_limits<T>::digits;
-		constexpr static T BitShift = std::bit_width(BitCount - 1);
+		constexpr static T bit_count = std::numeric_limits<T>::digits;
+		constexpr static T bit_shift = std::bit_width(bit_count - 1);
 
 #pragma region Constructors & Destructors
 
@@ -58,7 +58,7 @@ namespace DSA {
 		}
 
 		constexpr T find_kth(T length, T k) {
-			INDEX bit = 1 << (BitCount - std::countl_zero(length) - 1);
+			INDEX bit = 1 << (bit_count - std::countl_zero(length) - 1);
 			INDEX index = 0;
 			while (bit > 0) {
 				INDEX next = index + bit;

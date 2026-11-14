@@ -1,10 +1,12 @@
 #pragma once
 
+#include "Math.hpp"
 #include "Memory.hpp"
 
 namespace DSA {
 
 	using namespace Algorithms;
+	using namespace Algorithms::Math;
 	using namespace Algorithms::Memory;
 
 	struct EMPTY_STRUCT {};
@@ -42,6 +44,24 @@ namespace DSA {
 		concept HasMutableData = HasData<T> && requires(T t, typename T::T * newData) {
 
 			{ t.set_data(newData) };
+
+		};
+
+#pragma endregion
+
+#pragma region Size
+
+		template <typename T>
+		concept HasSize = requires(T t) {
+
+			{ t.get_size() } -> std::same_as<typename T::INDEX>;
+
+		};
+
+		template <typename T>
+		concept HasMutableSize = HasData<T> && requires(T t, typename T::INDEX newSize) {
+
+			{ t.set_size(newSize) };
 
 		};
 

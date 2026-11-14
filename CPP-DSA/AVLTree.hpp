@@ -14,22 +14,22 @@ namespace DSA {
 
 	};
 
-	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
-	using AVLTreeNodeContainer = Collection<ContainerConfiguration, AVLTreeNode<KeyValuePair, ContainerConfiguration::template STRUCTURE<KeyValuePair>::INDEX>>;
+	template <concepts::StoragePolicy StoragePolicy, concepts::KeyValuePair KeyValuePair>
+	using AVLTreeNodeContainer = Collection<StoragePolicy, AVLTreeNode<KeyValuePair, StoragePolicy::template STRUCTURE<KeyValuePair>::INDEX>>;
 
-	template <concepts::StoragePolicy ContainerConfiguration, concepts::KeyValuePair KeyValuePair>
+	template <concepts::StoragePolicy StoragePolicy, concepts::KeyValuePair KeyValuePair>
 		requires std::is_nothrow_destructible_v<KeyValuePair>
-	class AVLTree : public AVLTreeNodeContainer<ContainerConfiguration, KeyValuePair> {
+	class AVLTree : public AVLTreeNodeContainer<StoragePolicy, KeyValuePair> {
 	public:
 
-		using Base = AVLTreeNodeContainer<ContainerConfiguration, KeyValuePair>;
+		using Base = AVLTreeNodeContainer<StoragePolicy, KeyValuePair>;
 
 		using typename Base::INDEX;
 		using typename Base::T;
 		using KEY = T::KEY;
 		using VALUE = T::VALUE;
 
-		constexpr static INDEX invalid_index = ContainerConfiguration::maximum_index;
+		constexpr static INDEX invalid_index = StoragePolicy::maximum_index;
 
 	protected:
 

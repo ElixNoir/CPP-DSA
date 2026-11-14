@@ -15,8 +15,8 @@ namespace DSA {
         using typename Base::INDEX;
         using typename Base::T;
 
-        constexpr static INDEX BitCount = Bitmask<>::BitCount;
-        constexpr static INDEX BitShift = Bitmask<>::BitShift;
+        constexpr static INDEX bit_count = Bitmask<>::bit_count;
+        constexpr static INDEX bit_shift = Bitmask<>::bit_shift;
 
     protected:
 

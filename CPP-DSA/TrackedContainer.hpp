@@ -14,14 +14,14 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		constexpr static auto BitCount = Bitmask<>::BitCount;
-		constexpr static auto BitShift = Bitmask<>::BitShift;
+		constexpr static auto bit_count = Bitmask<>::bit_count;
+		constexpr static auto bit_shift = Bitmask<>::bit_shift;
 
 		using TRACKED = Bitset<
 			std::conditional_t<
 				StoragePolicy::is_dynamic,
 				HeapStoragePolicy<INDEX, typename StoragePolicy::ALLOCATOR_TEMPLATE>,
-				InlineStoragePolicy<((Base::maximum_index + BitCount - 1) >> BitShift)>
+				InlineStoragePolicy<((Base::maximum_index + bit_count - 1) >> bit_shift)>
 			>
 		>;
 
@@ -112,7 +112,7 @@ namespace DSA {
 		TrackedContainer(INDEX initialCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires (concepts::DynamicStorage<Base>)
-		: Base(initialCapacity), tracked((initialCapacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift) {}
+		: Base(initialCapacity), tracked((initialCapacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift) {}
 
 		~TrackedContainer() noexcept
 			requires concepts::Container<Base>
@@ -135,7 +135,7 @@ namespace DSA {
 
 		[[nodiscard]] constexpr INDEX get_bitset_capacity(Base::Capacity explicitCapacity = {}) const noexcept {
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			return (capacity + BitCount - 1) >> BitShift;
+			return (capacity + bit_count - 1) >> bit_shift;
 		}
 
 #pragma endregion
@@ -203,7 +203,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(capacity * ratio + 1, explicitCapacity);
+			grow(Math::ceiling(capacity * ratio), explicitCapacity);
 		}
 
 		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})

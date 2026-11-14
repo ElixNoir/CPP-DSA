@@ -24,7 +24,7 @@ namespace DSA {
 
         const MASK* address = nullptr;
         INDEX mask = 0;
-        INDEX bit = MASK::BitCount;
+        INDEX bit = MASK::bit_count;
         INDEX maskCount = 0;
 
         constexpr void seek() {
@@ -33,7 +33,7 @@ namespace DSA {
                     address[mask].index_of_trailing_one(static_cast<int>(bit))
                     : address[mask].index_of_trailing_zero(static_cast<int>(bit));
 
-                if (found != MASK::BitCount) {
+                if (found != MASK::bit_count) {
                     bit = static_cast<INDEX>(found);
                     return;
                 }
@@ -44,7 +44,7 @@ namespace DSA {
 
             // End sentinel.
             mask = maskCount;
-            bit = MASK::BitCount;
+            bit = MASK::bit_count;
         }
 
     public:
@@ -58,7 +58,7 @@ namespace DSA {
         ) :
             address(address),
             mask(0),
-            bit(MASK::BitCount),
+            bit(MASK::bit_count),
             maskCount(maskCount)
         {
             if (!end)
@@ -68,7 +68,7 @@ namespace DSA {
         }
 
         constexpr INDEX operator*() const noexcept {
-            return mask * MASK::BitCount + bit;
+            return mask * MASK::bit_count + bit;
         }
 
         constexpr BitsetIterator& operator++() {

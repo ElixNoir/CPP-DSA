@@ -142,6 +142,8 @@
     <ClInclude Include="Addable.hpp" />
     <ClInclude Include="Aggregation.hpp" />
     <ClInclude Include="Allocator.hpp" />
+    <ClInclude Include="BuddyArena.hpp" />
+    <ClInclude Include="BumpArena.hpp" />
     <ClInclude Include="AVLTree.hpp" />
     <ClInclude Include="benchmark.hpp" />
     <ClInclude Include="BinarySearchTree.hpp" />
@@ -165,8 +167,10 @@
     <ClInclude Include="DSA.hpp" />
     <ClInclude Include="FenwickTree.hpp" />
     <ClInclude Include="Geometry.hpp" />
+    <ClInclude Include="Interner.hpp" />
     <ClInclude Include="LinkedListIterator.hpp" />
     <ClInclude Include="LinkedListNode.hpp" />
+    <ClInclude Include="Math.hpp" />
     <ClInclude Include="Multipliable.hpp" />
     <ClInclude Include="Parameter.hpp" />
     <ClInclude Include="SegmentTree.hpp" />
@@ -174,7 +178,7 @@
     <ClInclude Include="grail_sort.hpp" />
     <ClInclude Include="Hashable.hpp" />
     <ClInclude Include="Hashes.hpp" />
-    <ClInclude Include="Hashmap.hpp" />
+    <ClInclude Include="HoarderHashmap.hpp" />
     <ClInclude Include="heap_sort.hpp" />
     <ClInclude Include="insertion_sort.hpp" />
     <ClInclude Include="KeyValuePair.hpp" />
@@ -199,6 +203,7 @@
     <ClInclude Include="swap.hpp" />
     <ClInclude Include="Swappable.hpp" />
     <ClInclude Include="Test.hpp" />
+    <ClInclude Include="PointerHashmap.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />
     <ClInclude Include="Collection.hpp" />
     <ClInclude Include="Buffer.hpp" />
@@ -210,6 +215,7 @@
     <ClInclude Include="Traits.hpp" />
     <ClInclude Include="Arithmetic.hpp" />
     <ClInclude Include="TransitionMatrix.hpp" />
+    <ClInclude Include="Vector2.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bitwise.hpp" />
@@ -221,6 +227,7 @@
     <ClCompile Include="random.hpp" />
     <ClCompile Include="Selection.hpp" />
     <ClCompile Include="unroll.hpp" />
+    <ClCompile Include="View.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

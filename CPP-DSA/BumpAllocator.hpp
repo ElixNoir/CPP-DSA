@@ -4,12 +4,12 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T>
+	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class BumpAllocator : Collection<ContainerConfiguration, T> {
+	class BumpAllocator : Collection<StoragePolicy, T> {
 	public:
 
-		using Base = Collection<ContainerConfiguration, T>;
+		using Base = Collection<StoragePolicy, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -28,8 +28,8 @@ namespace DSA {
 
 #pragma region Allocate
 
-		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1, INDEX capacity = Base::default_capacity()) const noexcept {
-			return Base::can_add(capacity, count);
+		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
+			return Base::can_add(count, explicitCapacity);
 		}
 
 		[[nodiscard]] constexpr INDEX allocate() noexcept {

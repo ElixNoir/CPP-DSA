@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Arithmetic.hpp"
+#include "Math.hpp"
 #include "hash.hpp"
 #include "Traits.hpp"
 
@@ -15,40 +15,61 @@ constexpr bool has_sse = true;
 constexpr bool has_sse = true;
 #elif defined(_M_AMD64) || defined(_M_X64)
 #include <xmmintrin.h>
-constexpr bool has_sse = false;
+constexpr bool has_sse = true;
 #else
 constexpr bool has_sse = false;
 #endif
 
-template<bool HAS_SSE>
-struct fx4_Storage;
+template<typename T, size_t CAPACITY, bool HAS_SSE>
+struct simd_storage;
+
+template <>
+struct simd_storage<float, 4, false> {
+	using T = std::array<float, 4>;
+};
 
 template<>
-struct fx4_Storage<true> {
+struct simd_storage<float, 4, true> {
 	using T = __m128;
 };
 
 template <>
-struct fx4_Storage<false> {
-	using T = std::array<float, 4>;
+struct simd_storage<double, 2, false> {
+	using T = std::array<double, 2>;
 };
 
-template <bool HAS_SSE = has_sse>
-struct fx4 {
+template<>
+struct simd_storage<double, 2, true> {
+	using T = __m128d;
+};
 
-	using T = fx4_Storage<has_sse>::T;
+template <>
+struct simd_storage<int32_t, 4, false> {
+	using T = std::array<int32_t, 4>;
+};
+
+template<>
+struct simd_storage<int32_t, 4, true> {
+	using T = __m128i;
+};
+
+template <typename T, size_t CAPACITY, bool HAS_SSE = has_sse>
+	requires std::is_fundamental_v<T>
+struct simd {
+
+	using T = simd_storage<T, CAPACITY, has_sse>::T;
 
 	T data;
 
 #pragma region Constructors & Destructors
 
-	[[nodiscard]] constexpr fx4() noexcept = default;
+	[[nodiscard]] constexpr simd() noexcept = default;
 
-	[[nodiscard]] constexpr fx4(float value) noexcept : data(_mm_set_ps1(value)) {}
+	[[nodiscard]] constexpr simd(float value) noexcept : data(_mm_set_ps1(value)) {}
 
-	[[nodiscard]] constexpr fx4(float e0, float e1, float e2, float e3) noexcept : data(_mm_setr_ps(e0, e1, e2, e3)) {}
+	[[nodiscard]] constexpr simd(float e0, float e1, float e2, float e3) noexcept : data(_mm_setr_ps(e0, e1, e2, e3)) {}
 
-	[[nodiscard]] constexpr fx4(T value) noexcept : data(value) {}
+	[[nodiscard]] constexpr simd(T value) noexcept : data(value) {}
 
 #pragma endregion
 
@@ -61,7 +82,7 @@ struct fx4 {
 	/// <summary>
 	/// Add packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 add_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd add_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_add_ps(data, other);
 		else
@@ -71,11 +92,11 @@ struct fx4 {
 	/// <summary>
 	/// Add the lower single-precision (32-bit) floating-point element in this and other and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 add_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd add_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_add_ss(data, other);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
 			result[0] = data[0] + other[0];
 			return result;
@@ -85,7 +106,7 @@ struct fx4 {
 	/// <summary>
 	/// Divide packed single-precision (32-bit) floating-point elements in this by packed elements in other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 div_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd div_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_div_ps(data, other);
 		else
@@ -95,11 +116,11 @@ struct fx4 {
 	/// <summary>
 	/// Divide the lower single-precision (32-bit) floating-point element in this by the lower single-precision (32-bit) floating-point element in other and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 div_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd div_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_div_ss(data, other);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
 			result[0] = data[0] / other[0];
 			return result;
@@ -109,7 +130,7 @@ struct fx4 {
 	/// <summary>
 	/// Multiply packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 mul_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd mul_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_mul_ps(data, other);
 		else
@@ -119,11 +140,11 @@ struct fx4 {
 	/// <summary>
 	/// Multiply the lower single-precision (32-bit) floating-point element in this and other, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 mul_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd mul_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_mul_ss(data, other);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
 			result[0] = data[0] * other[0];
 			return result;
@@ -133,7 +154,7 @@ struct fx4 {
 	/// <summary>
 	/// Compute the approximate reciprocal of packed single-precision (32-bit) floating-point elements in this. The maximum relative error for this approximation is less than 1.5 * 2^-12.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 rcp_ps() const noexcept {
+	[[nodiscard]] constexpr simd rcp_ps() const noexcept {
 		if constexpr (has_sse)
 			return _mm_rcp_ps(data);
 		else
@@ -143,11 +164,11 @@ struct fx4 {
 	/// <summary>
 	/// Compute the approximate reciprocal of the lower single-precision (32-bit) floating-point element in this and copy the upper 3 packed elements from this. The maximum relative error for this approximation is less than 1.5*2^-12.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 rcp_ss() const noexcept {
+	[[nodiscard]] constexpr simd rcp_ss() const noexcept {
 		if constexpr (has_sse)
 			return _mm_rcp_ss(data);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
 			result[0] = 1 / data[0]; 
 			return result;
@@ -157,46 +178,46 @@ struct fx4 {
 	/// <summary>
 	/// Compute the approximate reciprocal square root of packed single-precision (32-bit) floating-point elements in this. The maximum relative error for this approximation is less than 1.5*2^-12.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 rsqrt_ps() const noexcept {
+	[[nodiscard]] constexpr simd rsqrt_ps() const noexcept {
 		if constexpr (has_sse)
 			return _mm_rsqrt_ps(data);
 		else
-			return { 1 / Arithmetic::square_root(data[0]), 1 / Arithmetic::square_root(data[1]), 1 / Arithmetic::square_root(data[2]), 1 / Arithmetic::square_root(data[3]) };
+			return { 1 / Math::square_root(data[0]), 1 / Math::square_root(data[1]), 1 / Math::square_root(data[2]), 1 / Math::square_root(data[3]) };
 	}
 
 	/// <summary>
 	/// Compute the approximate reciprocal square root of the lower single-precision (32-bit) floating-point element in this and copy the upper 3 packed elements from this. The maximum relative error for this approximation is less than 1.5*2^-12.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 rsqrt_ss() const noexcept {
+	[[nodiscard]] constexpr simd rsqrt_ss() const noexcept {
 		if constexpr (has_sse)
 			return _mm_rsqrt_ss(data);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
-			result[0] = 1 / Arithmetic::square_root(data[0]);
+			result[0] = 1 / Math::square_root(data[0]);
 			return result;
 		}
 	}
 
 	/// Compute the square root of packed single-precision (32-bit) floating-point elements in this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 sqrt_ps() const noexcept {
+	[[nodiscard]] constexpr simd sqrt_ps() const noexcept {
 		if constexpr (has_sse)
 			return _mm_sqrt_ps(data);
 		else
-			return { Arithmetic::square_root(data[0]), Arithmetic::square_root(data[1]), Arithmetic::square_root(data[2]), Arithmetic::square_root(data[3]) };
+			return { Math::square_root(data[0]), Math::square_root(data[1]), Math::square_root(data[2]), Math::square_root(data[3]) };
 	}
 
 	/// <summary>
 	/// Compute the square root of the lower single-precision (32-bit) floating-point element in this and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 sqrt_ss() const noexcept {
+	[[nodiscard]] constexpr simd sqrt_ss() const noexcept {
 		if constexpr (has_sse)
 			return _mm_sqrt_ss(data);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
-			result[0] = Arithmetic::square_root(data[0]);
+			result[0] = Math::square_root(data[0]);
 			return result;
 		}
 	}
@@ -204,7 +225,7 @@ struct fx4 {
 	/// <summary>
 	/// Subtract packed single-precision (32-bit) floating-point elements in other from packed single-precision (32-bit) floating-point elements in this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 sub_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd sub_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_sub_ps(data, other);
 		else
@@ -214,11 +235,11 @@ struct fx4 {
 	/// <summary>
 	/// Subtract the lower single-precision (32-bit) floating-point element in other from the lower single-precision (32-bit) floating-point element in this, and copy the upper 3 packed elements from this to the upper elements of dst.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 sub_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd sub_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_sub_ss(data, other);
 		else {
-			fx4 result;
+			simd result;
 			std::memcpy(result, other, sizeof(T));
 			result[0] = data[0] - other[0];
 			return result;
@@ -232,7 +253,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for equality.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpeq_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpeq_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpeq_ps(data, other);
 		else
@@ -242,7 +263,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for equality, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpeq_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpeq_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpeq_ss(data, other);
 		else
@@ -252,7 +273,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for greater-than-or-equal.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpge_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpge_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpge_ps(data, other);
 		else
@@ -262,7 +283,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for greater-than-or-equal, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpge_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpge_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpge_ss(data, other);
 		else
@@ -272,7 +293,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for greater-than.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpgt_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpgt_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpgt_ps(data, other);
 		else
@@ -282,7 +303,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for greater-than, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpgt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpgt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpgt_ss(data, other);
 		else
@@ -292,7 +313,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for less-than-or-equal.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmple_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmple_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmple_ps(data, other);
 		else
@@ -302,7 +323,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for less-than-or-equal, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmple_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmple_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmple_ss(data, other);
 		else
@@ -312,7 +333,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for less-than.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmplt_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmplt_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmplt_ps(data, other);
 		else
@@ -322,7 +343,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for less-than, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmplt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmplt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmplt_ss(data, other);
 		else
@@ -332,7 +353,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for not-equal.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpneq_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpneq_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpneq_ps(data, other);
 		else
@@ -342,7 +363,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for not-equal, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpneq_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpneq_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpneq_ss(data, other);
 		else
@@ -352,7 +373,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for not-greater-than-or-equal.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpnge_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpnge_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpnge_ps(data, other);
 		else
@@ -362,7 +383,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for not-greater-than-or-equal, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpnge_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpnge_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpnge_ss(data, other);
 		else
@@ -372,7 +393,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for not-greater-than.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpngt_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpngt_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpngt_ps(data, other);
 		else
@@ -382,7 +403,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for not-greater-than, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpngt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpngt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpngt_ss(data, other);
 		else
@@ -392,7 +413,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for not-less-than-or-equal.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpnle_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpnle_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpnle_ps(data, other);
 		else
@@ -402,7 +423,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for not-less-than-or-equal, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpnle_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpnle_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpnle_ss(data, other);
 		else
@@ -412,7 +433,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other for not-less-than.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpnlt_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpnlt_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpnlt_ps(data, other);
 		else
@@ -422,7 +443,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other for not-less-than, and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpnlt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpnlt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpnlt_ss(data, other);
 		else
@@ -432,7 +453,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other to see if neither is NaN.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpord_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpord_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpord_ps(data, other);
 		else
@@ -442,7 +463,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other to see if neither is NaN and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpord_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpord_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpord_ss(data, other);
 		else
@@ -452,7 +473,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other to see if either is NaN.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpunord_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpunord_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpunord_ps(data, other);
 		else
@@ -462,7 +483,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other to see if either is NaN and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 cmpunord_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd cmpunord_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_cmpunord_ss(data, other);
 		else
@@ -472,7 +493,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point element in this and other for equality.
 	/// </summary>
-	[[nodiscard]] constexpr int comieq_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int comieq_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_comieq_ss(data, other);
 		else
@@ -482,7 +503,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point element in this and other for greater-than-or-equal.
 	/// </summary>
-	[[nodiscard]] constexpr int comige_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int comige_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_comige_ss(data, other);
 		else
@@ -492,7 +513,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point element in this and other for greater-than.
 	/// </summary>
-	[[nodiscard]] constexpr int comigt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int comigt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_comigt_ss(data, other);
 		else
@@ -502,7 +523,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point element in this and other for less-than-or-equal.
 	/// </summary>
-	[[nodiscard]] constexpr int comile_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int comile_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_comile_ss(data, other);
 		else
@@ -512,7 +533,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point element in this and other for less-than.
 	/// </summary>
-	[[nodiscard]] constexpr int comilt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int comilt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_comilt_ss(data, other);
 		else
@@ -522,7 +543,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point element in this and other for not-equal
 	/// </summary>
-	[[nodiscard]] constexpr int comineq_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int comineq_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_comineq_ss(data, other);
 		else
@@ -530,9 +551,9 @@ struct fx4 {
 	}
 
 	/// <summary>
-	/// Compare the lower single-precision (32-bit) floating-point element in this and other for equality. fx4 instruction will not signal an exception for QNaNs.
+	/// Compare the lower single-precision (32-bit) floating-point element in this and other for equality. simd instruction will not signal an exception for QNaNs.
 	/// </summary>
-	[[nodiscard]] constexpr int ucomieq_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int ucomieq_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_ucomieq_ss(data, other);
 		else
@@ -540,9 +561,9 @@ struct fx4 {
 	}
 
 	/// <summary>
-	/// Compare the lower single-precision (32-bit) floating-point element in this and other for greater-than-or-equal. fx4 instruction will not signal an exception for QNaNs.
+	/// Compare the lower single-precision (32-bit) floating-point element in this and other for greater-than-or-equal. simd instruction will not signal an exception for QNaNs.
 	/// </summary>
-	[[nodiscard]] constexpr int ucomige_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int ucomige_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_ucomige_ss(data, other);
 		else
@@ -550,9 +571,9 @@ struct fx4 {
 	}
 
 	/// <summary>
-	/// Compare the lower single-precision (32-bit) floating-point element in this and other for greater-than. fx4 instruction will not signal an exception for QNaNs.
+	/// Compare the lower single-precision (32-bit) floating-point element in this and other for greater-than. simd instruction will not signal an exception for QNaNs.
 	/// </summary>
-	[[nodiscard]] constexpr int ucomigt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int ucomigt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_ucomigt_ss(data, other);
 		else
@@ -560,9 +581,9 @@ struct fx4 {
 	}
 
 	/// <summary>
-	/// Compare the lower single-precision (32-bit) floating-point element in this and other for less-than-or-equal. fx4 instruction will not signal an exception for QNaNs.
+	/// Compare the lower single-precision (32-bit) floating-point element in this and other for less-than-or-equal. simd instruction will not signal an exception for QNaNs.
 	/// </summary>
-	[[nodiscard]] constexpr int ucomile_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int ucomile_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_ucomile_ss(data, other);
 		else
@@ -570,9 +591,9 @@ struct fx4 {
 	}
 
 	/// <summary>
-	/// Compare the lower single-precision (32-bit) floating-point element in this and other for less-than. fx4 instruction will not signal an exception for QNaNs.
+	/// Compare the lower single-precision (32-bit) floating-point element in this and other for less-than. simd instruction will not signal an exception for QNaNs.
 	/// </summary>
-	[[nodiscard]] constexpr int ucomilt_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int ucomilt_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_ucomilt_ss(data, other);
 		else
@@ -580,9 +601,9 @@ struct fx4 {
 	}
 
 	/// <summary>
-	/// Compare the lower single-precision (32-bit) floating-point element in this and other for not-equal. fx4 instruction will not signal an exception for QNaNs.
+	/// Compare the lower single-precision (32-bit) floating-point element in this and other for not-equal. simd instruction will not signal an exception for QNaNs.
 	/// </summary>
-	[[nodiscard]] constexpr int ucomineq_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr int ucomineq_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_ucomineq_ss(data, other);
 		else
@@ -596,7 +617,7 @@ struct fx4 {
 	/// <summary>
 	/// Compute the bitwise AND of packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 and_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd and_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_and_ps(data, other);
 		else
@@ -606,7 +627,7 @@ struct fx4 {
 	/// <summary>
 	/// Compute the bitwise AND-NOT of packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 andnot_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd andnot_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_andnot_ps(data, other);
 		else
@@ -616,7 +637,7 @@ struct fx4 {
 	/// <summary>
 	/// Compute the bitwise OR of packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 or_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd or_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_or_ps(data, other);
 		else
@@ -626,7 +647,7 @@ struct fx4 {
 	/// <summary>
 	/// Compute the bitwise XOR of packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 xor_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd xor_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 		return _mm_xor_ps(data, other);
 		else
@@ -640,7 +661,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 max_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd max_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_max_ps(data, other);
 		else
@@ -650,7 +671,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 max_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd max_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_max_ss(data, other);
 		else
@@ -660,7 +681,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare packed single-precision (32-bit) floating-point elements in this and other.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 min_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd min_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_min_ps(data, other);
 		else
@@ -670,7 +691,7 @@ struct fx4 {
 	/// <summary>
 	/// Compare the lower single-precision (32-bit) floating-point elements in this and other and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 min_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd min_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_min_ss(data, other);
 		else
@@ -694,7 +715,7 @@ struct fx4 {
 	/// <summary>
 	/// Move the lower single-precision (32-bit) floating-point element from other and copy the upper 3 packed elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 move_ss(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd move_ss(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_move_ss(data, other);
 		else
@@ -704,7 +725,7 @@ struct fx4 {
 	/// <summary>
 	/// Move the upper 2 single-precision (32-bit) floating-point elements from other to the lower 2 elements and copy the upper 2 elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 movehl_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd movehl_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_movehl_ps(data, other);
 		else
@@ -714,7 +735,7 @@ struct fx4 {
 	/// <summary>
 	/// Move the lower 2 single-precision (32-bit) floating-point elements from other to the upper 2 elements and copy the lower 2 elements from this.
 	/// </summary>
-	[[nodiscard]] constexpr fx4 movelh_ps(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd movelh_ps(simd other) const noexcept {
 		if constexpr (has_sse)
 			return _mm_movelh_ps(data, other);
 		else
@@ -839,7 +860,7 @@ struct fx4 {
 		return Algorithms::hash(data);
 	}
 
-	constexpr void swap(fx4& other) noexcept {
+	constexpr void swap(simd& other) noexcept {
 		T temporary = other.data;
 		other.data = data;
 		data = temporary;
@@ -849,19 +870,19 @@ struct fx4 {
 
 #pragma region Operators
 
-	[[nodiscard]] constexpr fx4 operator+(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd operator+(simd other) const noexcept {
 		return add_ps(other);
 	}
 
-	[[nodiscard]] constexpr fx4 operator/(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd operator/(simd other) const noexcept {
 		return div_ps(other);
 	}
 
-	[[nodiscard]] constexpr fx4 operator*(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd operator*(simd other) const noexcept {
 		return mul_ps(other);
 	}
 
-	[[nodiscard]] constexpr fx4 operator-(fx4 other) const noexcept {
+	[[nodiscard]] constexpr simd operator-(simd other) const noexcept {
 		return sub_ps(other);
 	}
 
@@ -877,7 +898,7 @@ struct fx4 {
 		return data;
 	}
 
-	friend std::ostream& operator<<(std::ostream& ostream, const fx4 t) {
+	friend std::ostream& operator<<(std::ostream& ostream, const simd t) {
 		ostream << '{' << t[0] << ", " << t[1] << ", " << t[2] << ", " << t[3] << '}';
 		return ostream;
 	}

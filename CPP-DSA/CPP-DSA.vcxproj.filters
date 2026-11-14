@@ -138,7 +138,7 @@
     <ClInclude Include="TrackedContainer.hpp">
       <Filter>Header Files\Lists</Filter>
     </ClInclude>
-    <ClInclude Include="Hashmap.hpp">
+    <ClInclude Include="HoarderHashmap.hpp">
       <Filter>Header Files\Maps</Filter>
     </ClInclude>
     <ClInclude Include="SegmentTree.hpp">
@@ -255,6 +255,24 @@
     <ClInclude Include="A.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Vector2.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.hpp">
+      <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClInclude>
+    <ClInclude Include="Interner.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BumpArena.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="BuddyArena.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerHashmap.hpp">
+      <Filter>Header Files\Maps</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -283,6 +301,9 @@
     </ClCompile>
     <ClCompile Include="NumberTheory.hpp">
       <Filter>Header Files\Algorithms\Categories</Filter>
+    </ClCompile>
+    <ClCompile Include="View.hpp">
+      <Filter>Header Files\General</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

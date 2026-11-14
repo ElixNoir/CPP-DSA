@@ -5,12 +5,12 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy ContainerConfiguration, typename T, uintmax_t(*HASH)(const T&) = hash>
+	template <concepts::StoragePolicy StoragePolicy, typename T, uintmax_t(*HASH)(const T&) = hash>
 		requires std::is_nothrow_destructible_v<T>
-	class Hashmap : public TrackedContainer<ContainerConfiguration, T> {
+	class Hashmap : public TrackedContainer<StoragePolicy, T> {
 	public:
 
-		using Base = TrackedContainer<ContainerConfiguration, T>;
+		using Base = TrackedContainer<StoragePolicy, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -25,10 +25,10 @@ namespace DSA {
 			using ALLOCATOR = Base::ALLOCATOR;
 
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			const INDEX newBitsetCapacity = (newCapacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift;
+			const INDEX newBitsetCapacity = (newCapacity + Bitmask<uintmax_t>::bit_count - 1) >> Bitmask<uintmax_t>::bit_shift;
 			Base::TRACKED newTracked(newBitsetCapacity);
 			newTracked.zero(newBitsetCapacity);
-			const INDEX oldBitsetCapacity = (capacity + Bitmask<uintmax_t>::BitCount - 1) >> Bitmask<uintmax_t>::BitShift;
+			const INDEX oldBitsetCapacity = (capacity + Bitmask<uintmax_t>::bit_count - 1) >> Bitmask<uintmax_t>::bit_shift;
 
 			T* const newData = ALLOCATOR::allocate(newCapacity);
 			T* const oldData = Base::get_data();
@@ -106,7 +106,7 @@ namespace DSA {
 
 #pragma region Find, Insert, Set, Upsert
 
-		[[nodiscard]] constexpr INDEX find(const T& key, Base::Capacity explicitCapacity = {}) const noexcept {
+		[[nodiscard]] constexpr INDEX find_occupied(const T& key, Base::Capacity explicitCapacity = {}) const noexcept {
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			const T* data = Base::get_data();
 			const INDEX begin = HASH(key) % capacity;
@@ -184,7 +184,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(capacity * ratio + 1, explicitCapacity);
+			grow(Math::ceiling(capacity * ratio), explicitCapacity);
 		}
 
 		[[nodiscard]] constexpr bool should_grow(Base::Capacity explicitCapacity = {}) const noexcept {

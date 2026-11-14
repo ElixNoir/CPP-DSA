@@ -76,7 +76,7 @@ namespace DSA {
 			if (size >= otherSize)
 				std::memcpy(data, otherData, otherSize);
 			else {
-				Base::no_copy_resize(otherSize);
+				Base::no_move_resize(otherSize);
 				std::memcpy(data, otherData, otherSize);
 			}
 
@@ -108,8 +108,8 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool can_add(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr bool can_add(INDEX count = 1) const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return count <= capacity - get_size();
 		}
 
@@ -121,8 +121,8 @@ namespace DSA {
 			return get_size() == 0;
 		}
 
-		[[nodiscard]] constexpr bool is_full(Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr bool is_full() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return get_size() == capacity;
 		}
 

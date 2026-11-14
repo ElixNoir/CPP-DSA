@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DSA.hpp"
-#include "Parameter.hpp"
 
 #include <cstring>
 
@@ -28,6 +27,20 @@ namespace DSA {
 
 		};
 
+		template <typename T>
+		concept DynamicStorage = Storage<T> && requires(T t) {
+
+			requires T::is_dynamic == true;
+
+		};
+
+		template <typename T>
+		concept StaticStorage = Storage<T> && requires(T t) {
+
+			requires T::is_dynamic == false;
+
+		};
+
 		template <typename T, typename U = T>
 		concept StoragePolicy = requires(T t) {
 
@@ -40,10 +53,17 @@ namespace DSA {
 
 		};
 
-		template <typename T>
-		concept DynamicStorage = Storage<T> && requires(T t) {
+		template <typename T, typename U = T>
+		concept DynamicStoragePolicy = StoragePolicy<T, U> && requires(T t) {
 
 			requires T::is_dynamic == true;
+
+		};
+
+		template <typename T, typename U = T>
+		concept StaticStoragePolicy = StoragePolicy<T, U> && requires(T t) {
+
+			requires T::is_dynamic == false;
 
 		};
 
@@ -90,17 +110,7 @@ namespace DSA {
 
 		protected:
 
-			using Capacity = Parameter<INDEX, true>;
-
 			std::byte* data = nullptr;
-
-#pragma region Methods
-
-			[[nodiscard]] constexpr INDEX extract_capacity(Capacity explicitCapacity = {}) const noexcept {
-				return explicitCapacity.data;
-			}
-
-#pragma endregion
 
 		public:
 
@@ -187,94 +197,10 @@ namespace DSA {
 			
 #pragma endregion
 
-#pragma region Memory Management
-
-			void double_capacity(Capacity explicitCapacity = {})
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
-			{
-				const INDEX capacity = extract_capacity(explicitCapacity);
-				grow(capacity << 1, explicitCapacity);
-			}
-
-			void expand(float ratio = 1.5, Capacity explicitCapacity = {})
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
-			{
-				const INDEX capacity = extract_capacity(explicitCapacity);
-				grow(capacity * ratio + 1, explicitCapacity);
-			}
-
-			void grow(INDEX newCapacity, Capacity explicitCapacity = {})
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
-			{
-				const INDEX capacity = extract_capacity(explicitCapacity);
-				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-					set_data(ALLOCATOR::reallocate(get_data(), newCapacity));
-				else {
-					T* oldData = get_data();
-					set_data(ALLOCATOR::allocate(newCapacity));
-					std::memcpy(get_data(), oldData, capacity);
-					ALLOCATOR::deallocate(oldData);
-				}
-			}
-
-			void no_copy_resize(INDEX newCapacity)
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-			{
-				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-					set_data(ALLOCATOR::reallocate(get_data(), newCapacity));
-				else {
-					ALLOCATOR::deallocate(get_data());
-					set_data(ALLOCATOR::allocate(newCapacity));
-				}
-			}
-
-			void reserve(INDEX newCapacity, Capacity explicitCapacity = {})
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
-			{
-				const INDEX capacity = extract_capacity(explicitCapacity);
-				if (newCapacity > capacity)
-					grow(newCapacity, explicitCapacity);
-			}
-
-			void resize(INDEX newCapacity, Capacity explicitCapacity = {})
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
-			{
-				const INDEX capacity = extract_capacity(explicitCapacity);
-				if (newCapacity > capacity)
-					grow(newCapacity, explicitCapacity);
-				else
-					shrink(newCapacity);
-			}
-
-			void shrink(INDEX newCapacity)
-				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
-			{
-				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-					set_data(ALLOCATOR::reallocate(get_data(), newCapacity));
-				else {
-					T* oldData = get_data();
-					set_data(ALLOCATOR::allocate(newCapacity));
-					std::memcpy(get_data(), oldData, newCapacity);
-					ALLOCATOR::deallocate(oldData);
-				}
-			}
-
-#pragma endregion
-
 #pragma region Setters
 
 			constexpr void set_data(T* newData) noexcept {
-				data = reinterpret_cast<std::byte*>(newData);
-			}
-
-			constexpr void one(INDEX count) noexcept {
-				std::memset(get_raw_data(), 0xFF, count * sizeof(T));
+				data = static_cast<std::byte*>(newData);
 			}
 
 			constexpr void one(INDEX count, INDEX begin = 0) noexcept {
@@ -283,10 +209,6 @@ namespace DSA {
 
 			constexpr void one_raw(size_t count, INDEX begin = 0) noexcept {
 				std::memset(get_raw_data() + begin, 0xFF, count);
-			}
-
-			constexpr void zero(INDEX count) noexcept {
-				std::memset(get_raw_data(), 0, count * sizeof(T));
 			}
 
 			constexpr void zero(INDEX count, INDEX begin = 0) noexcept {
@@ -311,7 +233,7 @@ namespace DSA {
 		using INDEX = _INDEX;
 
 		template <concepts::AllocatorConfiguration Configuration>
-		using ALLOCATOR_TEMPLATE = void;
+		using ALLOCATOR_TEMPLATE = StandardAllocator<Configuration>;
 
 		template <typename T>
 		using ALLOCATOR = void;
@@ -338,17 +260,7 @@ namespace DSA {
 
 		protected:
 
-			using Capacity = Parameter<INDEX, false>;
-
 			alignas(T) std::byte data[CAPACITY * sizeof(T)];
-
-#pragma region Methods
-
-			[[nodiscard]] constexpr INDEX extract_capacity(Capacity explicitCapacity = {}) const noexcept {
-				return get_capacity();
-			}
-
-#pragma endregion
 
 		public:
 
@@ -375,6 +287,14 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Methods
+
+#pragma region Checks
+
+			[[nodiscard]] constexpr bool contains_index(INDEX index) const noexcept {
+				return index < get_capacity();
+			}
+
+#pragma endregion
 
 #pragma region Getters
 
@@ -409,6 +329,22 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Setters
+
+			constexpr void one() noexcept {
+				one(get_capacity());
+			}
+
+			constexpr void one_raw() noexcept {
+				one_raw(get_capacity());
+			}
+
+			constexpr void zero() noexcept {
+				zero(get_capacity());
+			}
+
+			constexpr void zero_raw() noexcept {
+				zero_raw(get_capacity());
+			}
 
 			constexpr void one(INDEX count) noexcept {
 				std::memset(get_raw_data(), 0xFF, count * sizeof(T));

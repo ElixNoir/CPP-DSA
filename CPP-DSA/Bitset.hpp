@@ -6,7 +6,7 @@
 namespace DSA {
 
 	template <concepts::StoragePolicy StoragePolicy>
-	class Bitset : public StoragePolicy::template STRUCTURE<Bitmask<>> {
+	class Bitset : public ContainerPolicy<StoragePolicy>::template STRUCTURE<Bitmask<>> { //StoragePolicy::template STRUCTURE<Bitmask<>> {
 	public:
 
 		using Base = StoragePolicy::template STRUCTURE<Bitmask<>>;
@@ -15,39 +15,49 @@ namespace DSA {
 
 		using BitIndex = promoted_t<INDEX>;
 
-		constexpr static Bitmask<>::T BitCount = Bitmask<>::BitCount;
-		constexpr static Bitmask<>::T BitShift = Bitmask<>::BitShift;
+		constexpr static Bitmask<>::T bit_count = Bitmask<>::bit_count;
+		constexpr static Bitmask<>::T bit_shift = Bitmask<>::bit_shift;
+
+#pragma region Constructors & Destructors
+
+		constexpr void destroy() noexcept {
+			//const INDEX capacity = Base::get_capacity();
+		}
+
+#pragma endregion
 
 #pragma region Methods
 
+#pragma region Getters
+
 		constexpr Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) noexcept {
-			return Base::get(bitIndex >> BitShift);
+			return Base::get(bitIndex >> bit_shift);
 		}
 
 		constexpr const Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) const noexcept {
-			return Base::get(bitIndex >> BitShift);
+			return Base::get(bitIndex >> bit_shift);
 		}
 
 		constexpr Bitmask<>::T get_bit_at(BitIndex bitIndex) const noexcept {
-			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (BitCount - 1));
+			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (bit_count - 1));
 		}
 
-		constexpr void reset_bit_at(BitIndex bitIndex) noexcept {
-			get_bitmask_from_bitIndex(bitIndex).reset(bitIndex & (BitCount - 1));
-		}
+#pragma endregion
 
-		constexpr void set_bit_at(BitIndex bitIndex) noexcept {
-			get_bitmask_from_bitIndex(bitIndex).set(bitIndex & (BitCount - 1));
+#pragma region Find
+
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit(INDEX begin = 0) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			return find_first_bit<FRONT, TRAILING, ONES>(begin, capacity);
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit(Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		constexpr BitIndex find_first_bit(INDEX begin, INDEX end) const noexcept {
 			int bitOffset;
 			if constexpr (FRONT) {
-				BitIndex bitIndex = 0;
-				while (bitIndex < capacity) {
-					const Bitmask<>& mask = Base::get(bitIndex++);
+				while (begin < end) {
+					const Bitmask<>& mask = Base::get(begin++);
 					if constexpr (TRAILING) {
 						if constexpr (ONES)
 							bitOffset = mask.index_of_trailing_one();
@@ -61,14 +71,13 @@ namespace DSA {
 							bitOffset = mask.index_of_leading_zero();
 					}
 
-					if (bitOffset != BitCount)
-						return bitIndex << BitShift + bitOffset;
+					if (bitOffset != bit_count)
+						return begin << bit_shift + bitOffset;
 				}
 			}
 			else {
-				BitIndex bitIndex = capacity;
-				while (bitIndex > 0) {
-					const Bitmask<>& mask = Base::get(--bitIndex);
+				while (begin < end) {
+					const Bitmask<>& mask = Base::get(--end);
 					if constexpr (TRAILING) {
 						if constexpr (ONES)
 							bitOffset = mask.index_of_trailing_one();
@@ -82,81 +91,56 @@ namespace DSA {
 							bitOffset = mask.index_of_leading_zero();
 					}
 
-					if (bitOffset != BitCount)
-						return bitIndex << BitShift + bitOffset;
+					if (bitOffset != bit_count)
+						return end << bit_shift + bitOffset;
 				}
 			}
 
-			return capacity;
+			return end;
 		}
 
 		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_after(BitIndex bitIndex, Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			const Bitmask<>::T initialOffset = bitIndex & (BitCount - 1);
+		constexpr BitIndex find_first_bit_after(BitIndex bitBegin) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			return find_first_bit_after<FRONT, TRAILING, ONES>(bitBegin, capacity);
+		}
+
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit_after(BitIndex bitBegin, INDEX end) const noexcept {
+			const Bitmask<>::T initialOffset = bitBegin & (bit_count - 1);
+			const INDEX begin = bitBegin >> bit_shift;
 
 			int bitOffset;
-
-			bitIndex >>= BitShift; // technically fits in INDEX
 
 			if constexpr (TRAILING) {
 				if constexpr (ONES)
-					bitOffset = Base::get(bitIndex).index_of_trailing_one(initialOffset);
+					bitOffset = Base::get(begin).index_of_trailing_one(initialOffset);
 				else
-					bitOffset = Base::get(bitIndex).index_of_trailing_zero(initialOffset);
+					bitOffset = Base::get(begin).index_of_trailing_zero(initialOffset);
 			}
 			else {
 				if constexpr (ONES)
-					bitOffset = Base::get(bitIndex).index_of_leading_one(initialOffset);
+					bitOffset = Base::get(begin).index_of_leading_one(initialOffset);
 				else
-					bitOffset = Base::get(bitIndex).index_of_leading_zero(initialOffset);
+					bitOffset = Base::get(begin).index_of_leading_zero(initialOffset);
 			}
 
-			if (bitOffset != BitCount)
-				return bitIndex << BitShift + bitOffset;
+			if (bitOffset != bit_count)
+				return begin + bitOffset;
 
-			if constexpr (FRONT) {
-				while (bitIndex < capacity) {
-					const Bitmask<>& mask = Base::get(++bitIndex);
-					if constexpr (TRAILING) {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_trailing_one();
-						else
-							bitOffset = mask.index_of_trailing_zero();
-					}
-					else {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_leading_one();
-						else
-							bitOffset = mask.index_of_leading_zero();
-					}
+			return find_first_bit<FRONT, TRAILING, ONES>(begin, end);
+		}
 
-					if (bitOffset != BitCount)
-						return bitIndex << BitShift + bitOffset;
-				}
-			}
-			else {
-				while (bitIndex > 0) {
-					const Bitmask<>& mask = Base::get(--bitIndex);
-					if constexpr (TRAILING) {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_trailing_one();
-						else
-							bitOffset = mask.index_of_trailing_zero();
-					}
-					else {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_leading_one();
-						else
-							bitOffset = mask.index_of_leading_zero();
-					}
+#pragma endregion
 
-					if (bitOffset != BitCount)
-						return bitIndex << BitShift + bitOffset;
-				}
-			}
+#pragma region Setters
 
-			return capacity;
+		constexpr void reset_bit_at(BitIndex bitIndex) noexcept {
+			get_bitmask_from_bitIndex(bitIndex).reset(bitIndex & (bit_count - 1));
+		}
+
+		constexpr void set_bit_at(BitIndex bitIndex) noexcept {
+			get_bitmask_from_bitIndex(bitIndex).set(bitIndex & (bit_count - 1));
 		}
 
 #pragma endregion
@@ -164,19 +148,19 @@ namespace DSA {
 #pragma region Iteration
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> begin(Base::Capacity explicitCapacity = {}) noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		constexpr auto begin() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, false);
 		}
 
 		template <bool ONES>
-		BitsetIterator<INDEX, ONES> end(Base::Capacity explicitCapacity = {}) noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		constexpr auto end() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, true);
 		}
 
-		auto ones(Base::Capacity explicitCapacity = {}) noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		constexpr auto ones() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			struct Proxy {
 				Bitset* self;
 
@@ -186,8 +170,8 @@ namespace DSA {
 			return Proxy{ this };
 		}
 
-		auto zeros(Base::Capacity explicitCapacity = {}) noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		constexpr auto zeros() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			struct Proxy {
 				Bitset* self;
 
@@ -196,6 +180,8 @@ namespace DSA {
 			};
 			return Proxy{ this };
 		}
+
+#pragma endregion
 
 #pragma endregion
 

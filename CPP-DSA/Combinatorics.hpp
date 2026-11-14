@@ -1,17 +1,16 @@
 #pragma once
 
-#include "Arithmetic.hpp"
+#include "Math.hpp"
 #include "Comparable.hpp"
 #include "Constants.hpp"
 #include "Memory.hpp"
 
 namespace Algorithms {
 
-
 	namespace Combinatorics {
 
 		constexpr static double fibonacci(uint32_t nth) noexcept {
-			return Arithmetic::power(Constants::phi, nth) / Constants::square_root_of_5 + .5;
+			return Math::power(Constants::phi, nth) / Constants::square_root_of_5 + .5;
 		}
 
 		template <typename T>
@@ -34,16 +33,16 @@ namespace Algorithms {
 				return tgammal(data);
 		}
 
-		constexpr static double upper_incomplete_gamma_integer(int alpha, double rate) noexcept {
+		constexpr static double upper_incomplete_gamma_integer(uint32_t alpha, double rate) noexcept {
 			if (alpha <= 0 || rate < 0) return 0.0; // Domain protection
 
 			double sum = 0;
-			for (int k = 0; k < alpha; ++k) {
-				double log_term = k * Arithmetic::natural_logarithm(rate) - ln_abs_gamma(k + 1);
-				sum += Arithmetic::exponential(log_term);
+			for (uint32_t k = 0; k < alpha; ++k) {
+				double log_term = k * Math::natural_logarithm(rate) - ln_abs_gamma(k + 1);
+				sum += Math::exponential(log_term);
 			}
 
-			return Arithmetic::exponential(ln_abs_gamma(alpha) - rate) * sum;
+			return Math::exponential(ln_abs_gamma(alpha) - rate) * sum;
 		}
 
 		constexpr static uint64_t choose(uint32_t n, uint32_t r) noexcept { //. pascal table next?
@@ -53,7 +52,7 @@ namespace Algorithms {
 				r = n - r;
 
 			uint64_t result = 1;
-			for (int i = 1; i <= r; ++i)
+			for (uint32_t i = 1; i <= r; ++i)
 				result *= (n - i + 1) / i;
 
 			return result;

@@ -26,48 +26,30 @@ namespace DSA {
 
 	}
 
-	template <concepts::StoragePolicy _STORAGE_POLICY>
-	struct ContainerPolicy {
+	template <concepts::StoragePolicy STORAGE_POLICY>
+	struct ContainerPolicy;
 
-		using STORAGE_POLICY = _STORAGE_POLICY;
-
-		using INDEX = typename STORAGE_POLICY::INDEX;
-
-		template <typename T>
-		using ALLOCATOR = typename STORAGE_POLICY::template ALLOCATOR<T>;
-
-		constexpr static bool is_dynamic = STORAGE_POLICY::is_dynamic;
-		constexpr static INDEX maximum_capacity = STORAGE_POLICY::maximum_capacity;
-		constexpr static INDEX maximum_index = STORAGE_POLICY::maximum_index;
+	template <concepts::DynamicStoragePolicy STORAGE_POLICY>
+	struct ContainerPolicy<STORAGE_POLICY> : public STORAGE_POLICY {
 
 		template <typename _T>
 		class STRUCTURE : public STORAGE_POLICY::template STRUCTURE<_T> {
 		public:
 
-			using T = _T;
-			using ALLOCATOR = ALLOCATOR<T>;
-			using Base = typename STORAGE_POLICY::template STRUCTURE<T>;
-			using INDEX = STORAGE_POLICY::INDEX;
+			using Base = typename STORAGE_POLICY::template STRUCTURE<_T>;
+			using typename Base::ALLOCATOR;
+			using typename Base::INDEX;
+			using typename Base::T;
 
 			using This = STRUCTURE<T>;
 
-			constexpr static bool is_dynamic = is_dynamic;
-			constexpr static INDEX maximum_capacity = maximum_capacity;
-			constexpr static INDEX maximum_index = maximum_index;
+			constexpr static bool is_dynamic = Base::is_dynamic;
+			constexpr static INDEX maximum_capacity = Base::maximum_capacity;
+			constexpr static INDEX maximum_index = Base::maximum_index;
 
 		protected:
 
-			using Capacity = Parameter<INDEX, false>;
-
 			INDEX capacity = 0;
-
-#pragma region Methods
-
-			[[nodiscard]] constexpr INDEX extract_capacity(Capacity explicitCapacity = {}) const noexcept {
-				return get_capacity();
-			}
-
-#pragma endregion
 
 		public:
 
@@ -94,7 +76,7 @@ namespace DSA {
 				if (capacity >= otherCapacity)
 					std::memcpy(data, otherData, capacity);
 				else {
-					Base::no_copy_resize(otherCapacity);
+					Base::no_move_resize(otherCapacity);
 					std::memcpy(data, otherData, capacity);
 				}
 			}
@@ -139,6 +121,88 @@ namespace DSA {
 
 #pragma endregion
 
+#pragma region Memory Management
+
+			constexpr void double_capacity()
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				const INDEX capacity = get_capacity();
+				grow(capacity << 1);
+			}
+
+			constexpr void expand(float ratio = 1.5)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				const INDEX capacity = get_capacity();
+				grow(Math::ceiling(capacity * ratio));
+			}
+
+			constexpr void grow(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				const INDEX capacity = get_capacity();
+				T* const oldData = Base::get_data();
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					set_data(ALLOCATOR::reallocate(oldData, newCapacity));
+				else {
+					T* const newData = ALLOCATOR::allocate(newCapacity);
+					std::memcpy(newData, oldData, capacity);
+					ALLOCATOR::deallocate(oldData);
+					Base::set_data(newData);
+				}
+			}
+
+			constexpr void no_move_resize(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+			{
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					set_data(ALLOCATOR::reallocate(Base::get_data(), newCapacity));
+				else {
+					ALLOCATOR::deallocate(Base::get_data());
+					set_data(ALLOCATOR::allocate(newCapacity));
+				}
+			}
+
+			constexpr void reserve(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				const INDEX capacity = get_capacity();
+				if (newCapacity > capacity)
+					grow(newCapacity);
+			}
+
+			constexpr void resize(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				const INDEX capacity = get_capacity();
+				if (newCapacity > capacity)
+					grow(newCapacity);
+				else
+					shrink(newCapacity);
+			}
+
+			constexpr void shrink(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires std::is_trivial_v<T>
+			{
+				T* const oldData = Base::get_data();
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					Base::set_data(ALLOCATOR::reallocate(oldData, newCapacity));
+				else {
+					T* const newData = ALLOCATOR::allocate(newCapacity);
+					std::memcpy(newData, oldData, newCapacity);
+					ALLOCATOR::deallocate(oldData);
+					Base::set_data(newData);
+				}
+			}
+
+#pragma endregion
+
 #pragma region Setters
 
 			constexpr void set_capacity(INDEX newCapacity) noexcept
@@ -148,11 +212,19 @@ namespace DSA {
 			}
 
 			constexpr void one() noexcept {
-				std::memset(Base::get_raw_data(), 0xFF, get_capacity() * sizeof(T));
+				Base::one(get_capacity());
+			}
+
+			constexpr void one_raw() noexcept {
+				Base::one_raw(get_capacity());
 			}
 
 			constexpr void zero() noexcept {
-				std::memset(Base::get_raw_data(), 0, get_capacity() * sizeof(T));
+				Base::zero(get_capacity());
+			}
+
+			constexpr void zero_raw() noexcept {
+				Base::zero_raw(get_capacity());
 			}
 
 #pragma endregion
@@ -160,6 +232,10 @@ namespace DSA {
 #pragma endregion
 
 		};
+
 	};
+
+	template <concepts::StaticStoragePolicy STORAGE_POLICY>
+	struct ContainerPolicy<STORAGE_POLICY> : public STORAGE_POLICY {};
 
 }

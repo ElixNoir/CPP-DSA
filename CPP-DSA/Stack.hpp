@@ -226,7 +226,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			helper_resize<true>(capacity * ratio + 1);
+			helper_resize<true>(Math::ceiling(capacity * ratio));
 		}
 
 		void grow(INDEX newCapacity)

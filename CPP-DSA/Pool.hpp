@@ -2,6 +2,7 @@
 
 #include "Bitset.hpp"
 #include "heap_sort.hpp"
+#include "Math.hpp"
 #include "Stack.hpp"
 
 namespace DSA {
@@ -15,10 +16,10 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		using BitsetConfiguration = std::conditional_t<
+		using BitsetPolicy = std::conditional_t<
 			concepts::DynamicStoragePolicy<StoragePolicy>,
 			HeapStoragePolicy<INDEX, typename StoragePolicy::ALLOCATOR_TEMPLATE>,
-			StaticStoragePolicy<StoragePolicy::maximum_index>
+			InlineStoragePolicy<((StoragePolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
 		>;
 
 	protected:
@@ -32,15 +33,15 @@ namespace DSA {
 			requires (!std::is_trivially_destructible_v<T>)
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
+			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
 
-			Bitset<BitsetConfiguration> bitset;
+			Bitset<BitsetPolicy> bitset;
 			if constexpr (concepts::DynamicStorage<Base>) {
 				if constexpr (concepts::NothrowResizableStorage<Base, T>)
-					bitset = Bitset<BitsetConfiguration>(bitsetCapacity);
+					bitset = Bitset<BitsetPolicy>(bitsetCapacity);
 				else {
 					try {
-						bitset = Bitset<BitsetConfiguration>(bitsetCapacity);
+						bitset = Bitset<BitsetPolicy>(bitsetCapacity);
 					}
 					catch (...) { // destroy as efficiently as possible without needing to heap-allocate memory
 						const INDEX freeStackSize = free_stack.get_size();
@@ -84,9 +85,10 @@ namespace DSA {
 
 			free_stack.grow(newCapacity);
 			
-			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::BitCount - 1) >> Bitmask<>::BitShift;
+			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
 
-			Bitset<BitsetConfiguration> bitset(bitsetCapacity);
+			Bitset<BitsetPolicy> bitset(bitsetCapacity);
 			bitset.zero_raw(explicitCapacity);
 
 			const INDEX size = Base::get_size();
@@ -171,18 +173,28 @@ namespace DSA {
 
 #pragma region Add & Remove
 
+		[[nodiscard]] constexpr INDEX add() noexcept {
+			INDEX index = free_stack.is_empty() ? free_top++ : free_stack.pop();
+			++Base::size;
+			return index;
+		}
+
 		constexpr INDEX add(const T& data) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			INDEX index;
 			if (!free_stack.is_empty()) {
 				index = free_stack.pop();
-				try {
+				if constexpr (std::is_nothrow_copy_constructible_v<T>)
 					copy_construct_at(Base::get_data() + index, data);
-				}
-				catch (...) {
-					free_stack.push(index);
-					throw;
+				else {
+					try {
+						copy_construct_at(Base::get_data() + index, data);
+					}
+					catch (...) {
+						free_stack.push(index);
+						throw;
+					}
 				}
 			}
 			else {
@@ -202,12 +214,16 @@ namespace DSA {
 			INDEX index;
 			if (!free_stack.is_empty()) {
 				index = free_stack.pop();
-				try {
+				if constexpr (std::is_nothrow_copy_constructible_v<T>)
 					move_construct_at(Base::get_data() + index, std::move(data));
-				}
-				catch (...) {
-					free_stack.push(index);
-					throw;
+				else {
+					try {
+						move_construct_at(Base::get_data() + index, std::move(data));
+					}
+					catch (...) {
+						free_stack.push(index);
+						throw;
+					}
 				}
 			}
 			else {
@@ -230,6 +246,10 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Allocate & Deallocate
+
+		constexpr INDEX allocate() noexcept {
+			return add();
+		}
 
 		constexpr INDEX allocate(const T& data) 
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
@@ -264,7 +284,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(capacity * ratio + 1, explicitCapacity);
+			grow(Math::ceiling(capacity * ratio), explicitCapacity);
 		}
 
 		constexpr void empty(Base::Capacity explicitCapacity = {})
@@ -289,7 +309,7 @@ namespace DSA {
 		{
 			const INDEX capacity = Base::extract_capacity(explicitCapacity);
 			if (newCapacity > capacity)
-				grow(explicitCapacity);
+				grow(newCapacity, explicitCapacity);
 		}
 
 #pragma endregion

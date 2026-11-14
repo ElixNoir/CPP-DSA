@@ -24,6 +24,27 @@ namespace Algorithms {
 
 	namespace Memory {
 
+#pragma region Alignment
+
+		template <typename T>
+		[[nodiscard]] constexpr static size_t align_up(std::byte* data) noexcept {
+			return (data + alignof(T) - 1) & ~(alignof(T) - 1);
+		}
+
+		template <std::integral T>
+		[[nodiscard]] constexpr static T align_up(T size, T powerOf2Alignment) noexcept {
+			return (size + powerOf2Alignment - 1) & ~(powerOf2Alignment - 1);
+		}
+
+		template <std::integral T>
+		[[nodiscard]] constexpr static T align_up_any(T size, T alignment) noexcept {
+			return size + alignment - size % alignment;
+		}
+
+#pragma endregion
+
+#pragma region Nontrivial
+
 		template <typename T, typename... Arguments>
 		constexpr static void construct_at(T* address, Arguments&&... arguments)
 			noexcept(std::is_nothrow_constructible_v<T, Arguments...>)
@@ -358,6 +379,8 @@ namespace Algorithms {
 				}
 			}
 		}
+
+#pragma endregion
 
 	}
 

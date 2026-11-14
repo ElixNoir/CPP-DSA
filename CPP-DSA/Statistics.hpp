@@ -1,15 +1,10 @@
 #pragma once
 
 #include "Combinatorics.hpp"
+#include "Constants.hpp"
 #include "Selection.hpp"
 
 namespace Algorithms {
-
-	namespace Constants {
-
-		constexpr static double square_root_of_3 = 1.7320508075688772;
-
-	}
 
 	namespace Statistics {
 
@@ -33,7 +28,7 @@ namespace Algorithms {
 
 		template <typename T, std::input_iterator ITERATOR>
 		constexpr static T mean_of(ITERATOR begin, ITERATOR end, size_t count) noexcept {
-			T sum = Arithmetic::sum(begin, end);
+			T sum = Math::sum(begin, end);
 			return sum / count;
 		}
 
@@ -54,7 +49,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double standard_deviation(double variance) noexcept {
-			return Arithmetic::square_root(variance);
+			return Math::square_root(variance);
 		}
 
 		template <typename T, std::input_iterator ITERATOR>
@@ -62,7 +57,7 @@ namespace Algorithms {
 			T mean = mean_of(begin, end, count);
 			T squareDifference = 0;
 			while (begin != end)
-				squareDifference += Arithmetic::square(*(begin++) - mean);
+				squareDifference += Math::square(*(begin++) - mean);
 			return squareDifference / count;
 		}
 
@@ -85,6 +80,8 @@ namespace Algorithms {
 
 #pragma endregion
 
+#pragma region Distribution
+
 #pragma region Bernoulli Distribution
 
 		constexpr static double bernoulli_expected_value(double probability) noexcept {
@@ -92,7 +89,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double bernoulli_pmf(double probability, double value) noexcept {
-			return Arithmetic::power(probability, value) * Arithmetic::power(1 - probability, 1 - value);
+			return Math::power(probability, value) * Math::power(1 - probability, 1 - value);
 		}
 
 		constexpr static double bernoulli_variance(double probability) noexcept {
@@ -100,7 +97,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double bernoulli_standard_deviation(double probability) noexcept {
-			return Arithmetic::square_root(bernoulli_variance(probability));
+			return Math::square_root(bernoulli_variance(probability));
 		}
 
 #pragma endregion
@@ -110,16 +107,16 @@ namespace Algorithms {
 		constexpr static double binomial_cdf(uint64_t count, double probability, double k) noexcept {
 			double sum = 0.0;
 			for (int i = 0; i < k; ++i)
-				sum += Arithmetic::power(probability, i) * Arithmetic::power(1 - probability, count - i); // needs choose
-			return sum * Combinatorics::choose() * k;
+				sum += Combinatorics::choose(count, i) * Math::power(probability, i) * Math::power(1 - probability, count - i);
+			return sum;
 		}
 
 		constexpr static double binomial_expected_value(uint64_t count, double probability) noexcept {
 			return count * probability;
 		} 
 
-		constexpr static double binomial_pmf(uint64_t count, double probability, double value) noexcept {
-			return Combinatorics::choose() * Arithmetic::power(probability, value) * Arithmetic::power(1 - probability, count - value); // needs choose
+		constexpr static double binomial_pmf(uint64_t count, double probability, double k) noexcept {
+			return Combinatorics::choose(count, k) * Math::power(probability, k) * Math::power(1 - probability, count - k);
 		}
 
 		constexpr static double binomial_variance(uint64_t count, double probability) noexcept {
@@ -127,7 +124,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double binomial_standard_deviation(uint64_t count, double probability) noexcept {
-			return Arithmetic::square_root(binomial_variance(count, probability));
+			return Math::square_root(binomial_variance(count, probability));
 		}
 
 #pragma endregion
@@ -137,7 +134,7 @@ namespace Algorithms {
 #pragma region CDF
 
 		constexpr static double exponential_greater_cdf(double rate, double value) noexcept {
-			return Arithmetic::exponential(-value * rate);
+			return Math::exponential(-value * rate);
 		}
 
 		constexpr static double exponential_less_cdf(double rate, double value) noexcept {
@@ -151,7 +148,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double exponential_pdf(double rate, double value) noexcept {
-			return rate * Arithmetic::exponential(-value * rate);
+			return rate * Math::exponential(-value * rate);
 		}
 
 		constexpr static double exponential_variance(double rate) noexcept {
@@ -168,13 +165,13 @@ namespace Algorithms {
 			double sum = 0;
 			const double x = value * rate;
 			for (int k = 0; k < shape; ++k)
-				sum += Arithmetic::power(x, k) / Constants::Factorials[k];
-			return sum * Arithmetic::exponential(-x);
+				sum += Math::power(x, k) / Constants::Factorials[k];
+			return sum * Math::exponential(-x);
 		}
 
 		constexpr static double gamma_shape_of_2_greater_cdf(double rate, double value) noexcept {
 			const double d = value / rate;
-			return Arithmetic::exponential(-d) * (d + 1);
+			return Math::exponential(-d) * (d + 1);
 		}
 
 		constexpr static double gamma_less_cdf(uint64_t shape, double rate, double value) noexcept {
@@ -192,7 +189,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double gamma_pdf(double shape, double rate, double value) noexcept {
-			return Arithmetic::power(rate, shape) * Arithmetic::power(value, shape - 1) * Arithmetic::exponential(-value * rate) / Combinatorics::ln_abs_gamma(value);
+			return Math::power(rate, shape) * Math::power(value, shape - 1) * Math::exponential(-value * rate) / Combinatorics::ln_abs_gamma(value);
 		}
 
 		constexpr static double gamma_variance(double shape, double rate) noexcept {
@@ -206,7 +203,7 @@ namespace Algorithms {
 #pragma region CDF
 
 		constexpr static double geometric_less_cdf(double probability, double k) noexcept {
-			return Arithmetic::power(1 - probability, k);
+			return Math::power(1 - probability, k);
 		}
 
 		constexpr static double geometric_greater_cdf(double probability, double k) noexcept {
@@ -220,7 +217,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double geometric_pdf(double probability, double k) noexcept {
-			return probability * Arithmetic::power(1 - probability, k - 1);
+			return probability * Math::power(1 - probability, k - 1);
 		}
 
 		constexpr static double geometric_variance(double probability) noexcept {
@@ -244,11 +241,11 @@ namespace Algorithms {
 #pragma endregion
 
 		constexpr static double normal_expected_value(double deviation, double variance) noexcept {
-			return -Arithmetic::square(deviation) / (variance * 2);
+			return -Math::square(deviation) / (variance * 2);
 		}
 
 		constexpr static double normal_pdf(double deviation, double variance) noexcept {
-			return Arithmetic::exponential(normal_expected_value(deviation, variance)) / standard_deviation(variance * Constants::pies);
+			return Math::exponential(normal_expected_value(deviation, variance)) / standard_deviation(variance * Constants::pies);
 		}
 
 		constexpr static double normal_variance(double variance) noexcept {
@@ -266,7 +263,7 @@ namespace Algorithms {
 		constexpr static double poisson_greater_cdf(double rate, uint64_t k) noexcept {
 			double sum = 0;
 			for (int i = 0; i < k; ++i)
-				sum += Arithmetic::power(rate, i) * Arithmetic::exponential(-rate) / Constants::Factorials[i];
+				sum += Math::power(rate, i) * Math::exponential(-rate) / Constants::Factorials[i];
 			return sum;
 		}
 
@@ -314,7 +311,7 @@ namespace Algorithms {
 
 		// -inf < x < inf
 		constexpr static double poisson_pdf(double rate, uint64_t k) noexcept {
-			return Arithmetic::power(rate, k) * Arithmetic::exponential(-rate) / Constants::Factorials[k];
+			return Math::power(rate, k) * Math::exponential(-rate) / Constants::Factorials[k];
 		}
 
 		constexpr static double poisson_pgf(double rate) noexcept {
@@ -322,7 +319,7 @@ namespace Algorithms {
 		}
 
 		constexpr static double poisson_skewness(double rate) noexcept {
-			return 1.0 / Arithmetic::square_root(rate);
+			return 1.0 / Math::square_root(rate);
 		}
 
 		constexpr static double poisson_variance(double rate) noexcept {
@@ -369,8 +366,10 @@ namespace Algorithms {
 		}
 
 		constexpr static double uniform_variance(double minimumX, double maximumX) noexcept {
-			return Arithmetic::square(maximumX - minimumX) / 12;
+			return Math::square(maximumX - minimumX) / 12;
 		}
+
+#pragma endregion
 
 #pragma endregion
 
