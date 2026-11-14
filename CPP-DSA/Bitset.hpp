@@ -131,6 +131,31 @@ namespace DSA {
 			return find_first_bit<FRONT, TRAILING, ONES>(begin, end);
 		}
 
+		template <bool FRONT, bool TRAILING, bool ONES>
+		constexpr BitIndex find_first_bit_before(INDEX begin, BitIndex bitEnd) const noexcept {
+			const Bitmask<>::T initialOffset = bitBegin & (bit_count - 1);
+
+			int bitOffset;
+
+			if constexpr (TRAILING) {
+				if constexpr (ONES)
+					bitOffset = Base::get(begin).index_of_trailing_one(initialOffset);
+				else
+					bitOffset = Base::get(begin).index_of_trailing_zero(initialOffset);
+			}
+			else {
+				if constexpr (ONES)
+					bitOffset = Base::get(begin).index_of_leading_one(initialOffset);
+				else
+					bitOffset = Base::get(begin).index_of_leading_zero(initialOffset);
+			}
+
+			if (bitOffset != bit_count)
+				return begin + bitOffset;
+
+			return find_first_bit<FRONT, TRAILING, ONES>(begin, end);
+		}
+
 #pragma endregion
 
 #pragma region Setters

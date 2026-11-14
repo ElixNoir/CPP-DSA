@@ -118,13 +118,16 @@ namespace DSA {
 			// the first zero bit is guaranteed to be either deleted or empty
 			INDEX index = key_states.find_first_bit_after<true, true, false>(begin);//, { capacity });
 			if (index == capacity) // if no zero bit was found...
-				index = key_states.find_first_bit<true, true, false>({ begin }); // wrap around
+				index = key_states.find_first_bit<true, true, false>(0, begin >> Bitmask<>::bit_shift); // wrap around
 
 			return index;
 		}
 
 		constexpr INDEX insert(const T key) noexcept {
-			const INDEX index = find_unoccupied(key);
+			return insert_at(find_unoccupied(key));
+		}
+
+		constexpr INDEX insert_at(const T key, INDEX index) noexcept {
 			key_states.get_bitmask_from_bitIndex(index);
 			Base::get(index) = key;
 			return index;

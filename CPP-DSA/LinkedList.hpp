@@ -173,13 +173,13 @@ namespace DSA {
 		}
 
 		/*
-		template <typename... Arguments>
-		constexpr INDEX emplace(Arguments&&... arguments)
-			noexcept(std::is_nothrow_constructible_v<T, Arguments...>)
+		template <typename... ARGUMENTS>
+		constexpr INDEX emplace(ARGUMENTS&&... arguments)
+			noexcept(std::is_nothrow_constructible_v<T, ARGUMENTS...>)
 		{
 			INDEX index = helper_allocate();
 			reconstruct_at(Base::get_data() + index, std::move(Base::get(0)));
-			construct_at(Base::get_data(), std::forward<Arguments>(arguments)...);
+			construct_at(Base::get_data(), std::forward<ARGUMENTS>(arguments)...);
 			return index;
 		}
 		*/

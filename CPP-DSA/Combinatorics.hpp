@@ -63,7 +63,7 @@ namespace Algorithms {
 			noexcept(std::is_nothrow_copy_constructible_v<T>)
 		{
 			T available[18];
-			Memory::copy_construct_range_forward(available, available + 18, initial);
+			Memory::copy_construct_range(available, available + 18, initial);
 			uint8_t top = length;
 			uint64_t identity = 0;
 
@@ -78,7 +78,7 @@ namespace Algorithms {
 				--top;
 			}
 
-			Memory::destroy_range_forward(available, available + 18);
+			Memory::destroy_range(available, available + 18);
 
 			return identity;
 		}
@@ -88,7 +88,7 @@ namespace Algorithms {
 			noexcept(std::is_nothrow_copy_constructible_v<T>)
 		{
 			T available[18];
-			Memory::copy_construct_range_forward(available, available + 18, data);
+			Memory::copy_construct_range(available, available + 18, data);
 
 			for (uint8_t index = 0; index < length; ++index) {
 				const uint64_t factorial = Constants::Factorials[length - index];
@@ -96,7 +96,7 @@ namespace Algorithms {
 				identity %= factorial;
 			}
 
-			Memory::destroy_range_forward(available, available + 18);
+			Memory::destroy_range(available, available + 18);
 		}
 
 	}

@@ -32,11 +32,11 @@ namespace DSA {
 
 	}
 
-	template <concepts::StoragePolicy StoragePolicy, typename T>
-	class Collection : public StoragePolicy::template STRUCTURE<T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T>
+	class Collection : public ContainerPolicy::template STRUCTURE<T> {
 	public:
 
-		using Base = StoragePolicy::template STRUCTURE<T>;
+		using Base = ContainerPolicy::template STRUCTURE<T>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -44,14 +44,6 @@ namespace DSA {
 	protected:
 
 		INDEX size = 0;
-
-#pragma region Methods
-
-		constexpr void set_size(INDEX newSize) noexcept {
-			size = newSize;
-		}
-
-#pragma endregion
 
 	public:
 
@@ -65,7 +57,7 @@ namespace DSA {
 
 		Collection(std::initializer_list<T> initializerList) noexcept : Base(initializerList), size(initializerList.size()) {}
 
-		Collection& operator=(const Collection& other)
+		constexpr Collection& operator=(const Collection& other) noexcept
 			requires (Base::is_dynamic && std::is_trivial_v<T>)
 		{
 			T* const data = Base::get_data();
@@ -83,7 +75,7 @@ namespace DSA {
 			set_size(otherSize);
 		}
 
-		Collection& operator=(const Collection& other)
+		constexpr Collection& operator=(const Collection& other) noexcept
 			requires (!Base::is_dynamic && std::is_trivial_v<T>)
 		{
 			std::memcpy(Base::get_data(), other.get_data(), get_size());
@@ -97,14 +89,6 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Methods
-
-#pragma region Getters
-
-		[[nodiscard]] constexpr INDEX get_size() const noexcept {
-			return size;
-		}
-
-#pragma endregion
 
 #pragma region Checks
 
@@ -124,6 +108,22 @@ namespace DSA {
 		[[nodiscard]] constexpr bool is_full() const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return get_size() == capacity;
+		}
+
+#pragma endregion
+
+#pragma region Getters
+
+		[[nodiscard]] constexpr INDEX get_size() const noexcept {
+			return size;
+		}
+
+#pragma endregion
+
+#pragma region Setters
+
+		constexpr void set_size(INDEX newSize) noexcept {
+			size = newSize;
 		}
 
 #pragma endregion

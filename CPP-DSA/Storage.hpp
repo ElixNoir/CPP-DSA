@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Allocator.hpp"
+#include "StandardAllocator.hpp"
 #include "DSA.hpp"
 
 #include <cstring>
@@ -68,8 +70,7 @@ namespace DSA {
 		};
 
 		template <typename BASE, typename T>
-		concept NothrowResizableStorage =
-			concepts::DynamicStorage<BASE>
+		concept NothrowResizableStorage = concepts::DynamicStorage<BASE>
 			&& concepts::NothrowResizableAllocator<typename BASE::ALLOCATOR>
 			&& std::is_nothrow_move_constructible_v<T>;
 

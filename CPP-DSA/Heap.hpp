@@ -116,12 +116,12 @@ namespace DSA {
 			bubble_up(index);
 		}
 
-		template <typename... Arguments>
-		constexpr void emplace(Arguments&&... arguments)
-			noexcept (std::is_nothrow_constructible_v<T, Arguments...>)
+		template <typename... ARGUMENTS>
+		constexpr void emplace(ARGUMENTS&&... arguments)
+			noexcept (std::is_nothrow_constructible_v<T, ARGUMENTS...>)
 		{
 			const INDEX index = Base::get_size();
-			construct_at<T>(Base::get_data() + index, forward<Arguments>(arguments)...);
+			construct_at<T>(Base::get_data() + index, forward<ARGUMENTS>(arguments)...);
 
 			++Base::size;
 			bubble_up(index);

@@ -5,14 +5,16 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy, typename T>
+	template <concepts::ContainerPolicy ContainerPolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class Stack : public Collection<StoragePolicy, T> {
+	class Stack : public Collection<ContainerPolicy, T> {
 	public:
 
-		using Base = Collection<StoragePolicy, T>;
+		using Base = Collection<ContainerPolicy, T>;
 		using typename Base::INDEX;
 		using typename Base::T;
+
+		using Self = Stack<ContainerPolicy, T>;
 
 	protected:
 
@@ -52,8 +54,7 @@ namespace DSA {
 			ALLOCATOR::deallocate(oldData);
 
 			Base::set_data(newData);
-			if constexpr (concepts::HasMutableCapacity<Base>)
-				Base::set_capacity(newCapacity);
+			Base::set_capacity(newCapacity);
 		}
 
 #pragma endregion
@@ -97,27 +98,30 @@ namespace DSA {
 			++Base::size;
 		}
 
-		constexpr void add_many(const T* source, INDEX count) 
-			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		template <concepts::InputIterator<T> ITERATOR>
+		constexpr void add_many(ITERATOR sourceIterator, INDEX count)
+			noexcept (is_move_iterator_v<ITERATOR>
+				? std::is_nothrow_move_constructible_v<T>
+				: std::is_nothrow_copy_constructible_v<T>)
 		{
-			T* const address = Base::get_data() + Base::get_size();
-			copy_construct_range_backward(address, address + count, source);
-			Base::size += count;
+			if constexpr (is_move_iterator_v<ITERATOR>) {
+				T* const address = Base::get_data() + Base::get_size();
+				move_construct_range(address, address + count, sourceIterator);
+				Base::size += count;
+			}
+			else {
+				T* const address = Base::get_data() + Base::get_size();
+				copy_construct_range(address, address + count, sourceIterator);
+				Base::size += count;
+			}
+			
 		}
 
-		constexpr void add_many(T* source, INDEX count) 
-			noexcept (std::is_nothrow_move_constructible_v<T>)
+		template <typename... ARGUMENTS>
+		constexpr void emplace(ARGUMENTS&&... arguments)
+			noexcept (std::is_nothrow_constructible_v<T, ARGUMENTS...>)
 		{
-			T* const address = Base::get_data() + Base::get_size();
-			move_construct_range_backward(address, address + count, source);
-			Base::size += count;
-		}
-
-		template <typename... Arguments>
-		constexpr void emplace(Arguments&&... arguments)
-			noexcept (std::is_nothrow_constructible_v<T, Arguments...>)
-		{
-			construct_at<T>(Base::get_data() + Base::get_size(), std::forward<Arguments>(arguments)...);
+			construct_at<T>(Base::get_data() + Base::get_size(), std::forward<ARGUMENTS>(arguments)...);
 			++Base::size;
 		}
 
@@ -127,7 +131,7 @@ namespace DSA {
 
 		constexpr void remove_many(INDEX count) noexcept {
 			T* const address = Base::get_data() + Base::get_size();
-			destroy_range_backward(address - count, address);
+			destroy_range<Direction::Backward>(address - count, address);
 			Base::size -= count;
 		}
 
@@ -172,13 +176,13 @@ namespace DSA {
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			T* const address = Base::get_data() + Base::get_size() - count;
-			move_construct_range_backward(destination, destination + count, address);
-			destroy_range_backward(address, address + count);
+			move_construct_range<Direction::Backward>(destination, destination + count, address);
+			destroy_range<Direction::Backward>(address, address + count);
 			Base::size -= count;
 		}
 
-		[[nodiscard]] constexpr bool can_push(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
-			return Base::can_add(count, explicitCapacity);
+		[[nodiscard]] constexpr bool can_push(INDEX count = 1) const noexcept {
+			return Base::can_add(count);
 		}
 
 		constexpr void push(const T& data) 
@@ -193,27 +197,23 @@ namespace DSA {
 			add(std::move(data));
 		}
 
-		constexpr void push_copy_construct_many(const T* source, INDEX count) 
-			noexcept (std::is_nothrow_copy_constructible_v<T>)
+		template <concepts::InputIterator<T> ITERATOR>
+		constexpr void push_many(ITERATOR sourceIterator, INDEX count)
+			noexcept (noexcept(add_many(sourceIterator, count)))
 		{
-			add_many(source, count);
-		}
-
-		constexpr void push_move_construct_many(T* source, INDEX count) 
-			noexcept (std::is_nothrow_move_constructible_v<T>)
-		{
-			add_many(source, count);
+			add_many(sourceIterator, count);
 		}
 
 #pragma endregion
 
 #pragma region Memory Management
 
-		void double_capacity(Base::Capacity explicitCapacity = {})
+		void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			grow(Base::extract_capacity(explicitCapacity) << 1);
+			const INDEX capacity = Base::get_capacity();
+			grow(capacity << 1);
 		}
 
 		constexpr void empty() noexcept {
@@ -221,11 +221,11 @@ namespace DSA {
 			Base::set_size(0);
 		}
 
-		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+		void expand(float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			helper_resize<true>(Math::ceiling(capacity * ratio));
 		}
 
@@ -236,20 +236,20 @@ namespace DSA {
 			helper_resize<true>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+		void reserve(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
 				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+		void resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
 				grow(newCapacity);
 			else
@@ -267,20 +267,28 @@ namespace DSA {
 
 #pragma region Iteration
 
-		StackIterator<T> begin() noexcept {
+		constexpr StackIterator<T> begin() noexcept {
 			return StackIterator<T>(Base::get_data());
 		}
 
-		StackIterator<const T> begin() const noexcept {
+		constexpr StackIterator<const T> begin() const noexcept {
 			return StackIterator<const T>(Base::get_data());
 		}
 
-		StackIterator<T> end() noexcept {
+		constexpr StackIterator<T> end() noexcept {
 			return StackIterator<T>(Base::get_data() + Base::get_size());
 		}
 
-		StackIterator<const T> end() const noexcept {
+		constexpr StackIterator<const T> end() const noexcept {
 			return StackIterator<const T>(Base::get_data() + Base::get_size());
+		}
+
+		constexpr StackIterator<T> iterator_at(INDEX index) noexcept {
+			return StackIterator<T>(Base::get_data() + index);
+		}
+
+		constexpr StackIterator<const T> iterator_at(INDEX index) const noexcept {
+			return StackIterator<const T>(Base::get_data() + index);
 		}
 
 #pragma endregion
