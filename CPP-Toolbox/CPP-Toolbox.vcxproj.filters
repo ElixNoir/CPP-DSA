@@ -13,10 +13,36 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Networking">
+      <UniqueIdentifier>{7320ce71-c234-4fe9-bf2d-d7e1a15f4389}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Input.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="JPEG.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Socket.hpp">
+      <Filter>Header Files\Networking</Filter>
+    </ClInclude>
+    <ClInclude Include="Runtime.hpp">
+      <Filter>Header Files\Networking</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SocketHandle.hpp">
+      <Filter>Header Files\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkError.hpp">
+      <Filter>Header Files\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkingNative.hpp">
+      <Filter>Header Files\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketRuntime.hpp">
+      <Filter>Header Files\Networking</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

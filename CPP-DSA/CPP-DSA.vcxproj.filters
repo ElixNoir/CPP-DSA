@@ -40,6 +40,27 @@
     <Filter Include="Header Files\Algorithms\Categories">
       <UniqueIdentifier>{aba7611c-1a75-464e-94f5-0b8dabb1fca3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Transforms">
+      <UniqueIdentifier>{f6942479-ce76-4421-ad2d-9696a68c4bcf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Compression">
+      <UniqueIdentifier>{b3657e7c-e5ce-46ba-98a6-8e09e0e67e49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Permutations">
+      <UniqueIdentifier>{9e31c446-983c-4f23-bae9-f8c60007ed84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Quantization">
+      <UniqueIdentifier>{dc10ec96-d527-4d1a-919b-9bbeb2d4bb06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Math">
+      <UniqueIdentifier>{3c5bbd7e-9b2f-4678-b654-ca621a8365fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Sorting">
+      <UniqueIdentifier>{ef32580c-eed4-486a-9d09-3f089c1c5c0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\General">
+      <UniqueIdentifier>{d0ee5da2-7164-4a5f-89dc-a152f9f5bb77}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Traits.hpp">
@@ -53,48 +74,6 @@
     </ClInclude>
     <ClInclude Include="Test.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="quad_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="insertion_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="repeat.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="swap.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="bubble_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="comb_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="selection_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="shell_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="rank_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="rotate.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="binary_search.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="grail_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="radix_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="heap_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
     </ClInclude>
     <ClInclude Include="AVLTree.hpp">
       <Filter>Header Files\Trees</Filter>
@@ -162,12 +141,6 @@
     <ClInclude Include="Stack.hpp">
       <Filter>Header Files\Lists</Filter>
     </ClInclude>
-    <ClInclude Include="benchmark.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
-    <ClInclude Include="Alloca.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
     <ClInclude Include="StackIterator.hpp">
       <Filter>Header Files\Iterators</Filter>
     </ClInclude>
@@ -213,38 +186,14 @@
     <ClInclude Include="Allocator.hpp">
       <Filter>Header Files\Concepts</Filter>
     </ClInclude>
-    <ClInclude Include="Sorting.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClInclude>
-    <ClInclude Include="Memory.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClInclude>
-    <ClInclude Include="Statistics.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClInclude>
-    <ClInclude Include="Arithmetic.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClInclude>
     <ClInclude Include="Multipliable.hpp">
       <Filter>Header Files\Concepts</Filter>
     </ClInclude>
     <ClInclude Include="Addable.hpp">
       <Filter>Header Files\Concepts</Filter>
     </ClInclude>
-    <ClInclude Include="Aggregation.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClInclude>
-    <ClInclude Include="compare.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
     <ClInclude Include="Parameter.hpp">
       <Filter>Header Files\General</Filter>
-    </ClInclude>
-    <ClInclude Include="Geometry.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClInclude>
-    <ClInclude Include="Constants.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
     </ClInclude>
     <ClInclude Include="TransitionMatrix.hpp">
       <Filter>Header Files\General</Filter>
@@ -254,9 +203,6 @@
     </ClInclude>
     <ClInclude Include="Vector2.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Math.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
     </ClInclude>
     <ClInclude Include="Interner.hpp">
       <Filter>Header Files</Filter>
@@ -270,9 +216,6 @@
     <ClInclude Include="PointerHashmap.hpp">
       <Filter>Header Files\Maps</Filter>
     </ClInclude>
-    <ClInclude Include="merge_sort.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClInclude>
     <ClInclude Include="ALL.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -282,34 +225,100 @@
     <ClInclude Include="Collection.hpp">
       <Filter>Header Files\Lists</Filter>
     </ClInclude>
+    <ClInclude Include="dct.hpp">
+      <Filter>Header Files\Algorithms\Categories\Transforms</Filter>
+    </ClInclude>
+    <ClInclude Include="dct8x8.hpp">
+      <Filter>Header Files\Algorithms\Categories\Transforms</Filter>
+    </ClInclude>
+    <ClInclude Include="Quantization.hpp">
+      <Filter>Header Files\Algorithms\Categories\Quantization</Filter>
+    </ClInclude>
+    <ClInclude Include="Aggregation.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Arithmetic.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Statistics.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Sorting.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="bubble_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="comb_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="heap_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="insertion_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="merge_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="quad_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="radix_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="rank_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="shell_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="selection_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="grail_sort.hpp">
+      <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
+    </ClInclude>
+    <ClInclude Include="Alloca.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="benchmark.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="binary_search.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="compare.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="repeat.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="rotate.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="swap.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Selection.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClCompile>
-    <ClCompile Include="Combinatorics.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClCompile>
-    <ClCompile Include="random.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClCompile>
-    <ClCompile Include="hash.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClCompile>
-    <ClCompile Include="unroll.hpp">
-      <Filter>Header Files\Algorithms</Filter>
-    </ClCompile>
-    <ClCompile Include="Bitwise.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
-    </ClCompile>
     <ClCompile Include="Iterator.hpp">
       <Filter>Header Files\Concepts</Filter>
-    </ClCompile>
-    <ClCompile Include="NumberTheory.hpp">
-      <Filter>Header Files\Algorithms\Categories</Filter>
     </ClCompile>
     <ClCompile Include="View.hpp">
       <Filter>Header Files\General</Filter>
@@ -322,6 +331,33 @@
     </ClCompile>
     <ClCompile Include="PerfectHashArray.hpp">
       <Filter>Header Files\Maps</Filter>
+    </ClCompile>
+    <ClCompile Include="huffman.hpp">
+      <Filter>Header Files\Algorithms\Categories\Compression</Filter>
+    </ClCompile>
+    <ClCompile Include="zigzag.hpp">
+      <Filter>Header Files\Algorithms\Categories\Permutations</Filter>
+    </ClCompile>
+    <ClCompile Include="Bitwise.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Combinatorics.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="NumberTheory.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="hash.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClCompile>
+    <ClCompile Include="random.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClCompile>
+    <ClCompile Include="unroll.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClCompile>
+    <ClCompile Include="Selection.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

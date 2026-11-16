@@ -139,7 +139,16 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Runtime.hpp" />
     <ClInclude Include="Input.hpp" />
+    <ClInclude Include="JPEG.hpp" />
+    <ClInclude Include="Socket.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="NetworkError.hpp" />
+    <ClCompile Include="NetworkingNative.hpp" />
+    <ClCompile Include="SocketHandle.hpp" />
+    <ClCompile Include="SocketRuntime.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
