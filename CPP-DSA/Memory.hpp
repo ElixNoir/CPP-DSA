@@ -554,6 +554,8 @@ namespace Algorithms {
 
 #pragma endregion
 
+#pragma region Reconstruct
+
 		template <typename T>
 		constexpr static void reconstruct_at(T* destination, T&& source)
 			noexcept (std::is_nothrow_move_constructible_v<T>
@@ -562,6 +564,110 @@ namespace Algorithms {
 			move_construct_at(destination, std::move(source));
 			destroy_at(&source);
 		}
+
+		template <
+			Direction DIRECTION = Direction::Forward,
+			bool DESTINATION_LEFT_INCLUSIVE = true,
+			bool SOURCE_LEFT_INCLUSIVE = true,
+			bool DESTROY_ON_THROW = true,
+			std::forward_iterator DESTINATION_ITERATOR,
+			std::input_iterator SOURCE_ITERATOR
+		>
+			requires (DIRECTION == Direction::Forward || std::bidirectional_iterator<DESTINATION_ITERATOR>)
+		constexpr static void reconstruct_range(DESTINATION_ITERATOR begin, DESTINATION_ITERATOR end, SOURCE_ITERATOR sourceBegin)
+			noexcept (std::is_nothrow_move_constructible_v<std::iter_value_t<DESTINATION_ITERATOR>>
+				&& (DIRECTION == Direction::Forward ? noexcept(++begin) : noexcept(--end)))
+		{
+			using T = std::iter_value_t<DESTINATION_ITERATOR>;
+
+			if constexpr (std::contiguous_iterator<DESTINATION_ITERATOR> && std::is_trivially_move_constructible_v<T>) {
+				if (begin != end)
+					std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), sourceBegin + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
+			}
+			else {
+				if constexpr (!SOURCE_LEFT_INCLUSIVE) {
+					if (begin != end)
+						++sourceBegin;
+				}
+
+				if constexpr (DIRECTION == Direction::Forward) {
+					DESTINATION_ITERATOR initial = begin;
+					if constexpr (!DESTINATION_LEFT_INCLUSIVE) {
+						if (begin != end)
+							++initial;
+					}
+
+					if constexpr (!DESTROY_ON_THROW || std::is_nothrow_move_constructible_v<T>) {
+						while (begin != end) {
+							DESTINATION_ITERATOR destination;
+							if constexpr (DESTINATION_LEFT_INCLUSIVE)
+								destination = begin++;
+							else
+								destination = ++begin;
+
+							reconstruct_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+						}
+					}
+					else {
+						try {
+							while (begin != end) {
+								DESTINATION_ITERATOR destination;
+								if constexpr (DESTINATION_LEFT_INCLUSIVE)
+									destination = begin++;
+								else
+									destination = ++begin;
+
+								reconstruct_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+							}
+						}
+						catch (...) {
+							destroy_range<Direction::Forward>(initial, begin);
+							throw;
+						}
+					}
+				}
+				else {
+					DESTINATION_ITERATOR initial = end;
+					if constexpr (!DESTINATION_LEFT_INCLUSIVE) {
+						if (begin != end)
+							++initial;
+					}
+
+					if constexpr (!DESTROY_ON_THROW || std::is_nothrow_move_constructible_v<T>) {
+						while (begin != end) {
+							DESTINATION_ITERATOR destination;
+							if constexpr (DESTINATION_LEFT_INCLUSIVE)
+								destination = --end;
+							else
+								destination = end--;
+
+							reconstruct_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+						}
+					}
+					else {
+						try {
+							while (begin != end) {
+								DESTINATION_ITERATOR destination;
+								if constexpr (DESTINATION_LEFT_INCLUSIVE)
+									destination = --end;
+								else
+									destination = end--;
+
+								reconstruct_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+							}
+						}
+						catch (...) {
+							destroy_range<Direction::Backward>(end, initial);
+							throw;
+						}
+					}
+				}
+			}
+		}
+
+#pragma endregion
+
+#pragma region Replace
 
 		template <typename T>
 		constexpr static void replace_at(T* destination, T&& source)
@@ -572,6 +678,108 @@ namespace Algorithms {
 			move_construct_at(destination, std::move(source));
 			destroy_at(&source);
 		}
+
+		template <
+			Direction DIRECTION = Direction::Forward,
+			bool DESTINATION_LEFT_INCLUSIVE = true,
+			bool SOURCE_LEFT_INCLUSIVE = true,
+			bool DESTROY_ON_THROW = true,
+			std::forward_iterator DESTINATION_ITERATOR,
+			std::input_iterator SOURCE_ITERATOR
+		>
+			requires (DIRECTION == Direction::Forward || std::bidirectional_iterator<DESTINATION_ITERATOR>)
+		constexpr static void replace_range(DESTINATION_ITERATOR begin, DESTINATION_ITERATOR end, SOURCE_ITERATOR sourceBegin)
+			noexcept (std::is_nothrow_move_constructible_v<std::iter_value_t<DESTINATION_ITERATOR>>
+				&& (DIRECTION == Direction::Forward ? noexcept(++begin) : noexcept(--end)))
+		{
+			using T = std::iter_value_t<DESTINATION_ITERATOR>;
+
+			if constexpr (std::contiguous_iterator<DESTINATION_ITERATOR> && std::is_trivially_move_constructible_v<T>) {
+				if (begin != end)
+					std::memcpy(begin + (!DESTINATION_LEFT_INCLUSIVE), sourceBegin + (!SOURCE_LEFT_INCLUSIVE), (end - begin) * sizeof(T));
+			}
+			else {
+				if constexpr (!SOURCE_LEFT_INCLUSIVE) {
+					if (begin != end)
+						++sourceBegin;
+				}
+
+				if constexpr (DIRECTION == Direction::Forward) {
+					DESTINATION_ITERATOR initial = begin;
+					if constexpr (!DESTINATION_LEFT_INCLUSIVE) {
+						if (begin != end)
+							++initial;
+					}
+
+					if constexpr (!DESTROY_ON_THROW || std::is_nothrow_move_constructible_v<T>) {
+						while (begin != end) {
+							DESTINATION_ITERATOR destination;
+							if constexpr (DESTINATION_LEFT_INCLUSIVE)
+								destination = begin++;
+							else
+								destination = ++begin;
+
+							replace_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+						}
+					}
+					else {
+						try {
+							while (begin != end) {
+								DESTINATION_ITERATOR destination;
+								if constexpr (DESTINATION_LEFT_INCLUSIVE)
+									destination = begin++;
+								else
+									destination = ++begin;
+
+								replace_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+							}
+						}
+						catch (...) {
+							destroy_range<Direction::Forward>(initial, begin);
+							throw;
+						}
+					}
+				}
+				else {
+					DESTINATION_ITERATOR initial = end;
+					if constexpr (!DESTINATION_LEFT_INCLUSIVE) {
+						if (begin != end)
+							++initial;
+					}
+
+					if constexpr (!DESTROY_ON_THROW || std::is_nothrow_move_constructible_v<T>) {
+						while (begin != end) {
+							DESTINATION_ITERATOR destination;
+							if constexpr (DESTINATION_LEFT_INCLUSIVE)
+								destination = --end;
+							else
+								destination = end--;
+
+							replace_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+						}
+					}
+					else {
+						try {
+							while (begin != end) {
+								DESTINATION_ITERATOR destination;
+								if constexpr (DESTINATION_LEFT_INCLUSIVE)
+									destination = --end;
+								else
+									destination = end--;
+
+								replace_at(std::addressof(*destination), std::move(*(sourceBegin++)));
+							}
+						}
+						catch (...) {
+							destroy_range<Direction::Backward>(end, initial);
+							throw;
+						}
+					}
+				}
+			}
+		}
+
+#pragma endregion
 
 #pragma endregion
 

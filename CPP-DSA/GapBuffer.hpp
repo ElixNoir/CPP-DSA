@@ -4,29 +4,55 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy, typename T>
+	template <concepts::ContainerPolicy ContainerPolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class GapBuffer : public StoragePolicy::template STRUCTURE<T> {
+	class GapBuffer : public ContainerPolicy::template STRUCTURE<T> { //! incomplete
 	public:
 
-		using Base = StoragePolicy::template STRUCTURE<T>;
+		using Base = ContainerPolicy::template STRUCTURE<T>;
+		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		constexpr static bool is_dynamic = Base::is_dynamic;
+
 	protected:
 
-		INDEX end;
+#pragma region Properties
+
+		INDEX end = 0;
 		INDEX start = 0;
+
+#pragma endregion
 
 #pragma region Methods
 
-		void helper_destroy(Base::Capacity explicitCapacity = {}) noexcept
-			requires (!std::is_trivially_destructible_v<T>)
+		constexpr void helper_resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			T* const data = Base::get_data();
-			destroy_range_forward(data, data + start);
-			destroy_range_forward(data + end, data + capacity);
+			T* const oldData = Base::get_data();
+			T* const newData = ALLOCATOR::allocate(newCapacity);
+
+			try {
+				const INDEX rightSize = oldCapacity - end;
+				move_construct_range(newData, newData + start, oldData);
+				move_construct_range(newData + newCapacity, newData + newCapacity + rightSize, oldData + end);
+			}
+			catch (...) {
+				ALLOCATOR::deallocate(newData);
+				throw;
+			}
+			destroy_range(oldData, oldData + start);
+			const INDEX capacity = Base::get_capacity();
+			destroy_range(oldData + end, oldData + capacity);
+
+			ALLOCATOR::deallocate(oldData);
+
+			data = reinterpret_cast<std::byte*>(newData);
+			end = newCapacity - rightSize;
+			if constexpr (concepts::Container<Base>)
+				Base::set_capacity(newCapacity);
 		}
 
 #pragma endregion
@@ -40,14 +66,18 @@ namespace DSA {
 		~GapBuffer() noexcept = default;
 
 		~GapBuffer() noexcept
-			requires concepts::HasCapacity<Base>
+			requires (!std::is_trivially_destructible_v<T>)
 		{
 			destroy();
 		}
 
-		constexpr void destroy(Base::Capacity explicitCapacity = {}) noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy(explicitCapacity);
+		constexpr void destroy() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<T>) {
+				const INDEX capacity = Base::get_capacity();
+				T* const data = Base::get_data();
+				destroy_range(data, data + start);
+				destroy_range(data + end, data + capacity);
+			}
 		}
 
 #pragma endregion
@@ -64,8 +94,8 @@ namespace DSA {
 			return end - start;
 		}
 
-		[[nodiscard]] constexpr INDEX get_size(Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr INDEX get_size() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return capacity - get_gap_size();
 		}
 
@@ -77,21 +107,21 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool is_empty(Base::Capacity explicitCapacity = {}) const noexcept {
-			return get_size(explicitCapacity) == 0;
+		[[nodiscard]] constexpr bool is_empty() const noexcept {
+			return get_size(capacity) == 0;
 		}
 
-		[[nodiscard]] constexpr bool is_full(Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			return get_size(explicitCapacity) == capacity;
+		[[nodiscard]] constexpr bool is_full() const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			return get_size(capacity) == capacity;
 		}
 
 #pragma endregion
 
 #pragma region Add & Remove
 
-		[[nodsicard]] constexpr bool can_add(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodsicard]] constexpr bool can_add(INDEX count = 1) const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return get_gap_size(capacity) >= count;
 		}
 
@@ -121,7 +151,7 @@ namespace DSA {
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			T* const address = Base::get_data() + start;
-			move_construct_range_forward(address, address + count, source);
+			move_construct_range(address, address + count, source);
 			start += count;
 		}
 
@@ -132,31 +162,31 @@ namespace DSA {
 			return can_remove(Base::get_capacity(), count);
 		}
 
-		[[nodsicard]] constexpr bool can_remove(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
-			return get_size(explicitCapacity) >= count;
+		[[nodsicard]] constexpr bool can_remove(INDEX count = 1) const noexcept {
+			return get_size(capacity) >= count;
 		}
 
 		constexpr void remove_end() noexcept {
 			T* const address = Base::get_data() + end;
-			destroy_range_forward(address, address + 1);
+			destroy_range(address, address + 1);
 			++end;
 		}
 
 		constexpr void remove_end_many(INDEX count) noexcept {
 			T* const address = Base::get_data() + end;
-			destroy_range_forward(address, address + count);
+			destroy_range(address, address + count);
 			end += count;
 		}
 
 		constexpr void remove_start() noexcept {
 			T* const address = Base::get_data() + start;
-			destroy_range_forward(address - 1, address);
+			destroy_range(address - 1, address);
 			--start;
 		}
 
 		constexpr void remove_start_many(INDEX count) noexcept {
 			T* const address = Base::get_data() + start;
-			destroy_range_forward(address - count, address);
+			destroy_range(address - count, address);
 			start -= count;
 		}
 
@@ -172,10 +202,11 @@ namespace DSA {
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				end -= shift;
 				start -= shift;
-				move_construct_range_backward(address + end, address + end + shift, address + start);
+				reconstruct_range<Direction::Backward>(address + end, address + end + shift, address + start);
 			}
 			else {
-				move_construct_range_backward(address + end - shift, address + end, address + start - shift);
+				move_construct_range<Direction::Backward>(address + end - shift, address + end, address + start - shift);
+				destroy_range(address + start - shift, address + start - shift);
 				end -= shift;
 				start -= shift;
 			}
@@ -186,7 +217,7 @@ namespace DSA {
 		{
 			T* const address = Base::get_data();
 			const INDEX shift = position - start;
-			move_construct_range_forward(address + start, address + start + shift, address + end);
+			move_construct_range(address + start, address + start + shift, address + end); // ????
 			end += shift;
 			start += shift;
 		}
@@ -204,51 +235,28 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity(Base::Capacity explicitCapacity = {})
+		constexpr void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(capacity << 1, explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
+			grow(capacity << 1, capacity);
 		}
 
-		void grow(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+		constexpr void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			using ALLOCATOR = Base::ALLOCATOR;
-			
-			T* oldData = Base::get_data();
-			T* newData = ALLOCATOR::allocate(newCapacity);
-
-			try {
-				const INDEX rightSize = oldCapacity - end;
-				move_construct_range_forward(newData, newData + start, oldData);
-				move_construct_range_forward(newData + newCapacity, newData + newCapacity + rightSize, oldData + end);
-			}
-			catch (...) {
-				ALLOCATOR::deallocate(newData);
-				throw;
-			}
-			destroy_range_forward(oldData, oldData + start);
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			destroy_range_forward(oldData + end, oldData + capacity);
-
-			ALLOCATOR::deallocate(oldData);
-
-			data = reinterpret_cast<std::byte*>(newData);
-			end = newCapacity - rightSize;
-			if constexpr (concepts::Container<Base>)
-				Base::set_capacity(newCapacity);
+			helper_resize(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+		constexpr void reserve(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
-				grow(newCapacity, explicitCapacity);
+				grow(newCapacity);
 		}
 
 #pragma endregion

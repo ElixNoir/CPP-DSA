@@ -14,17 +14,19 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		constexpr static bool is_dynamic = Base::is_dynamic;
+
 	protected:
 
 #pragma region Methods
 
-		void helper_resize(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+		void helper_resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
 
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			const INDEX newBitsetCapacity = (newCapacity + Bitmask<uintmax_t>::bit_count - 1) >> Bitmask<uintmax_t>::bit_shift;
 			Base::TRACKED newTracked(newBitsetCapacity);
 			newTracked.zero(newBitsetCapacity);
@@ -95,9 +97,9 @@ namespace DSA {
 			destroy();
 		}
 
-		constexpr void destroy(Base::Capacity explicitCapacity = {}) noexcept {
+		constexpr void destroy() noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy(explicitCapacity);
+				helper_destroy();
 		}
 
 #pragma endregion
@@ -106,8 +108,8 @@ namespace DSA {
 
 #pragma region Find, Insert, Set, Upsert
 
-		[[nodiscard]] constexpr INDEX find_occupied(const T& key, Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr INDEX find_occupied(const T& key) const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			const T* data = Base::get_data();
 			const INDEX begin = HASH(key) % capacity;
 
@@ -124,26 +126,26 @@ namespace DSA {
 			return capacity; // if container is used well, unreachable due to threshold in DynamicContainer
 		}
 
-		[[nodiscard]] constexpr INDEX find_unoccupied(const T& key, Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr INDEX find_unoccupied(const T& key) const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			const INDEX begin = HASH(key) % capacity;
 
-			INDEX index = Base::find_first_untracked(begin, explicitCapacity);
+			INDEX index = Base::find_first_untracked(begin, capacity);
 			if (index == capacity)
-				index = Base::find_unoccupied(0, explicitCapacity);
+				index = Base::find_unoccupied(0, capacity);
 			//if (index == capacity) // if container is used well, unreachable due to threshold in DynamicContainer
 			//    return capacity;
 
 			return index;
 		}
 
-		void insert(const T& key, Base::Capacity explicitCapacity = {}) noexcept {
-			set(find_unoccupied(key, explicitCapacity), key);
+		void insert(const T& key) noexcept {
+			set(find_unoccupied(key, capacity), key);
 			++Base::size;
 		}
 
-		void insert(T&& key, Base::Capacity explicitCapacity = {}) noexcept {
-			set(find_unoccupied(key, explicitCapacity), std::move(key));
+		void insert(T&& key) noexcept {
+			set(find_unoccupied(key, capacity), std::move(key));
 			++Base::size;
 		}
 
@@ -159,61 +161,61 @@ namespace DSA {
 			++Base::size;
 		}
 
-		void upsert(const T& key, Base::Capacity explicitCapacity = {}) noexcept {
-			set(find(key, explicitCapacity), key);
+		void upsert(const T& key) noexcept {
+			set(find(key, capacity), key);
 		}
 
-		void upsert(T&& key, Base::Capacity explicitCapacity = {}) noexcept {
-			set(find(key, explicitCapacity), std::move(key));
+		void upsert(T&& key) noexcept {
+			set(find(key, capacity), std::move(key));
 		}
 
 #pragma endregion
 
 #pragma region Memory Management
 
-		void double_capacity(Base::Capacity explicitCapacity = {})
+		void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			grow(capacity << 1);
 		}
 
-		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
+		void expand(float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(Math::ceiling(capacity * ratio), explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
+			grow(Math::ceiling(capacity * ratio), capacity);
 		}
 
-		[[nodiscard]] constexpr bool should_grow(Base::Capacity explicitCapacity = {}) const noexcept {
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+		[[nodiscard]] constexpr bool should_grow() const noexcept {
+			const INDEX capacity = Base::get_capacity();
 			return static_cast<double>(Base::get_size()) / capacity > 0.8;
 		}
 
 		void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			helper_resize<true>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
+		void reserve(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
+			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
 				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity, Base::Capacity explicitCapacity = {}))
+		void resize(INDEX newCapacity))
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			if (newCapacity > capacity)
+			const INDEX capacity = Base::get_capacity();
+			if (newCapacity >= capacity)
 				grow(newCapacity);
 			else
 				shrink(newCapacity);
@@ -221,7 +223,7 @@ namespace DSA {
 
 		void shrink(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			helper_resize<false>(newCapacity);
 		}

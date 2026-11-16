@@ -24,7 +24,7 @@ namespace DSA {
 
 		template <typename T>
 		struct is_expensively_comparable {
-			static constexpr bool data = requires {
+			constexpr static bool data = requires {
 				{ T::is_expensively_comparable } -> std::same_as<const bool&>;
 			} ? T::is_expensively_comparable : false;
 		};
@@ -32,7 +32,7 @@ namespace DSA {
 		template <typename T>
 			requires std::is_fundamental_v<T>
 		struct is_expensively_comparable<T> {
-			static constexpr bool data = false;
+			constexpr static bool data = false;
 		};
 
 		template <typename T>

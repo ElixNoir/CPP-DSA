@@ -4,41 +4,60 @@
 
 namespace DSA {
 
-    template <concepts::LinkedListNode _T>
-    class LinkedListIterator {
-    public:
+	template <concepts::LinkedListNode _T>
+	class LinkedListIterator {
+	public:
 
-        using iterator_category = std::forward_iterator_tag;
+		using INDEX = typename _T::INDEX;
+		using T = _T;
 
-        using INDEX = typename _T::INDEX;
-        using T = _T;
+#pragma region C++ Iterator Traits
 
-    protected:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = T;
+		using difference_type = std::ptrdiff_t;
+		using pointer = T*;
+		using reference = T&;
 
-        T* data;
-        INDEX index;
-        INDEX remaining;
+#pragma endregion
 
-    public:
+	protected:
 
-        LinkedListIterator(T* data, INDEX first, INDEX size) noexcept
-            : data(data), index(first), remaining(size) {
-        }
+#pragma region Properties
 
-        T& operator*() const noexcept {
-            return data[index];
-        }
+		T* data;
+		INDEX index;
+		INDEX remaining;
 
-        LinkedListIterator& operator++() noexcept {
-            index = data[index].next;
-            --remaining;
-            return *this;
-        }
+#pragma endregion
 
-        bool operator!=(const LinkedListIterator& other) const noexcept {
-            return remaining != other.remaining;
-        }
+	public:
 
-    };
+#pragma region Constructors & Destructors
+
+		constexpr LinkedListIterator(T* data, INDEX first, INDEX size) noexcept
+			: data(data), index(first), remaining(size) {}
+
+#pragma endregion
+
+#pragma region Operators
+
+		T& operator*() const noexcept {
+			return data[index];
+		}
+
+		LinkedListIterator& operator++() noexcept {
+			index = data[index].next;
+			--remaining;
+			return *this;
+		}
+
+		bool operator!=(const LinkedListIterator& other) const noexcept {
+			return remaining != other.remaining;
+		}
+
+#pragma endregion
+
+	};
 
 }

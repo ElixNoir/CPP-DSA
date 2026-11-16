@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Aggregation.hpp"
 #include "Bitset.hpp"
 #include "Collection.hpp"
 #include "hash.hpp"
 #include "Math.hpp"
+
 #include <iostream>
 
 namespace DSA {
@@ -30,7 +32,9 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_resize(INDEX newCapacity)
+		template <ResizeOperation RESIZE_OPERATION>
+			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
+		constexpr void helper_resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base, T>)
 			requires concepts::DynamicStorage<Base>
 		{
@@ -41,20 +45,42 @@ namespace DSA {
 			Bitset<BitsetPolicy> newKeyStates(newKeyStatesCapacity);
 			newKeyStates.zero();
 
+			const INDEX size = Base::get_size();
 			const T* newData = ALLOCATOR::allocate(newCapacity);
 			const T* oldData = Base::get_data();
+
+			INDEX count;
+			if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
+				count = size;
+			else
+				count = Aggregation::minimum(newCapacity, size);
+
 			for (INDEX index : key_states.ones(keyStatesCapacity)) {
+				if (count == 0)
+					break;
 				T key = oldData[index];
 				const INDEX newIndex = Algorithms::hash_pointer(key) % newCapacity;
 				newData[newIndex] = key;
 				newKeyStates.set_bit_at(newIndex);
+				--count;
+			}
+
+			if constexpr (std::is_nothrow_move_assignable_v<Bitset<BitsetPolicy>>)
+				key_states = std::move(newKeyStates);
+			else {
+				try {
+					key_states = std::move(newKeyStates);
+				}
+				catch (...) {
+					ALLOCATOR::deallocate(newData);
+					throw;
+				}
 			}
 
 			ALLOCATOR::deallocate(oldData);
 
+			Base::set_capacity(newCapacity);
 			Base::set_data(newData);
-			if (concepts::HasMutableCapacity<Base>)
-				Base::set_capacity(newCapacity);
 		}
 
 #pragma endregion
@@ -192,7 +218,7 @@ namespace DSA {
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
-			if (newCapacity > capacity)
+			if (newCapacity >= capacity)
 				grow(newCapacity);
 		}
 

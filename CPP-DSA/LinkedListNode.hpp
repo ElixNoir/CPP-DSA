@@ -19,7 +19,7 @@ namespace DSA {
 
 	}
 
-	template <typename _T, std::unsigned_integral _INDEX = size_t>
+	template <typename _T, std::unsigned_integral _INDEX = uint32_t>
 	struct LinkedListNode {
 
 		using INDEX = _INDEX;

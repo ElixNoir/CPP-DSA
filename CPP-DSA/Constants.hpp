@@ -4,6 +4,8 @@
 
 namespace Constants {
 
+	constexpr static double euler_constant = 0.57721566490153286;
+
 	constexpr static double e = 2.718281828459045;
 	constexpr static double natural_logarithm_of_2 = 0.693147180559945;
 

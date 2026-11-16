@@ -18,14 +18,6 @@ namespace DSA {
 		constexpr static Bitmask<>::T bit_count = Bitmask<>::bit_count;
 		constexpr static Bitmask<>::T bit_shift = Bitmask<>::bit_shift;
 
-#pragma region Constructors & Destructors
-
-		constexpr void destroy() noexcept {
-			//const INDEX capacity = Base::get_capacity();
-		}
-
-#pragma endregion
-
 #pragma region Methods
 
 #pragma region Getters
@@ -46,114 +38,97 @@ namespace DSA {
 
 #pragma region Find
 
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit(INDEX begin = 0) const noexcept {
+		template <Direction DIRECTION = Direction::Forward, bool ONES>
+		constexpr BitIndex find_bit(INDEX begin = 0) const noexcept {
 			const INDEX capacity = Base::get_capacity();
-			return find_first_bit<FRONT, TRAILING, ONES>(begin, capacity);
+			return find_bit<DIRECTION, ONES>(begin, capacity);
 		}
 
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit(INDEX begin, INDEX end) const noexcept {
+		template <Direction DIRECTION = Direction::Forward, bool ONES>
+		constexpr BitIndex find_bit(INDEX begin, INDEX end) const noexcept {
 			int bitOffset;
-			if constexpr (FRONT) {
+			if constexpr (DIRECTION == Direction::Forward) {
 				while (begin < end) {
-					const Bitmask<>& mask = Base::get(begin++);
-					if constexpr (TRAILING) {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_trailing_one();
-						else
-							bitOffset = mask.index_of_trailing_zero();
-					}
-					else {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_leading_one();
-						else
-							bitOffset = mask.index_of_leading_zero();
-					}
-
+					const Bitmask<>& mask = Base::get(begin);
+					if constexpr (ONES)
+						bitOffset = mask.index_of_trailing_one();
+					else
+						bitOffset = mask.index_of_trailing_zero();
 					if (bitOffset != bit_count)
-						return begin << bit_shift + bitOffset;
+						return (begin << bit_shift) + bitOffset;
+					++begin;
 				}
 			}
 			else {
 				while (begin < end) {
 					const Bitmask<>& mask = Base::get(--end);
-					if constexpr (TRAILING) {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_trailing_one();
-						else
-							bitOffset = mask.index_of_trailing_zero();
-					}
-					else {
-						if constexpr (ONES)
-							bitOffset = mask.index_of_leading_one();
-						else
-							bitOffset = mask.index_of_leading_zero();
-					}
-
-					if (bitOffset != bit_count)
-						return end << bit_shift + bitOffset;
+					if constexpr (ONES)
+						bitOffset = mask.index_of_leading_one();
+					else
+						bitOffset = mask.index_of_leading_zero();
+					if (bitOffset != 0)
+						return (end << bit_shift) + bitOffset;
 				}
 			}
 
 			return end;
 		}
 
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_after(BitIndex bitBegin) const noexcept {
+		template <bool ONES>
+		constexpr BitIndex find_first_bit() const noexcept {
 			const INDEX capacity = Base::get_capacity();
-			return find_first_bit_after<FRONT, TRAILING, ONES>(bitBegin, capacity);
+			return find_first_bit_at_or_after<ONES>(0, capacity);
 		}
 
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_after(BitIndex bitBegin, INDEX end) const noexcept {
+		template <bool ONES>
+		constexpr BitIndex find_first_bit_at_or_after(BitIndex bitBegin) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			return find_first_bit_at_or_after<ONES>(bitBegin, capacity);
+		}
+
+		template <bool ONES>
+		constexpr BitIndex find_first_bit_at_or_after(BitIndex bitBegin, INDEX end) const noexcept {
 			const Bitmask<>::T initialOffset = bitBegin & (bit_count - 1);
 			const INDEX begin = bitBegin >> bit_shift;
-
+			const Bitmask<>::T bitmask = Base::get(begin);
 			int bitOffset;
-
-			if constexpr (TRAILING) {
-				if constexpr (ONES)
-					bitOffset = Base::get(begin).index_of_trailing_one(initialOffset);
-				else
-					bitOffset = Base::get(begin).index_of_trailing_zero(initialOffset);
-			}
-			else {
-				if constexpr (ONES)
-					bitOffset = Base::get(begin).index_of_leading_one(initialOffset);
-				else
-					bitOffset = Base::get(begin).index_of_leading_zero(initialOffset);
-			}
+			if constexpr (ONES)
+				bitOffset = bitmask.index_of_trailing_one(initialOffset);
+			else
+				bitOffset = bitmask.index_of_trailing_zero(initialOffset);
 
 			if (bitOffset != bit_count)
-				return begin + bitOffset;
+				return (begin << bit_shift) + bitOffset;
 
-			return find_first_bit<FRONT, TRAILING, ONES>(begin, end);
+			return find_bit<Direction::Forward, ONES>(begin + 1, end);
 		}
 
-		template <bool FRONT, bool TRAILING, bool ONES>
-		constexpr BitIndex find_first_bit_before(INDEX begin, BitIndex bitEnd) const noexcept {
-			const Bitmask<>::T initialOffset = bitBegin & (bit_count - 1);
+		template <bool ONES>
+		constexpr BitIndex find_last_bit() const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			return find_bit<Direction::Backward, ONES>(0, capacity);
+		}
 
+		template <bool ONES>
+		constexpr BitIndex find_last_bit_at_or_before(BitIndex bitEnd) const noexcept {
+			const INDEX capacity = Base::get_capacity();
+			return find_last_bit_at_or_before<ONES>(0, bitEnd);
+		}
+
+		template <bool ONES>
+		constexpr BitIndex find_last_bit_at_or_before(INDEX begin, BitIndex bitEnd) const noexcept {
+			const Bitmask<>::T initialOffset = bitEnd & (bit_count - 1);
+			const INDEX end = bitEnd >> bit_shift;
+			const Bitmask<>::T bitmask = Base::get(end);
 			int bitOffset;
-
-			if constexpr (TRAILING) {
-				if constexpr (ONES)
-					bitOffset = Base::get(begin).index_of_trailing_one(initialOffset);
-				else
-					bitOffset = Base::get(begin).index_of_trailing_zero(initialOffset);
-			}
-			else {
-				if constexpr (ONES)
-					bitOffset = Base::get(begin).index_of_leading_one(initialOffset);
-				else
-					bitOffset = Base::get(begin).index_of_leading_zero(initialOffset);
-			}
-
+			if constexpr (ONES)
+				bitOffset = bitmask.index_of_leading_one(initialOffset);
+			else
+				bitOffset = bitmask.index_of_leading_zero(initialOffset);
 			if (bitOffset != bit_count)
-				return begin + bitOffset;
+				return (end << bit_shift) + bitOffset;
 
-			return find_first_bit<FRONT, TRAILING, ONES>(begin, end);
+			return find_bit<Direction::Backward, ONES>(begin, end);
 		}
 
 #pragma endregion

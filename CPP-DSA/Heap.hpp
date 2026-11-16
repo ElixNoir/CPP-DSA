@@ -20,8 +20,11 @@ namespace DSA {
 	public:
 
 		using Base = Collection<StoragePolicy, T>;
+		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
+
+		constexpr static bool is_dynamic = Base::is_dynamic;
 
 	protected:
 
@@ -31,43 +34,6 @@ namespace DSA {
 		constexpr INDEX left_of(INDEX index) const noexcept { return (index << 1) + 1; }
 		constexpr INDEX right_of(INDEX index) const noexcept { return (index << 1) + 2; }
 
-		void helper_destroy() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			destroy_range_backward(Base::get_data(), Base::get_data() + Base::get_size());
-		}
-
-		template <bool GROW>
-		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			using ALLOCATOR = Base::ALLOCATOR;
-
-			T* const oldData = Base::get_data();
-			T* const newData = ALLOCATOR::allocate(newCapacity);
-
-			try {
-				if constexpr (GROW)
-					reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
-				else {
-					reconstruct_range_backward(newData, newData + newCapacity, oldData);
-					destroy_range_backward(oldData + newCapacity, oldData + Base::get_size());
-					Base::set_size(newCapacity);
-				}
-			}
-			catch (...) {
-				ALLOCATOR::deallocate(newData);
-				throw;
-			}
-
-			ALLOCATOR::deallocate(oldData);
-
-			Base::set_data(newData);
-			if constexpr (concepts::DynamicContainer<Base>)
-				Base::set_capacity(newCapacity);
-		}
-
 #pragma endregion
 
 	public:
@@ -75,20 +41,6 @@ namespace DSA {
 #pragma region Constructors & Destructors
 
 		using Base::Base;
-
-		~Heap() noexcept = default;
-
-		~Heap() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			destroy();
-		}
-
-		void destroy() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			helper_destroy();
-		}
 
 #pragma endregion
 
@@ -130,18 +82,11 @@ namespace DSA {
 		constexpr void remove(INDEX index)
 			noexcept (concepts::is_nothrow_swappable_v<T>)
 		{
-			const INDEX size = Base::get_size();
+			const INDEX lastIndex = Base::get_size() - 1;
+			if (index != lastIndex)
+				swap(Base::get(index), Base::get(lastIndex));
 
 			destroy_at(Base::get_data() + index);
-
-			if (index >= size)
-				return;
-			if (index == size - 1) {
-				--Base::size;
-				return;
-			}
-
-			swap(Base::get(index), Base::get(size - 1));
 			--Base::size;
 
 			heapify(index);
@@ -157,7 +102,7 @@ namespace DSA {
 			if constexpr (HEAP_TYPE == MAX_HEAP) {
 				while (index != 0) {
 					const INDEX parentIndex = parent(index);
-					if (Base::get(parentIndex) < Base::get(index))
+					if (Base::get(parentIndex) >= Base::get(index))
 						return;
 					swap(Base::get(index), Base::get(parentIndex));
 					index = parentIndex;
@@ -166,7 +111,7 @@ namespace DSA {
 			else {
 				while (index != 0) {
 					const INDEX parentIndex = parent(index);
-					if (Base::get(parentIndex) < Base::get(index))
+					if (Base::get(parentIndex) <= Base::get(index))
 						return;
 					swap(Base::get(index), Base::get(parentIndex));
 					index = parentIndex;
@@ -245,66 +190,6 @@ namespace DSA {
 
 #pragma endregion
 
-#pragma region Memory Management
-
-		void double_capacity(Base::Capacity explicitCapacity = {})
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(capacity << 1);
-		}
-
-		constexpr void empty() noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
-			Base::set_size(0);
-		}
-
-		void expand(float ratio = 1.5, Base::Capacity explicitCapacity = {})
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			grow(Math::ceiling(capacity * ratio), explicitCapacity);
-		}
-
-		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			helper_resize<true>(newCapacity);
-		}
-
-		void reserve(INDEX newCapacity, Base::Capacity explicitCapacity = {})
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			if (newCapacity > capacity)
-				grow(newCapacity);
-		}
-
-		void resize(INDEX newCapacity, Base::Capacity explicitCapacity = {})
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::extract_capacity(explicitCapacity);
-			if (newCapacity > capacity)
-				grow(newCapacity);
-			else
-				shrink(newCapacity);
-		}
-
-		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			helper_resize<false>(newCapacity);
-		}
-
-#pragma endregion
-
 #pragma region Operators
 
 		friend std::ostream& operator<<(std::ostream& ostream, const Heap& heap) {
@@ -327,21 +212,139 @@ namespace DSA {
 
 #pragma region Iteration
 
-		/*StackIterator<T> begin() noexcept {
-			return StackIterator<T>(Base::get_data());
+		using Iterator = T*;
+		using ConstIterator = const T*;
+
+		[[nodiscard]] constexpr Iterator begin() noexcept {
+			return Base::get_data();
 		}
 
-		StackIterator<const T> begin() const noexcept {
-			return StackIterator<const T>(Base::get_data());
+		[[nodiscard]] constexpr ConstIterator begin() const noexcept {
+			return Base::get_data();
 		}
 
-		StackIterator<T> end() noexcept {
-			return StackIterator<T>(Base::get_data() + Base::get_size());
+		[[nodiscard]] constexpr ConstIterator cbegin() const noexcept {
+			return Base::get_data();
 		}
 
-		StackIterator<const T> end() const noexcept {
-			return StackIterator<const T>(Base::get_data() + Base::get_size());
-		}*/
+		[[nodiscard]] constexpr Iterator end() noexcept {
+			return begin() + Base::get_size();
+		}
+
+		[[nodiscard]] constexpr ConstIterator end() const noexcept {
+			return begin() + Base::get_size();
+		}
+
+		[[nodiscard]] constexpr ConstIterator cend() const noexcept {
+			return cbegin() + Base::get_size();
+		}
+
+#pragma endregion
+
+#pragma region Traversal
+
+		template <std::invocable<INDEX> OPERATION>
+		constexpr void in_order(OPERATION& operation, INDEX index)
+			noexcept (std::is_nothrow_invocable_v<OPERATION&, INDEX>)
+		{
+			if (index == invalid_index)
+				return;
+
+			in_order(operation, left_of(index));
+			std::invoke(operation, index);
+			in_order(operation, right_of(index));
+		}
+
+		template <std::predicate<INDEX> PREDICATE>
+		constexpr bool in_order(PREDICATE& predicate, INDEX index)
+			noexcept (std::is_nothrow_invocable_v<PREDICATE&, INDEX>)
+		{
+			if (index == invalid_index)
+				return true;
+
+			if (!in_order(predicate, left_of(index)))
+				return false;
+
+			if (!std::invoke(predicate, index))
+				return false;
+
+			return in_order(predicate, right_of(index));
+		}
+
+		template <std::invocable<INDEX> OPERATION>
+		constexpr void level_order(OPERATION operation)
+			noexcept (std::is_nothrow_invocable_v<OPERATION&, INDEX>)
+		{
+			const INDEX size = Base::get_size();
+			for (INDEX index = 0; index < size; ++index)
+				operation(Base::get(index));
+		}
+
+		template <std::predicate<INDEX> PREDICATE>
+		constexpr void level_order(PREDICATE predicate)
+			noexcept (std::is_nothrow_invocable_v<PREDICATE&, INDEX>)
+		{
+			const INDEX size = Base::get_size();
+			for (INDEX index = 0; index < size; ++index)
+				if (!predicate(index))
+					return;
+		}
+
+		template <std::invocable<INDEX> OPERATION>
+		constexpr void post_order(OPERATION operation, INDEX index)
+			noexcept (std::is_nothrow_invocable_v<OPERATION&, INDEX>)
+		{
+			if (index >= Base::get_size())
+				return;
+
+			operation(Base::get(index));
+			pre_order(left_of(index));
+			pre_order(right_of(index));
+		}
+
+		template <std::predicate<INDEX> PREDICATE>
+		constexpr bool post_order(PREDICATE& predicate, INDEX index)
+			noexcept (std::is_nothrow_invocable_v<PREDICATE&, INDEX>)
+		{
+			if (index == invalid_index)
+				return true;
+
+			if (!post_order(predicate, left_of(index)))
+				return false;
+
+			if (!post_order(predicate, right_of(index)))
+				return false;
+
+			return std::invoke(predicate, index);
+		}
+
+		template <std::invocable<INDEX> OPERATION>
+		constexpr void pre_order(OPERATION operation, INDEX index)
+			noexcept (std::is_nothrow_invocable_v<OPERATION&, INDEX>)
+		{
+			if (index >= Base::get_size())
+				return;
+
+			operation(Base::get(index));
+			pre_order(left_of(index));
+			pre_order(right_of(index));
+		}
+
+		template <std::predicate<INDEX> PREDICATE>
+		constexpr bool pre_order(PREDICATE& predicate, INDEX index)
+			noexcept (std::is_nothrow_invocable_v<PREDICATE&, INDEX>)
+		{
+			if (index == invalid_index)
+				return true;
+
+			if (!std::invoke(predicate, index))
+				return false;
+
+			if (!pre_order(predicate, left_of(index)))
+				return false;
+
+			return pre_order(predicate, right_of(index));
+		}
 
 #pragma endregion
 

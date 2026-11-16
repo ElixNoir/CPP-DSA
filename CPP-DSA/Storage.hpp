@@ -76,7 +76,7 @@ namespace DSA {
 
 	}
 
-	template <std::unsigned_integral _INDEX = size_t, template <concepts::AllocatorConfiguration> typename _ALLOCATOR_TEMPLATE = StandardAllocator>
+	template <std::unsigned_integral _INDEX = uint32_t, template <concepts::AllocatorConfiguration> typename _ALLOCATOR_TEMPLATE = StandardAllocator>
 	struct HeapStoragePolicy {
 
 		using INDEX = _INDEX;
@@ -245,7 +245,7 @@ namespace DSA {
 		constexpr static INDEX maximum_capacity = CAPACITY;
 		constexpr static INDEX maximum_index = maximum_capacity - 1;
 
-		template <typename _T>
+		template <typename _T, size_t ALIGNMENT = alignof(_T)>
 		class STRUCTURE {
 		public:
 
@@ -261,7 +261,7 @@ namespace DSA {
 
 		protected:
 
-			alignas(T) std::byte data[CAPACITY * sizeof(T)];
+			alignas(ALIGNMENT) std::byte data[CAPACITY * sizeof(T)];
 
 		public:
 

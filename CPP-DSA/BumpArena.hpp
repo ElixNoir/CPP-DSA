@@ -18,8 +18,8 @@ namespace DSA {
 
 	public:
 
-		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
-			return Base::can_add(count, explicitCapacity);
+		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1) const noexcept {
+			return Base::can_add(count);
 		}
 
 		template <typename U>

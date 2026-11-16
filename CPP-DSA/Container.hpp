@@ -8,6 +8,13 @@ namespace DSA {
 	namespace concepts {
 
 		template <typename T>
+		concept ContainerDerivation = requires(T t) {
+
+			{ T::is_offset } -> std::same_as<const bool&>;
+
+		};
+
+		template <typename T>
 		concept Container = Storage<T> && HasCapacity<T>;
 
 		template <typename T>
@@ -25,13 +32,27 @@ namespace DSA {
 
 	}
 
+	enum class ResizeOperation {
+
+		GROW,
+		SHRINK,
+		UNKNOWN
+
+	};
+
+	struct ContainerDerivation {
+
+		constexpr static bool is_offset = false;
+
+	};
+
 	template <concepts::StoragePolicy STORAGE_POLICY>
 	struct ContainerPolicy;
 
 	template <concepts::DynamicStoragePolicy STORAGE_POLICY>
 	struct ContainerPolicy<STORAGE_POLICY> : public STORAGE_POLICY {
 
-		template <typename _T>
+		template <typename _T, typename D = ContainerDerivation>
 		class STRUCTURE : public STORAGE_POLICY::template STRUCTURE<_T> {
 		public:
 
@@ -46,9 +67,44 @@ namespace DSA {
 			constexpr static INDEX maximum_capacity = Base::maximum_capacity;
 			constexpr static INDEX maximum_index = Base::maximum_index;
 
+			constexpr static bool is_offset = D::is_offset;
+
 		protected:
 
+#pragma region Properties
+
 			INDEX capacity = 0;
+
+#pragma endregion
+
+#pragma region Methods
+
+			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
+			constexpr void resize_from_capacity(INDEX newCapacity, INDEX capacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires (is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
+			{
+				T* const oldData = Base::get_data();
+				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
+					Base::set_data(ALLOCATOR::reallocate(oldData, newCapacity));
+				else {
+					T* const newData = ALLOCATOR::allocate(newCapacity);
+
+					if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
+						std::memcpy(newData, oldData, capacity * sizeof(T));
+					else if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK)
+						std::memcpy(newData, oldData, newCapacity * sizeof(T));
+					else if (newCapacity >= capacity)
+						std::memcpy(newData, oldData, capacity * sizeof(T));
+					else
+						std::memcpy(newData, oldData, newCapacity * sizeof(T));
+
+					ALLOCATOR::deallocate(oldData);
+					Base::set_data(newData);
+				}
+			}
+
+#pragma endregion
 
 		public:
 
@@ -58,14 +114,16 @@ namespace DSA {
 
 			STRUCTURE(INDEX initialCapacity)
 				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires Base::is_dynamic
+				requires is_dynamic
 			: Base(initialCapacity), capacity(initialCapacity) {}
 
-			STRUCTURE(std::initializer_list<T> initializerList) noexcept : Base(initializerList), capacity(initializerList.size()) {}
+			STRUCTURE(std::initializer_list<T> initializerList) noexcept
+				requires (!is_offset)
+			: Base(initializerList), capacity(initializerList.size()) {}
 
 			STRUCTURE& operator=(const STRUCTURE& other)
 				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires (Base::is_dynamic && std::is_trivial_v<T>)
+				requires (is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				const T* const data = Base::get_data();
@@ -81,21 +139,21 @@ namespace DSA {
 			}
 
 			STRUCTURE& operator=(const STRUCTURE& other)
-				requires (!Base::is_dynamic && std::is_trivial_v<T>)
+				requires (!is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
 			{
 				std::memcpy(Base::get_data(), other.get_data(), get_capacity());
 			}
 
 			STRUCTURE(const STRUCTURE& other)
 				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires (Base::is_dynamic && std::is_trivial_v<T>)
+				requires (is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
 			: Base(other.get_capacity()), capacity(other.get_capacity()) {
 				std::memcpy(Base::get_data(), other.get_data(), other.get_capacity());
 			}
 
 			STRUCTURE(const STRUCTURE& other)
 				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires (!Base::is_dynamic && std::is_trivial_v<T>)
+				requires (!is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
 			{
 				std::memcpy(Base::get_data(), other.get_data(), get_capacity());
 			}
@@ -103,14 +161,6 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Methods
-
-#pragma region Getters
-
-			[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
-				return capacity;
-			}
-
-#pragma endregion
 
 #pragma region Checks
 
@@ -120,11 +170,19 @@ namespace DSA {
 
 #pragma endregion
 
+#pragma region Getters
+
+			[[nodiscard]] constexpr INDEX get_capacity() const noexcept {
+				return capacity;
+			}
+
+#pragma endregion
+
 #pragma region Memory Management
 
 			constexpr void double_capacity()
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
+				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				grow(capacity << 1);
@@ -132,7 +190,7 @@ namespace DSA {
 
 			constexpr void expand(float ratio = 1.5)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
+				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				grow(Math::ceiling(capacity * ratio));
@@ -140,18 +198,9 @@ namespace DSA {
 
 			constexpr void grow(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
+				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
 			{
-				const INDEX capacity = get_capacity();
-				T* const oldData = Base::get_data();
-				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-					set_data(ALLOCATOR::reallocate(oldData, newCapacity));
-				else {
-					T* const newData = ALLOCATOR::allocate(newCapacity);
-					std::memcpy(newData, oldData, capacity);
-					ALLOCATOR::deallocate(oldData);
-					Base::set_data(newData);
-				}
+				resize<ResizeOperation::GROW>(newCapacity);
 			}
 
 			constexpr void no_move_resize(INDEX newCapacity)
@@ -167,37 +216,28 @@ namespace DSA {
 
 			constexpr void reserve(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
+				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				if (newCapacity > capacity)
 					grow(newCapacity);
 			}
 
+			const INDEX capacity = Base::get_capacity();
+
+			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
 			constexpr void resize(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
+				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
 			{
-				const INDEX capacity = get_capacity();
-				if (newCapacity > capacity)
-					grow(newCapacity);
-				else
-					shrink(newCapacity);
+				resize_from_capacity<RESIZE_OPERATION>(newCapacity, Base::get_capacity());
 			}
 
 			constexpr void shrink(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires std::is_trivial_v<T>
+				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
 			{
-				T* const oldData = Base::get_data();
-				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
-					Base::set_data(ALLOCATOR::reallocate(oldData, newCapacity));
-				else {
-					T* const newData = ALLOCATOR::allocate(newCapacity);
-					std::memcpy(newData, oldData, newCapacity);
-					ALLOCATOR::deallocate(oldData);
-					Base::set_data(newData);
-				}
+				resize<ResizeOperation::SHRINK>(newCapacity);
 			}
 
 #pragma endregion
@@ -205,7 +245,7 @@ namespace DSA {
 #pragma region Setters
 
 			constexpr void set_capacity(INDEX newCapacity) noexcept
-				requires Base::is_dynamic
+				requires is_dynamic
 			{
 				capacity = newCapacity;
 			}

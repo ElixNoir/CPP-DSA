@@ -1,14 +1,20 @@
 #pragma once
 
 #include "Container.hpp"
-#include "Parameter.hpp"
 
 namespace DSA {
 
 	namespace concepts {
 
 		template <typename T>
-		concept Collection = Container<T> && requires(T t, typename T::INDEX index, typename T::T data) {
+		concept CollectionDerivation = ContainerDerivation<T> && requires(T t) {
+
+			{ T::is_sparse } -> std::same_as<const bool&>;
+
+		};
+
+		template <typename T>
+		concept Collection = Container<T> && CollectionDerivation<T> && requires(T t, typename T::INDEX index, typename T::T data) {
 
 			{ t.add(data) };
 			{ t.remove(index) };
@@ -32,7 +38,13 @@ namespace DSA {
 
 	}
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
+	struct CollectionDerivation : public ContainerDerivation {
+
+		constexpr static bool is_sparse = false;
+
+	};
+
+	template <concepts::ContainerPolicy ContainerPolicy, typename T, typename D = CollectionDerivation>
 	class Collection : public ContainerPolicy::template STRUCTURE<T> {
 	public:
 
@@ -41,9 +53,68 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		constexpr static bool is_dynamic = Base::is_dynamic;
+
+		constexpr static bool is_offset = D::is_offset;
+		constexpr static bool is_sparse = D::is_sparse;
+
 	protected:
 
+#pragma region Properties
+
 		INDEX size = 0;
+
+#pragma endregion
+
+#pragma region Methods
+
+		template <ResizeOperation RESIZE_OPERATION>
+			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
+		constexpr void resize_from_size(INDEX newCapacity, INDEX size)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset)
+		{
+			if constexpr (std::is_trivially_move_constructible_v<T>) {
+				Base::resize_from_capacity<RESIZE_OPERATION>(newCapacity, size);
+				return;
+			}
+
+			T* const newData = ALLOCATOR::allocate(newCapacity);
+			T* const oldData = Base::get_data();
+
+			if constexpr (std::is_nothrow_move_constructible_v) {
+				if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
+					reconstruct_range(newData, newData + size, oldData);
+				else {
+					reconstruct_range(newData, newData + newCapacity, oldData);
+					destroy_range<Direction::Backward>(oldData + newCapacity, oldData + size);
+					Base::set_size(newCapacity);
+				}
+			}
+			else {
+				try {
+					if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
+						move_construct_range(newData, newData + size, oldData);
+					else {
+						move_construct_range(newData, newData + newCapacity, oldData);
+						destroy_range<Direction::Backward>(oldData, oldData + size);
+						Base::set_size(newCapacity);
+					}
+				}
+				catch (...) {
+					destroy_range<Direction::Backward>(newData, newData + newCapacity);
+					ALLOCATOR::deallocate(newData);
+					throw;
+				}
+			}
+
+			ALLOCATOR::deallocate(oldData);
+
+			Base::set_data(newData);
+			Base::set_capacity(newCapacity);
+		}
+
+#pragma endregion
 
 	public:
 
@@ -52,13 +123,13 @@ namespace DSA {
 		Collection() : Base() {}
 
 		Collection(INDEX initialCapacity)
-			requires Base::is_dynamic
+			requires is_dynamic
 		: Base(initialCapacity) {}
 
 		Collection(std::initializer_list<T> initializerList) noexcept : Base(initializerList), size(initializerList.size()) {}
 
 		constexpr Collection& operator=(const Collection& other) noexcept
-			requires (Base::is_dynamic && std::is_trivial_v<T>)
+			requires (is_dynamic && std::is_trivial_v<T> && !is_sparse)
 		{
 			T* const data = Base::get_data();
 			const INDEX size = get_size();
@@ -76,7 +147,7 @@ namespace DSA {
 		}
 
 		constexpr Collection& operator=(const Collection& other) noexcept
-			requires (!Base::is_dynamic && std::is_trivial_v<T>)
+			requires (!is_dynamic && std::is_trivial_v<T> && !is_sparse)
 		{
 			std::memcpy(Base::get_data(), other.get_data(), get_size());
 			set_size(other.get_size());
@@ -84,7 +155,23 @@ namespace DSA {
 
 		Collection(const Collection& other)
 			noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+			requires (!is_offset && !is_sparse)
 		: Base(other), size(other.get_size()) {}
+
+		~Collection() noexcept = default;
+
+		~Collection() noexcept
+			requires (!std::is_trivially_destructible_v<T> && !is_sparse)
+		{
+			destroy();
+		}
+
+		constexpr void destroy() noexcept
+			requires (!is_offset && !is_sparse)
+		{
+			const T* data = Base::get_data();
+			destroy_range<Direction::Backward>(data, data + get_size());
+		}
 
 #pragma endregion
 
@@ -116,6 +203,75 @@ namespace DSA {
 
 		[[nodiscard]] constexpr INDEX get_size() const noexcept {
 			return size;
+		}
+
+#pragma endregion
+
+#pragma region Memory Management
+
+		constexpr void double_capacity()
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			const INDEX capacity = Base::get_capacity();
+			grow(capacity << 1);
+		}
+
+		constexpr void empty() noexcept
+			requires (!is_offset && !is_sparse)
+		{
+			destroy();
+			Base::set_size(0);
+		}
+
+		constexpr void expand(float ratio = 1.5)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			const INDEX capacity = Base::get_capacity();
+			grow(Math::ceiling(capacity * ratio));
+		}
+
+		constexpr void grow(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			resize_from_size<ResizeOperation::GROW>(newCapacity, Base::get_size());
+		}
+
+		constexpr void reserve(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			const INDEX capacity = Base::get_capacity();
+			if (newCapacity > capacity)
+				grow(newCapacity);
+		}
+
+		template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
+		constexpr void resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			const INDEX capacity = Base::get_capacity();
+			if (newCapacity >= capacity))
+				grow(newCapacity);
+			else
+				shrink(newCapacity);
+		}
+
+		constexpr void shrink(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			resize_from_size<ResizeOperation::SHRINK>(newCapacity, Base::get_size());
+		}
+
+		constexpr void shrink_to_fit()
+			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			requires (is_dynamic && !is_offset && !is_sparse)
+		{
+			shrink(Base::get_size());
 		}
 
 #pragma endregion

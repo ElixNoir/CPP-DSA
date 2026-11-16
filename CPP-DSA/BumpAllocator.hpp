@@ -18,7 +18,7 @@ namespace DSA {
 		~BumpAllocator() noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>) {
 				T* const data = Base::get_data();
-				destroy_range_forward(data, data + Base::get_size());
+				destroy_range(data, data + Base::get_size());
 			}
 		}
 
@@ -28,15 +28,15 @@ namespace DSA {
 
 #pragma region Allocate
 
-		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1, Base::Capacity explicitCapacity = {}) const noexcept {
-			return Base::can_add(count, explicitCapacity);
+		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1) const noexcept {
+			return Base::can_add(count, capacity);
 		}
 
 		[[nodiscard]] constexpr INDEX allocate() noexcept {
 			return ++Base::size;
 		}
 
-		[[nodiscard]] constexpr INDEX allocate(size_t count) noexcept {
+		[[nodiscard]] constexpr INDEX allocate(INDEX count) noexcept {
 			INDEX index = Base::get_size();
 			Base::size += count;
 			return index;

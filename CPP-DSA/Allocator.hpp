@@ -44,7 +44,7 @@ namespace DSA {
 
 	}
 
-	template <typename _T = void, std::unsigned_integral _INDEX = size_t, bool _IGNORE_FAILED_ALLOCATION = false>
+	template <typename _T = void, std::unsigned_integral _INDEX = uint32_t, bool _IGNORE_FAILED_ALLOCATION = false>
 	struct AllocatorConfiguration {
 
 		using INDEX = _INDEX;

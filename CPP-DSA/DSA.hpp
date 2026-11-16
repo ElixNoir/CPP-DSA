@@ -15,14 +15,14 @@ namespace DSA {
 
 #pragma region Capacity
 
-		template <typename T, typename INDEX = size_t>
+		template <typename T, typename INDEX = uint32_t>
 		concept HasCapacity = std::is_fundamental_v<INDEX> && requires(T t) {
 
 			{ t.get_capacity() } -> std::convertible_to<INDEX>;
 
 		};
 
-		template <typename T, typename INDEX = size_t>
+		template <typename T, typename INDEX = uint32_t>
 		concept HasMutableCapacity = HasCapacity<T, INDEX> && requires(T t, INDEX newCapacity) {
 
 			{ t.set_capacity(newCapacity) };

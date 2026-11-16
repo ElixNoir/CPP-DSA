@@ -11,72 +11,17 @@ namespace DSA {
 	public:
 
 		using Base = Collection<ContainerPolicy, T>;
+		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using Self = Stack<ContainerPolicy, T>;
-
-	protected:
-
-#pragma region Methods
-
-		void helper_destroy() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			const T* data = Base::get_data();
-			destroy_range_backward(data, data + Base::get_size());
-		}
-
-		template <bool GROW>
-		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			using ALLOCATOR = Base::ALLOCATOR;
-
-			T* const oldData = Base::get_data();
-			T* const newData = ALLOCATOR::allocate(newCapacity);
-
-			try {
-				if constexpr (GROW)
-					reconstruct_range_backward(newData, newData + Base::get_size(), oldData);
-				else {
-					reconstruct_range_backward(newData, newData + newCapacity, oldData);
-					destroy_range_backward(oldData + newCapacity, oldData + Base::get_size());
-					Base::set_size(newCapacity);
-				}
-			}
-			catch (...) {
-				ALLOCATOR::deallocate(newData);
-				throw;
-			}
-
-			ALLOCATOR::deallocate(oldData);
-
-			Base::set_data(newData);
-			Base::set_capacity(newCapacity);
-		}
-
-#pragma endregion
 
 	public:
 
 #pragma region Constructors & Destructors
 
 		using Base::Base;
-
-		~Stack() noexcept = default;
-
-		~Stack() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			destroy();
-		}
-
-		void destroy() noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
-		}
 
 #pragma endregion
 
@@ -202,65 +147,6 @@ namespace DSA {
 			noexcept (noexcept(add_many(sourceIterator, count)))
 		{
 			add_many(sourceIterator, count);
-		}
-
-#pragma endregion
-
-#pragma region Memory Management
-
-		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::get_capacity();
-			grow(capacity << 1);
-		}
-
-		constexpr void empty() noexcept {
-			destroy();
-			Base::set_size(0);
-		}
-
-		void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::get_capacity();
-			helper_resize<true>(Math::ceiling(capacity * ratio));
-		}
-
-		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			helper_resize<true>(newCapacity);
-		}
-
-		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::get_capacity();
-			if (newCapacity > capacity)
-				grow(newCapacity);
-		}
-
-		void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			const INDEX capacity = Base::get_capacity();
-			if (newCapacity > capacity)
-				grow(newCapacity);
-			else
-				shrink(newCapacity);
-		}
-
-		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
-			requires concepts::DynamicStorage<Base>
-		{
-			helper_resize<false>(newCapacity);
 		}
 
 #pragma endregion

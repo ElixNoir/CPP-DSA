@@ -4,7 +4,7 @@
 
 namespace DSA {
 
-	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral INDEX = size_t>
+	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral INDEX = uint32_t>
 	struct AVLTreeNode {
 
 		INDEX left;

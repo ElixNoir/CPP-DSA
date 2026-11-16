@@ -7,96 +7,116 @@
 
 namespace DSA {
 
-    template <std::unsigned_integral INDEX, bool ONES>
-    class BitsetIterator {
-    public:
+	template <std::unsigned_integral INDEX, bool ONES>
+	class BitsetIterator {
+	public:
 
-        using MASK = Bitmask<uintmax_t>;
+		using MASK = Bitmask<uintmax_t>;
 
-        using value_type = INDEX;
-        using difference_type = std::ptrdiff_t;
-        using reference = INDEX;
-        using pointer = void;
-        using iterator_category = std::forward_iterator_tag;
-        using iterator_concept = std::forward_iterator_tag;
+#pragma region C++ Iterator Traits
 
-    protected:
+		using iterator_category = std::forward_iterator_tag;
+		using iterator_concept = std::forward_iterator_tag;
+		using difference_type = std::ptrdiff_t;
+		using pointer = void;
+		using reference = INDEX;
+		using value_type = INDEX;
 
-        const MASK* address = nullptr;
-        INDEX mask = 0;
-        INDEX bit = MASK::bit_count;
-        INDEX maskCount = 0;
+#pragma endregion
 
-        constexpr void seek() {
-            while (mask < maskCount) {
-                const int found = ONES ?
-                    address[mask].index_of_trailing_one(static_cast<int>(bit))
-                    : address[mask].index_of_trailing_zero(static_cast<int>(bit));
+	protected:
 
-                if (found != MASK::bit_count) {
-                    bit = static_cast<INDEX>(found);
-                    return;
-                }
+#pragma region Properties
 
-                ++mask;
-                bit = 0;
-            }
+		const MASK* address = nullptr;
+		INDEX mask = 0;
+		INDEX bit = MASK::bit_count;
+		INDEX maskCount = 0;
 
-            // End sentinel.
-            mask = maskCount;
-            bit = MASK::bit_count;
-        }
+#pragma endregion
 
-    public:
+#pragma region Methods
 
-        constexpr BitsetIterator() = default;
+		constexpr void seek() {
+			while (mask < maskCount) {
+				const int found = ONES ?
+					address[mask].index_of_trailing_one(static_cast<int>(bit))
+					: address[mask].index_of_trailing_zero(static_cast<int>(bit));
 
-        constexpr BitsetIterator(
-            const MASK* address,
-            INDEX maskCount,
-            bool end
-        ) :
-            address(address),
-            mask(0),
-            bit(MASK::bit_count),
-            maskCount(maskCount)
-        {
-            if (!end)
-                seek();
-            else
-                mask = maskCount;
-        }
+				if (found != MASK::bit_count) {
+					bit = static_cast<INDEX>(found);
+					return;
+				}
 
-        constexpr INDEX operator*() const noexcept {
-            return mask * MASK::bit_count + bit;
-        }
+				++mask;
+				bit = 0;
+			}
 
-        constexpr BitsetIterator& operator++() {
-            ++bit;
-            seek();
-            return *this;
-        }
+			// End sentinel.
+			mask = maskCount;
+			bit = MASK::bit_count;
+		}
 
-        constexpr BitsetIterator operator++(int) {
-            auto copy = *this;
-            ++*this;
-            return copy;
-        }
+#pragma endregion
 
-        constexpr bool operator==(
-            const BitsetIterator& other
-            ) const noexcept {
-            return address == other.address
-                && mask == other.mask
-                && bit == other.bit;
-        }
+	public:
 
-        constexpr bool operator!=(
-            const BitsetIterator& other
-            ) const noexcept {
-            return !(*this == other);
-        }
+#pragma region Constructors & Destructors
 
-    };
+		constexpr BitsetIterator() = default;
+
+		constexpr BitsetIterator(
+			const MASK* address,
+			INDEX maskCount,
+			bool end
+		) :
+			address(address),
+			mask(0),
+			bit(MASK::bit_count),
+			maskCount(maskCount)
+		{
+			if (!end)
+				seek();
+			else
+				mask = maskCount;
+		}
+
+#pragma endregion
+
+#pragma region Operators
+
+		constexpr INDEX operator*() const noexcept {
+			return mask * MASK::bit_count + bit;
+		}
+
+		constexpr BitsetIterator& operator++() {
+			++bit;
+			seek();
+			return *this;
+		}
+
+		constexpr BitsetIterator operator++(int) {
+			auto copy = *this;
+			++*this;
+			return copy;
+		}
+
+		constexpr bool operator==(
+			const BitsetIterator& other
+			) const noexcept {
+			return address == other.address
+				&& mask == other.mask
+				&& bit == other.bit;
+		}
+
+		constexpr bool operator!=(
+			const BitsetIterator& other
+			) const noexcept {
+			return !(*this == other);
+		}
+
+#pragma endregion
+
+	};
 
 }

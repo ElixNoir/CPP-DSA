@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="Addable.hpp" />
     <ClInclude Include="Aggregation.hpp" />
+    <ClInclude Include="ALL.hpp" />
     <ClInclude Include="Allocator.hpp" />
     <ClInclude Include="BuddyArena.hpp" />
     <ClInclude Include="BumpArena.hpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="LinkedListIterator.hpp" />
     <ClInclude Include="LinkedListNode.hpp" />
     <ClInclude Include="Math.hpp" />
+    <ClInclude Include="merge_sort.hpp" />
     <ClInclude Include="Multipliable.hpp" />
     <ClInclude Include="Parameter.hpp" />
     <ClInclude Include="SegmentTree.hpp" />
@@ -215,6 +217,7 @@
     <ClInclude Include="Traits.hpp" />
     <ClInclude Include="Arithmetic.hpp" />
     <ClInclude Include="TransitionMatrix.hpp" />
+    <ClInclude Include="BinaryTree.hpp" />
     <ClInclude Include="Vector2.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -224,8 +227,11 @@
     <ClCompile Include="Iterator.hpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="NumberTheory.hpp" />
+    <ClCompile Include="PatriciaTree.hpp" />
+    <ClCompile Include="PerfectHashArray.hpp" />
     <ClCompile Include="random.hpp" />
     <ClCompile Include="Selection.hpp" />
+    <ClCompile Include="String.hpp" />
     <ClCompile Include="unroll.hpp" />
     <ClCompile Include="View.hpp" />
   </ItemGroup>
