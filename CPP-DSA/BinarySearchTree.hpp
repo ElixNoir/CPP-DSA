@@ -172,6 +172,7 @@ namespace DSA {
 				else
 					rootIndex = node.left;
 			}
+
 			return candidate;
 		}
 
@@ -186,6 +187,7 @@ namespace DSA {
 					return rootIndex;
 				rootIndex = (node.key_value_pair.key > key) ? node.left : node.right;
 			}
+
 			return invalid_index;
 		}
 
@@ -203,6 +205,7 @@ namespace DSA {
 				else
 					rootIndex = node.right;
 			}
+
 			return parentIndex;
 		}
 
@@ -223,6 +226,7 @@ namespace DSA {
 				else
 					rootIndex = node.right;
 			}
+
 			return candidateIndex;
 		}
 
