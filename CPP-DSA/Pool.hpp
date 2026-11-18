@@ -37,7 +37,7 @@ namespace DSA {
 
 			Bitset<BitsetPolicy> bitset;
 			if constexpr (concepts::DynamicStorage<Base>) {
-				if constexpr (concepts::NothrowResizableStorage<Base, T>)
+				if constexpr (concepts::NothrowResizableStorage<Base>)
 					bitset = Bitset<BitsetPolicy>(bitsetCapacity);
 				else {
 					try {
@@ -78,7 +78,7 @@ namespace DSA {
 		}
 
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
@@ -152,7 +152,7 @@ namespace DSA {
 		Pool() noexcept = default;
 
 		Pool(INDEX initialCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		: Base(initialCapacity), free_stack(initialCapacity) {}
 
 		~Pool() noexcept
@@ -272,7 +272,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -280,7 +280,7 @@ namespace DSA {
 		}
 
 		void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -288,7 +288,7 @@ namespace DSA {
 		}
 
 		constexpr void empty()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
 			helper_destroy();
 			free_stack.empty();
@@ -297,14 +297,14 @@ namespace DSA {
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize(newCapacity, capacity);
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();

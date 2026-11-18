@@ -32,7 +32,7 @@ namespace DSA {
 		//static_assert(ALIGNMENT >= alignof(Header));
 		//static_assert(ALIGNMENT >= alignof(INDEX));
 
-		constexpr static INDEX invalid_index = Base::maximum_capacity;
+		constexpr static INDEX invalid_index = Base::invalid_index;
 
 		constexpr static bool is_dynamic = Base::is_dynamic;
 
@@ -60,14 +60,6 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Methods
-
-#pragma region Alignment
-
-		[[nodiscard]] constexpr static bool valid_alignment(size_t alignment) noexcept {
-			return alignment != 0 && std::has_single_bit(alignment);
-		}
-
-#pragma endregion
 
 #pragma region Block Utilities
 
@@ -209,50 +201,6 @@ namespace DSA {
 
 #pragma region Methods
 
-#pragma region Checks
-
-		[[nodiscard]] constexpr bool owns(INDEX index) const noexcept {
-			return index < Base::get_capacity();
-		}
-
-		[[nodiscard]] constexpr bool owns(const void* pointer) const noexcept {
-			const std::byte* const data = Base::get_data();
-			const auto* const byte_ptr = static_cast<const std::byte*>(pointer);
-			return std::less_equal<const std::byte*>{}(data, byte_ptr) && std::less<const std::byte*>{}(byte_ptr, data + Base::get_capacity());
-		}
-
-#pragma endregion
-
-#pragma region Getters
-
-		[[nodiscard]] constexpr INDEX get_maximum_order() const noexcept {
-			return std::countr_zero(Base::get_capacity());
-		}
-
-		[[nodiscard]] constexpr INDEX get_minimum_order() const noexcept {
-			return std::countr_zero(MINIMUM_BLOCK_SIZE);
-		}
-
-#pragma region Conversion
-
-		template <typename T = void>
-		[[nodiscard]] constexpr T* get_pointer(INDEX index) noexcept {
-			return static_cast<T*>(Base::get_data() + index);
-		}
-
-		template <typename T = void>
-		[[nodiscard]] constexpr const T* get_pointer(INDEX index) const noexcept {
-			return static_cast<const T*>(Base::get_data() + index);
-		}
-
-		[[nodiscard]] constexpr INDEX get_index(const void* pointer) const noexcept {
-			return static_cast<INDEX>(static_cast<const std::byte*>(pointer) - Base::get_data());
-		}
-
-#pragma endregion
-
-#pragma endregion
-
 #pragma region Allocate & Deallocate
 
 		[[nodiscard]] constexpr size_t get_allocated_block_size(INDEX payload_index) const noexcept {
@@ -264,26 +212,32 @@ namespace DSA {
 		}
 
 		template <typename T>
+		[[nodiscard]] constexpr bool could_allocate_with_alignment() const noexcept {
+			return could_allocate_with_alignment(alignof(T));
+		}
+
+		[[nodiscard]] constexpr bool could_allocate_with_alignment(size_t alignment) const noexcept {
+			return alignment <= Base::get_capacity(); // && std::has_single_bit(alignment);
+		}
+
+		template <typename T>
 		[[nodiscard]] constexpr INDEX allocate() noexcept {
 			return allocate(sizeof(T), alignof(T));
 		}
 
-		[[nodiscard]] constexpr INDEX allocate(size_t bytes, size_t alignment = alignof(std::max_align_t)) noexcept {
+		template <typename T>
+		[[nodiscard]] constexpr INDEX allocate(size_t count, size_t alignment = alignof(T)) noexcept {
 			const INDEX capacity = Base::get_capacity();
-			if (!valid_alignment(alignment) || alignment > capacity)
+			if (!std::has_single_bit(alignment))
 				return invalid_index;
 
 			const size_t effective_alignment = alignment > alignof(INDEX) ? alignment : alignof(INDEX);
-			if (effective_alignment > capacity)
-				return invalid_index;
 
-			// Reserve at least one byte, even for zero-byte requests.
-			const size_t payload_size = bytes ? bytes : 1;
+			const size_t payload_size = count * sizeof(T); // do not handle the case where count is 0
 			const size_t padding = effective_alignment - 1;
 
 			if (capacity <= prefix_size + padding)
 				return invalid_index;
-
 			if (payload_size > capacity - prefix_size - padding)
 				return invalid_index;
 
@@ -291,19 +245,15 @@ namespace DSA {
 			const INDEX minimum_order = get_minimum_order();
 
 			size_t order = std::bit_width(prefix_size + padding + payload_size - 1);
-
 			if (order < minimum_order)
 				order = minimum_order;
-
 			if (order > maximum_order)
 				return invalid_index;
 
 			// Find the first available block.
 			size_t available_order = order;
-
 			while (available_order <= maximum_order && free_lists[list_index(available_order)] == invalid_index)
 				++available_order;
-
 			if (available_order > maximum_order)
 				return invalid_index;
 
@@ -377,6 +327,50 @@ namespace DSA {
 
 			insert_free(current_index, order);
 		}
+
+#pragma endregion
+
+#pragma region Checks
+
+		[[nodiscard]] constexpr bool owns(INDEX index) const noexcept {
+			return index < Base::get_capacity();
+		}
+
+		[[nodiscard]] constexpr bool owns(const void* pointer) const noexcept {
+			const std::byte* const data = Base::get_data();
+			const auto* const byte_ptr = static_cast<const std::byte*>(pointer);
+			return std::less_equal<const std::byte*>{}(data, byte_ptr) && std::less<const std::byte*>{}(byte_ptr, data + Base::get_capacity());
+		}
+
+#pragma endregion
+
+#pragma region Getters
+
+		[[nodiscard]] constexpr INDEX get_maximum_order() const noexcept {
+			return std::countr_zero(Base::get_capacity());
+		}
+
+		[[nodiscard]] constexpr INDEX get_minimum_order() const noexcept {
+			return std::countr_zero(MINIMUM_BLOCK_SIZE);
+		}
+
+#pragma region Conversion
+
+		template <typename T = void>
+		[[nodiscard]] constexpr T* get_pointer(INDEX index) noexcept {
+			return static_cast<T*>(Base::get_data() + index);
+		}
+
+		template <typename T = void>
+		[[nodiscard]] constexpr const T* get_pointer(INDEX index) const noexcept {
+			return static_cast<const T*>(Base::get_data() + index);
+		}
+
+		[[nodiscard]] constexpr INDEX get_index(const void* pointer) const noexcept {
+			return static_cast<INDEX>(static_cast<const std::byte*>(pointer) - Base::get_data());
+		}
+
+#pragma endregion
 
 #pragma endregion
 

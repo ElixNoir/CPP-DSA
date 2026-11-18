@@ -26,6 +26,8 @@ namespace DSA {
 
 		constexpr static bool is_dynamic = Base::is_dynamic;
 
+		constexpr static INDEX invalid_index = Base::invalid_index;
+
 	protected:
 
 #pragma region Methods
@@ -80,11 +82,11 @@ namespace DSA {
 		}
 
 		constexpr void remove(INDEX index)
-			noexcept (concepts::is_nothrow_swappable_v<T>)
+			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			const INDEX lastIndex = Base::get_size() - 1;
 			if (index != lastIndex)
-				swap(Base::get(index), Base::get(lastIndex));
+				Algorithms::swap(Base::get(index), Base::get(lastIndex));
 
 			destroy_at(Base::get_data() + index);
 			--Base::size;
@@ -97,7 +99,7 @@ namespace DSA {
 #pragma region Bubble Up, Extract, Heapify, & Insert
 
 		constexpr void bubble_up(INDEX index)
-			noexcept (concepts::is_nothrow_swappable_v<T>)
+			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			if constexpr (HEAP_TYPE == MAX_HEAP) {
 				while (index != 0) {
@@ -124,7 +126,7 @@ namespace DSA {
 		}
 
 		constexpr T extract()
-			noexcept (concepts::is_nothrow_swappable_v<T>)
+			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			const INDEX size = Base::get_size();
 
@@ -145,7 +147,7 @@ namespace DSA {
 		}
 
 		constexpr void heapify(INDEX i)
-			noexcept (concepts::is_nothrow_swappable_v<T>)
+			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			const INDEX size = Base::get_size();
 

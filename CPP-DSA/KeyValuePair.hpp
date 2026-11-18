@@ -2,50 +2,45 @@
 
 namespace DSA {
 
-    template <typename _KEY, typename _VALUE = EMPTY_STRUCT>
-    struct KeyValuePair {
+	namespace concepts {
 
-        using KEY = _KEY;
-        using VALUE = _VALUE;
+		template <typename T>
+		concept KeyValuePair = requires(T t) {
 
-        KEY key;
-        [[no_unique_address]] VALUE data;
+			typename T::KEY;
+			typename T::VALUE;
 
-        constexpr KeyValuePair(KEY key) : key(key) {}
-        constexpr KeyValuePair(KEY key, VALUE data) : key(key), data(data) {}
+			t.key;
+			t.value;
 
-    };
+		};
 
-    namespace concepts {
+	}
 
-        template <typename T>
-        concept KeyValuePair = requires(T t) {
+	template <typename _KEY, typename _VALUE>
+	struct KeyValuePair {
 
-            typename T::KEY;
-            typename T::VALUE;
+		using KEY = _KEY;
+		using VALUE = _VALUE;
 
-            t.key;
-            t.data;
+		KEY key;
+		[[no_unique_address]] VALUE value;
 
-        };
+		constexpr KeyValuePair(KEY newKey) : key(newKey) {}
+		constexpr KeyValuePair(KEY newKey, VALUE newValue) : key(newKey), value(newValue) {}
 
-    }
+	};
 
-    namespace traits {
+	template <typename _KEY>
+	struct KeyValuePair<_KEY, void> {
 
-        template <typename T>
-        struct normalize_KeyValuePair {
-            using type = KeyValuePair<T>;
-        };
+		using KEY = _KEY;
+		using VALUE = void;
 
-        template <concepts::KeyValuePair T>
-        struct normalize_KeyValuePair<T> {
-            using type = T;
-        };
+		KEY key;
 
-        template <typename T>
-        using normalize_KeyValuePair_t = typename normalize_KeyValuePair<T>::type;
+		constexpr KeyValuePair(KEY newKey) : key(newKey) {}
 
-    }
+	};
 
 }

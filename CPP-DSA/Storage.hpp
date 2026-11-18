@@ -17,8 +17,8 @@ namespace DSA {
 			typename T::T;
 
 			{ T::is_dynamic } -> std::same_as<const bool&>;
+			{ T::invalid_index } -> std::convertible_to<size_t>;
 			{ T::maximum_capacity } -> std::convertible_to<size_t>;
-			{ T::maximum_index } -> std::convertible_to<size_t>;
 
 			{ t.get(index) } -> std::same_as<typename T::T&>;
 			{ std::as_const(t).get(index) } -> std::same_as<const typename T::T&>;
@@ -50,8 +50,8 @@ namespace DSA {
 			typename T::template STRUCTURE<U>;
 
 			{ T::is_dynamic } -> std::same_as<const bool&>;
+			{ T::invalid_index } -> std::convertible_to<size_t>;
 			{ T::maximum_capacity } -> std::convertible_to<size_t>;
-			{ T::maximum_index } -> std::convertible_to<size_t>;
 
 		};
 
@@ -69,10 +69,15 @@ namespace DSA {
 
 		};
 
-		template <typename BASE, typename T>
-		concept NothrowResizableStorage = concepts::DynamicStorage<BASE>
-			&& concepts::NothrowResizableAllocator<typename BASE::ALLOCATOR>
-			&& std::is_nothrow_move_constructible_v<T>;
+		template <typename T>
+		concept NothrowResizableStorage = DynamicStorage<T>
+			&& NothrowResizableAllocator<typename T::ALLOCATOR>
+			&& std::is_nothrow_move_constructible_v<typename T::T>;
+
+		template <typename T>
+		concept ReallocatableStorage = DynamicStorage<T>
+			&& ReallocatableAllocator<typename T::ALLOCATOR>
+			&& std::is_trivially_move_constructible_v<T>;
 
 	}
 
@@ -92,8 +97,8 @@ namespace DSA {
 		using This = HeapStoragePolicy<INDEX, ALLOCATOR_TEMPLATE>;
 
 		constexpr static bool is_dynamic = true;
+		constexpr static INDEX invalid_index = std::numeric_limits<INDEX>::max();
 		constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
-		constexpr static INDEX maximum_index = maximum_capacity - 1;
 
 		template <typename _T>
 		class STRUCTURE {
@@ -106,8 +111,8 @@ namespace DSA {
 			using This = STRUCTURE<T>;
 
 			constexpr static bool is_dynamic = is_dynamic;
+			constexpr static INDEX invalid_index = invalid_index;
 			constexpr static INDEX maximum_capacity = maximum_capacity;
-			constexpr static INDEX maximum_index = maximum_index;
 
 		protected:
 
@@ -242,8 +247,8 @@ namespace DSA {
 		using This = InlineStoragePolicy<CAPACITY, INDEX>;
 
 		constexpr static bool is_dynamic = false;
+		constexpr static INDEX invalid_index = std::numeric_limits<INDEX>::max();
 		constexpr static INDEX maximum_capacity = CAPACITY;
-		constexpr static INDEX maximum_index = maximum_capacity - 1;
 
 		template <typename _T, size_t ALIGNMENT = alignof(_T)>
 		class STRUCTURE {
@@ -256,8 +261,8 @@ namespace DSA {
 			using This = STRUCTURE<T>;
 
 			constexpr static bool is_dynamic = is_dynamic;
+			constexpr static INDEX invalid_index = invalid_index;
 			constexpr static INDEX maximum_capacity = maximum_capacity;
-			constexpr static INDEX maximum_index = maximum_index;
 
 		protected:
 

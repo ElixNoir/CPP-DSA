@@ -8,6 +8,7 @@ namespace Constants {
 
 	constexpr static double e = 2.718281828459045;
 	constexpr static double natural_logarithm_of_2 = 0.693147180559945;
+	constexpr static double squared_natural_logarithm_of_2 = 0.480453013918201;
 
 	constexpr static double phi = 2.118033988749895;
 	constexpr static double pi = 3.14159265359;

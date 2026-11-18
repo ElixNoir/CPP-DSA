@@ -6,21 +6,23 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy>
-	class FenwickTree : public Collection<StoragePolicy, uintmax_t> {
+	template <concepts::ContainerPolicy ContainerPolicy>
+	class FenwickTree : public Collection<ContainerPolicy, uintmax_t> { //! incomplete
 	public:
 
-		using Base = Collection<StoragePolicy, uintmax_t>;
+		using Base = Collection<ContainerPolicy, uintmax_t>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		constexpr static T bit_count = std::numeric_limits<T>::digits;
 		constexpr static T bit_shift = std::bit_width(bit_count - 1);
 
+		constexpr static bool is_dynamic = Base::is_dynamic;
+
 #pragma region Constructors & Destructors
 
 		FenwickTree(T* data, size_t size) noexcept
-			requires (!Base::is_dynamic)
+			requires (!is_dynamic)
 		{
 			for (size_t index = 0; index < size; ++index) {
 				while (index < size) {
@@ -28,12 +30,13 @@ namespace DSA {
 					index += index & -index;
 				}
 			}
+
 			Base::set_size(size);
 		}
 
 		FenwickTree(T* data, size_t size)
-			noexcept (concepts::NothrowAllocatedStorage<Base, T>)
-			requires Base::is_dynamic
+			noexcept (concepts::NothrowResizableStorage<Base>)
+			requires is_dynamic
 		: Base(size) {
 			for (size_t index = 0; index < size; ++index) {
 				while (index < size) {
@@ -41,12 +44,9 @@ namespace DSA {
 					index += index & -index;
 				}
 			}
+
 			Base::set_size(size);
 		}
-
-		//void destroy() noexcept {
-			//Base::destroy();
-		//}
 
 #pragma endregion
 
@@ -69,6 +69,7 @@ namespace DSA {
 				}
 				bit >>= 1;
 			}
+
 			return index;
 		}
 
@@ -78,6 +79,7 @@ namespace DSA {
 				sum += Base::get(index);
 				index -= index & -index;
 			}
+
 			return sum;
 		}
 

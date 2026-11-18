@@ -373,7 +373,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		constexpr void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -388,7 +388,7 @@ namespace DSA {
 		}
 
 		constexpr void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -396,14 +396,14 @@ namespace DSA {
 		}
 
 		constexpr void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize<ResizeOperation::GROW>(newCapacity);
 		}
 
 		constexpr void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -414,7 +414,7 @@ namespace DSA {
 		}
 
 		constexpr void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -423,7 +423,7 @@ namespace DSA {
 		}
 
 		constexpr void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize<ResizeOperation::SHRINK>(newCapacity);

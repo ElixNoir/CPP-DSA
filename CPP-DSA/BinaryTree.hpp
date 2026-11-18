@@ -11,25 +11,25 @@ namespace DSA {
 		concept BinaryTreeNode = requires(T t) {
 
 			typename T::NODE_REFERENCE_TYPE;
-			typename T::T;
 
 			{ t.left } -> std::same_as<typename T::NODE_REFERENCE_TYPE>;
 			{ t.right } -> std::same_as<typename T::NODE_REFERENCE_TYPE>;
-			{ t.data } -> std::same_as<typename T::T>;
 
 		};
 
 	}
 
-	template <typename _T = EMPTY_STRUCT, std::unsigned_integral _NODE_REFERENCE_TYPE = uint32_t>
+	template <std::unsigned_integral _NODE_REFERENCE_TYPE = uint32_t>
 	struct BinaryTreeNode {
 
 		using NODE_REFERENCE_TYPE = _NODE_REFERENCE_TYPE;
-		using T = _T;
+
+#pragma region Properties
 
 		NODE_REFERENCE_TYPE left;
 		NODE_REFERENCE_TYPE right;
-		T data;
+
+#pragma endregion
 
 	};
 
@@ -40,7 +40,7 @@ namespace DSA {
 
 	};
 
-	template <concepts::ContainerPolicy ContainerPolicy, concepts::BinaryTreeNode TREE_NODE = BinaryTreeNode<EMPTY_STRUCT, typename ContainerPolicy::INDEX>>
+	template <concepts::ContainerPolicy ContainerPolicy, concepts::BinaryTreeNode TREE_NODE = BinaryTreeNode<typename ContainerPolicy::INDEX>>
 		requires std::is_nothrow_destructible_v<TREE_NODE>
 	class BinaryTree : public Collection<ContainerPolicy, TREE_NODE, BinaryTreeDerivation> {
 	public:
@@ -54,7 +54,7 @@ namespace DSA {
 
 		constexpr static bool is_dynamic = Base::is_dynamic;
 
-		constexpr static INDEX invalid_index = Base::maximum_capacity;
+		constexpr static INDEX invalid_index = Base::invalid_index;
 
 	protected:
 
@@ -118,7 +118,7 @@ namespace DSA {
 
 		template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN, bool IS_DENSE = true>
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			if constexpr (std::is_trivially_move_constructible_v<T> && IS_DENSE) {
@@ -242,7 +242,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		constexpr void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -258,7 +258,7 @@ namespace DSA {
 		}
 
 		constexpr void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -266,14 +266,14 @@ namespace DSA {
 		}
 
 		constexpr void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			helper_resize<ResizeOperation::GROW>(newCapacity);
 		}
 
 		constexpr void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -282,7 +282,7 @@ namespace DSA {
 		}
 
 		constexpr void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -293,7 +293,7 @@ namespace DSA {
 		}
 
 		constexpr void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			helper_resize<ResizeOperation::SHRINK>(newCapacity);

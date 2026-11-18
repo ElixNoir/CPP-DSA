@@ -30,6 +30,9 @@
     <ClInclude Include="Runtime.hpp">
       <Filter>Header Files\Networking</Filter>
     </ClInclude>
+    <ClInclude Include="legv8_decoder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SocketHandle.hpp">
@@ -43,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="SocketRuntime.hpp">
       <Filter>Header Files\Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

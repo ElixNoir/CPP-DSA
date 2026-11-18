@@ -71,10 +71,10 @@ namespace DSA {
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
 		constexpr void resize_from_size(INDEX newCapacity, INDEX size)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset)
 		{
-			if constexpr (std::is_trivially_move_constructible_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				Base::resize_from_capacity<RESIZE_OPERATION>(newCapacity, size);
 				return;
 			}
@@ -210,7 +210,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		constexpr void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -225,7 +225,7 @@ namespace DSA {
 		}
 
 		constexpr void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -233,14 +233,14 @@ namespace DSA {
 		}
 
 		constexpr void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			resize_from_size<ResizeOperation::GROW>(newCapacity, Base::get_size());
 		}
 
 		constexpr void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -250,25 +250,25 @@ namespace DSA {
 
 		template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
 		constexpr void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			const INDEX capacity = Base::get_capacity();
-			if (newCapacity >= capacity))
+			if (newCapacity >= capacity)
 				grow(newCapacity);
 			else
 				shrink(newCapacity);
 		}
 
 		constexpr void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			resize_from_size<ResizeOperation::SHRINK>(newCapacity, Base::get_size());
 		}
 
 		constexpr void shrink_to_fit()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			shrink(Base::get_size());

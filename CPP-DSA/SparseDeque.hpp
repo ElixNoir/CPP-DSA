@@ -307,7 +307,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		constexpr void empty()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
 			Base::empty();
 			back = 0;

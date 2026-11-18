@@ -16,9 +16,6 @@
     <Filter Include="Header Files\Algorithms">
       <UniqueIdentifier>{2201784d-4b22-4700-b61e-e164b17c59f5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Policies">
-      <UniqueIdentifier>{7700a457-1210-43b8-82fd-38ca04c1390c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Lists">
       <UniqueIdentifier>{e6829978-4753-43de-93a3-61e64d7fbcea}</UniqueIdentifier>
     </Filter>
@@ -79,9 +76,6 @@
       <Filter>Header Files\Trees</Filter>
     </ClInclude>
     <ClInclude Include="BinarySearchTree.hpp">
-      <Filter>Header Files\Trees</Filter>
-    </ClInclude>
-    <ClInclude Include="BitmappedTrie.hpp">
       <Filter>Header Files\Trees</Filter>
     </ClInclude>
     <ClInclude Include="BloomFilter.hpp">
@@ -249,9 +243,6 @@
     <ClInclude Include="Math.hpp">
       <Filter>Header Files\Algorithms\Categories\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Memory.hpp">
-      <Filter>Header Files\Algorithms\Categories\Math</Filter>
-    </ClInclude>
     <ClInclude Include="Statistics.hpp">
       <Filter>Header Files\Algorithms\Categories\Math</Filter>
     </ClInclude>
@@ -291,7 +282,7 @@
     <ClInclude Include="grail_sort.hpp">
       <Filter>Header Files\Algorithms\Categories\Sorting</Filter>
     </ClInclude>
-    <ClInclude Include="Alloca.hpp">
+    <ClInclude Include="alloca.hpp">
       <Filter>Header Files\Algorithms\Categories\General</Filter>
     </ClInclude>
     <ClInclude Include="benchmark.hpp">
@@ -310,6 +301,12 @@
       <Filter>Header Files\Algorithms\Categories\General</Filter>
     </ClInclude>
     <ClInclude Include="swap.hpp">
+      <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClInclude>
+    <ClInclude Include="SWAR.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory.hpp">
       <Filter>Header Files\Algorithms\Categories\General</Filter>
     </ClInclude>
   </ItemGroup>
@@ -358,6 +355,12 @@
     </ClCompile>
     <ClCompile Include="Selection.hpp">
       <Filter>Header Files\Algorithms\Categories\General</Filter>
+    </ClCompile>
+    <ClCompile Include="HierarchicalBitset2.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockedBloomFilter.hpp">
+      <Filter>Header Files\Maps</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

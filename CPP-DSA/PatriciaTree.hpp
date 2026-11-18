@@ -10,29 +10,52 @@
 
 namespace DSA {
 
-	struct PatriciaTreeNodeData {
+	namespace concepts {
+
+		template <typename T>
+		concept PatriciaTreeNode = BinaryTreeNode<T> && requires(T t) {
+
+			typename T::T;
+
+			{ t.bit_index } -> std::same_as<uint32_t>;
+			{ t.key } -> std::same_as<typename T::T*>;
+
+		};
+
+		template <typename T>
+		concept PatriciaTreeKey = HasSize<T>;
+
+	}
+
+	template <concepts::PatriciaTreeKey _T, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
+	struct PatriciaTreeNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
+
+		using T = _T;
+
+#pragma region Properties
 
 		uint32_t bit_index = 0;
-		String key;
+		T key;
+
+#pragma endregion
 
 	};
 
-	template <std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
-	using PatriciaTreeNode = BinaryTreeNode<PatriciaTreeNodeData, NODE_REFERENCE_TYPE>;
-
-	template <concepts::ContainerPolicy ContainerPolicy>
-	class PatriciaTree : public BinaryTree<ContainerPolicy, PatriciaTreeNode<typename ContainerPolicy::INDEX>> { //! incomplete
+	template <concepts::ContainerPolicy ContainerPolicy, typename T = String>
+	class PatriciaTree : public BinaryTree<ContainerPolicy, PatriciaTreeNode<T, typename ContainerPolicy::INDEX>> { //! incomplete
 	public:
 
 		using Base = BinaryTree<ContainerPolicy, PatriciaTreeNode<typename ContainerPolicy::INDEX>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		using KEY = T::T;
+
 	protected:
 
 #pragma region Methods
 
-		constexpr static bool get_bit(String key, uint32_t bitIndex) noexcept {
+		constexpr static bool get_bit(KEY key, uint32_t bitIndex) noexcept {
 			if (bitIndex < 0)
 				return 0;
 			size_t byte_pos = static_cast<size_t>(bitIndex) >> 3;
@@ -41,7 +64,7 @@ namespace DSA {
 			return (key[byte_pos] >> (7 - (bitIndex & 7))) & 1;
 		}
 
-		constexpr static uint32_t first_differing_bit(String key1, String key2) noexcept {
+		constexpr static uint32_t first_differing_bit(KEY key1, KEY key2) noexcept {
 			size_t maxBits = ((key1.get_size() > key2.get_size() ? key1.get_size() : key2.get_size()) + 1) << 3;
 			for (size_t bitIndex = 0; bitIndex < maxBits; ++bitIndex)
 				if (get_bit(key1, bitIndex) != get_bit(key2, bitIndex))
@@ -50,7 +73,7 @@ namespace DSA {
 			return -1;
 		}
 
-		[[nodiscard]] constexpr INDEX search_closest(String key, INDEX begin) const noexcept {
+		[[nodiscard]] constexpr INDEX search_closest(KEY key, INDEX begin) const noexcept {
 			INDEX index = begin;
 			int previousBit = -1;
 
@@ -79,7 +102,7 @@ namespace DSA {
 
 #pragma region Contains, Insert, & Remove
 
-		[[nodiscard]] constexpr bool contains(const String& key) const noexcept {
+		[[nodiscard]] constexpr bool contains(const KEY& key) const noexcept {
 			if (Base::root == Base::invalid_index)
 				return false;
 
@@ -87,13 +110,15 @@ namespace DSA {
 			return closest != Base::invalid_index && key == Base::get(closest);
 		}
 
-		constexpr void add(const String& key) noexcept {
+		constexpr void add(const KEY& key) noexcept {
 			if (Base::root == Base::invalid_index) {
 				INDEX newRoot = Base::allocate();
 				Base::root = newRoot;
 				Base::get(newRoot) = T{
-					newRoot, newRoot,
-					PatriciaTreeNodeData{ 0, key }
+					newRoot,
+					newRoot,
+					0,
+					key
 				};
 				return;
 			}
@@ -124,7 +149,8 @@ namespace DSA {
 			Base::get(newIndex) = T{
 				branchBit ? index : newIndex,
 				branchBit ? newIndex : index,
-				PatriciaTreeNodeData{ diffBit, key }
+				diffBit,
+				key
 			};
 
 			if (parent == Base::invalid_index)
@@ -138,7 +164,7 @@ namespace DSA {
 			}
 		}
 
-		constexpr bool remove(const String& key) noexcept {
+		constexpr bool remove(const KEY& key) noexcept {
 			INDEX backParent = Base::invalid_index;
 			INDEX index = Base::root;
 			uint32_t previousBit = -1;

@@ -6,7 +6,7 @@ namespace DSA {
 
 	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class BumpAllocator : Collection<StoragePolicy, T> {
+	class BumpAllocator : Collection<StoragePolicy, T> { //! incomplete
 	public:
 
 		using Base = Collection<StoragePolicy, T>;

@@ -150,7 +150,6 @@
     <ClInclude Include="BinarySearchTree.hpp" />
     <ClInclude Include="binary_search.hpp" />
     <ClInclude Include="BitmappedPriorityDeque.hpp" />
-    <ClInclude Include="BitmappedTrie.hpp" />
     <ClInclude Include="Bitmask.hpp" />
     <ClInclude Include="Bitset.hpp" />
     <ClInclude Include="BitsetIterator.hpp" />
@@ -207,12 +206,13 @@
     <ClInclude Include="Storage.hpp" />
     <ClInclude Include="swap.hpp" />
     <ClInclude Include="Swappable.hpp" />
+    <ClInclude Include="SWAR.hpp" />
     <ClInclude Include="Test.hpp" />
     <ClInclude Include="PointerHashmap.hpp" />
     <ClInclude Include="TrackedContainer.hpp" />
     <ClInclude Include="Collection.hpp" />
     <ClInclude Include="Buffer.hpp" />
-    <ClInclude Include="Alloca.hpp" />
+    <ClInclude Include="alloca.hpp" />
     <ClInclude Include="StackIterator.hpp" />
     <ClInclude Include="StandardAllocator.hpp" />
     <ClInclude Include="Container.hpp" />
@@ -225,8 +225,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bitwise.hpp" />
+    <ClCompile Include="BlockedBloomFilter.hpp" />
     <ClCompile Include="Combinatorics.hpp" />
     <ClCompile Include="hash.hpp" />
+    <ClCompile Include="HierarchicalBitset2.hpp" />
     <ClCompile Include="huffman.hpp" />
     <ClCompile Include="Iterator.hpp" />
     <ClCompile Include="Main.cpp" />

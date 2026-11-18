@@ -22,7 +22,7 @@ namespace DSA {
 			std::conditional_t<
 				ContainerPolicy::is_dynamic,
 				HeapStoragePolicy<INDEX, typename ContainerPolicy::ALLOCATOR_TEMPLATE>,
-				InlineStoragePolicy<((Base::maximum_index + bit_count - 1) >> bit_shift)>
+				InlineStoragePolicy<((Base::maximum_capacity + bit_count - 1) >> bit_shift)>
 			>
 		>;
 
@@ -35,7 +35,7 @@ namespace DSA {
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
 		constexpr void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -113,7 +113,7 @@ namespace DSA {
 		TrackedContainer() noexcept = default;
 
 		TrackedContainer(INDEX initialCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (concepts::DynamicStorage<Base>)
 		: Base(initialCapacity), tracked((initialCapacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift) {}
 
@@ -202,7 +202,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -217,7 +217,7 @@ namespace DSA {
 		}
 
 		void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -225,7 +225,7 @@ namespace DSA {
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -233,7 +233,7 @@ namespace DSA {
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -242,7 +242,7 @@ namespace DSA {
 		}
 
 		void resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -253,7 +253,7 @@ namespace DSA {
 		}
 
 		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();

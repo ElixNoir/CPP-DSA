@@ -7,7 +7,7 @@ namespace DSA {
 
 	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class LinkedList : public Collection<StoragePolicy, LinkedListNode<T, typename StoragePolicy::INDEX>> {
+	class LinkedList : public Collection<StoragePolicy, LinkedListNode<T, typename StoragePolicy::INDEX>> { //! incomplete
 	public:
 
 		using Base = Collection<StoragePolicy, LinkedListNode<T, typename StoragePolicy::INDEX>>;
@@ -16,15 +16,17 @@ namespace DSA {
 
 		using VALUE = typename T::T;
 
+		constexpr static INDEX invalid_index = Base::invalid_index;
+
 	protected:
 
-		INDEX free_head = Base::maximum_index;
+		INDEX free_head = invalid_index;
 
 #pragma region Methods
 
 		constexpr INDEX helper_allocate() noexcept {
 			INDEX index = free_head;
-			if (index != Base::maximum_index)
+			if (index != invalid_index)
 				free_head = Base::get(index).next;
 			else
 				index = Base::size++;
@@ -46,7 +48,7 @@ namespace DSA {
 
 		// To-Do: shrink
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicContainer<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
@@ -107,16 +109,16 @@ namespace DSA {
 		LinkedList() noexcept
 			requires (!concepts::DynamicStorage<Base>)
 		{
-			Base::get(0).next = Base::maximum_index;
+			Base::get(0).next = invalid_index;
 		};
 
 		// `initialCapacity` must be at least 1, since the head node is always allocated.
 		LinkedList(INDEX initialCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		: Base(initialCapacity)
 		{
-			Base::get(0).next = Base::maximum_index;
+			Base::get(0).next = invalid_index;
 		};
 
 		~LinkedList() noexcept
@@ -187,7 +189,7 @@ namespace DSA {
 		constexpr void remove_head() noexcept {
 			const INDEX nextIndex = Base::get(0).next;
 			destroy_at(&Base::get(0).data);
-			if (nextIndex == Base::maximum_index)
+			if (nextIndex == invalid_index)
 				return;
 			reconstruct_at(Base::get_data(), std::move(Base::get(nextIndex)));
 		}
@@ -198,7 +200,7 @@ namespace DSA {
 				return;
 			}
 				
-			for (INDEX jndex = start; jndex != Base::maximum_index;) {
+			for (INDEX jndex = start; jndex != invalid_index;) {
 				T& node = Base::get(jndex);
 				if (node.next == index) {
 					remove_after(jndex);
@@ -239,7 +241,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -253,7 +255,7 @@ namespace DSA {
 		}
 
 		void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -261,7 +263,7 @@ namespace DSA {
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -269,7 +271,7 @@ namespace DSA {
 		}
 
 		constexpr void normalize()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
@@ -322,7 +324,7 @@ namespace DSA {
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -332,7 +334,7 @@ namespace DSA {
 
 		/*
 		void trim()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicContainer<Base>
 		{
 

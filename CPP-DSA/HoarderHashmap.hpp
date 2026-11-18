@@ -5,12 +5,13 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy, typename T, uintmax_t(*HASH)(const T&) = hash>
+	template <concepts::ContainerPolicy ContainerPolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class Hashmap : public TrackedContainer<StoragePolicy, T> {
+	class Hashmap : public TrackedContainer<ContainerPolicy, T> {
 	public:
 
-		using Base = TrackedContainer<StoragePolicy, T>;
+		using Base = TrackedContainer<ContainerPolicy, T>;
+		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -20,24 +21,22 @@ namespace DSA {
 
 #pragma region Methods
 
+		template <ResizeOperation RESIZE_OPERATION>
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
-			using ALLOCATOR = Base::ALLOCATOR;
-
 			const INDEX capacity = Base::get_capacity();
 			const INDEX newBitsetCapacity = (newCapacity + Bitmask<uintmax_t>::bit_count - 1) >> Bitmask<uintmax_t>::bit_shift;
-			Base::TRACKED newTracked(newBitsetCapacity);
+			typename Base::TRACKED newTracked(newBitsetCapacity);
 			newTracked.zero(newBitsetCapacity);
-			const INDEX oldBitsetCapacity = (capacity + Bitmask<uintmax_t>::bit_count - 1) >> Bitmask<uintmax_t>::bit_shift;
 
 			T* const newData = ALLOCATOR::allocate(newCapacity);
 			T* const oldData = Base::get_data();
 			const INDEX size = Base::get_size();
 
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
-				for (INDEX index : Base::tracked.ones(oldBitsetCapacity)) {
+				for (const INDEX index : Base::tracked.ones()) {
 					T& key = oldData[index];
 					const INDEX newIndex = HASH(key) % newCapacity;
 					move_construct_at(newData + newIndex, std::move(key));
@@ -48,16 +47,16 @@ namespace DSA {
 			}
 			else {
 				try {
-					for (INDEX index : Base::tracked.ones(oldBitsetCapacity)) {
+					for (const INDEX index : Base::tracked.ones()) {
 						T& key = oldData[index];
-						const INDEX newIndex = HASH(key) % newCapacity;
+						const INDEX newIndex = Algorithms::hash(key) % newCapacity;
 						move_construct_at(newData + newIndex, std::move(key));
 						newTracked.set_bit_at(newIndex);
 					}
 					if constexpr (!std::is_trivially_destructible_v<T>) {
-						for (INDEX index : Base::tracked.ones(newBitsetCapacity)) {
+						for (const INDEX index : Base::tracked.ones(newBitsetCapacity)) {
 							T& key = oldData[index];
-							destroy_at(newData + HASH(key) % newCapacity);
+							destroy_at(newData + Algorithms::hash(key) % newCapacity);
 						}
 					}
 				}
@@ -68,7 +67,7 @@ namespace DSA {
 							if (count == size)
 								break;
 							T& key = oldData[index];
-							destroy_at(newData + HASH(key) % newCapacity);
+							destroy_at(newData + Algorithms::hash(key) % newCapacity);
 							count++;
 						}
 					}
@@ -77,9 +76,8 @@ namespace DSA {
 				}
 			}
 
+			Base::set_capacity(newCapacity);
 			Base::set_data(newData);
-			if constexpr (concepts::HasMutableCapacity<Base>)
-				Base::set_capacity(newCapacity);
 			Base::tracked = std::move(newTracked);
 		}
 
@@ -98,20 +96,23 @@ namespace DSA {
 		}
 
 		constexpr void destroy() noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
+			if constexpr (!std::is_trivially_destructible_v<T>) {
+				T* const data = Base::get_data();
+				for (INDEX index : Base::tracked.ones())
+					destroy_at(data + index);
+			}
 		}
 
 #pragma endregion
 
 #pragma region Methods
 
-#pragma region Find, Insert, Set, Upsert
+#pragma region Find, Insert, Upsert
 
 		[[nodiscard]] constexpr INDEX find_occupied(const T& key) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			const T* data = Base::get_data();
-			const INDEX begin = HASH(key) % capacity;
+			const INDEX begin = Algorithms::hash(key) % capacity;
 
 			INDEX index = begin;
 			for (; index < capacity; index++)
@@ -128,7 +129,7 @@ namespace DSA {
 
 		[[nodiscard]] constexpr INDEX find_unoccupied(const T& key) const noexcept {
 			const INDEX capacity = Base::get_capacity();
-			const INDEX begin = HASH(key) % capacity;
+			const INDEX begin = Algorithms::hash(key) % capacity;
 
 			INDEX index = Base::find_first_untracked(begin, capacity);
 			if (index == capacity)
@@ -139,50 +140,60 @@ namespace DSA {
 			return index;
 		}
 
-		void insert(const T& key) noexcept {
-			set(find_unoccupied(key, capacity), key);
-			++Base::size;
+		constexpr void insert(const T& key) noexcept {
+			const INDEX capacity = Base::get_capacity();
+			insert_at(find_unoccupied(key, capacity), key);
 		}
 
-		void insert(T&& key) noexcept {
-			set(find_unoccupied(key, capacity), std::move(key));
-			++Base::size;
+		constexpr void insert(T&& key) noexcept {
+			const INDEX capacity = Base::get_capacity();
+			insert_at(find_unoccupied(key, capacity), std::move(key));
 		}
 
-		void set(INDEX index, const T& key) noexcept {
+		constexpr INDEX insert_at(const T key, INDEX index) noexcept {
 			copy_construct_at(Base::get_data() + index, key);
 			Base::tracked.set_bit_at(index);
 			++Base::size;
+			return index;
 		}
 
-		void set(INDEX index, T&& key) noexcept {
+		constexpr INDEX insert_at(T&& key, INDEX index) noexcept {
 			move_construct_at(Base::get_data() + index, std::move(key));
 			Base::tracked.set_bit_at(index);
 			++Base::size;
+			return index;
 		}
 
-		void upsert(const T& key) noexcept {
-			set(find(key, capacity), key);
+		constexpr INDEX upsert(const T key) noexcept {
+			const INDEX capacity = Base::get_capacity();
+			const INDEX index = find_occupied(key);
+			if (index == capacity)
+				return insert(key);
+			return index;
 		}
 
-		void upsert(T&& key) noexcept {
-			set(find(key, capacity), std::move(key));
+		constexpr INDEX upsert(T&& key) noexcept {
+			const INDEX capacity = Base::get_capacity();
+			const INDEX index = find_occupied(std::move(key));
+			if (index == capacity)
+				return insert(std::move(key));
+			return index;
 		}
 
 #pragma endregion
 
 #pragma region Memory Management
 
-		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+		constexpr void double_capacity()
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(capacity << 1);
 		}
 
-		void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+		constexpr void expand(float ratio = 1.5)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -194,15 +205,15 @@ namespace DSA {
 			return static_cast<double>(Base::get_size()) / capacity > 0.8;
 		}
 
-		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+		constexpr void grow(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
-			helper_resize<true>(newCapacity);
+			helper_resize<ResizeOperation::GROW>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+		constexpr void reserve(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -210,8 +221,8 @@ namespace DSA {
 				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity))
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+		constexpr void resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -221,11 +232,11 @@ namespace DSA {
 				shrink(newCapacity);
 		}
 
-		void shrink(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+		constexpr void shrink(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
-			helper_resize<false>(newCapacity);
+			helper_resize<ResizeOperation::SHRINK>(newCapacity);
 		}
 
 #pragma endregion

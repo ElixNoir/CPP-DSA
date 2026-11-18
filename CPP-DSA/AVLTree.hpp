@@ -4,130 +4,49 @@
 
 namespace DSA {
 
-	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral INDEX = uint32_t>
-	struct AVLTreeNode {
+	namespace concepts {
 
-		INDEX left;
-		INDEX right;
-		INDEX height;
-		KEY_VALUE_PAIR key_value_pair;
+		template <typename T>
+		concept AVLTreeNode = BinaryTreeNode<T> && requires(T t) {
+
+			{ t.height } -> std::same_as<uint16_t>;
+			{ t.data } -> std::same_as<typename T::T>;
+
+		};
+
+	}
+
+	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
+	struct AVLTreeNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
+
+		using T = KEY_VALUE_PAIR;
+
+#pragma region Properties
+
+		NODE_REFERENCE_TYPE height = 0;
+		KEY_VALUE_PAIR data;
+
+#pragma endregion
 
 	};
 
-	template <concepts::StoragePolicy StoragePolicy, concepts::KeyValuePair KeyValuePair>
-	using AVLTreeNodeContainer = Collection<StoragePolicy, AVLTreeNode<KeyValuePair, StoragePolicy::template STRUCTURE<KeyValuePair>::INDEX>>;
-
-	template <concepts::StoragePolicy StoragePolicy, concepts::KeyValuePair KeyValuePair>
-		requires std::is_nothrow_destructible_v<KeyValuePair>
-	class AVLTree : public AVLTreeNodeContainer<StoragePolicy, KeyValuePair> {
+	template <concepts::ContainerPolicy ContainerPolicy, concepts::KeyValuePair KEY_VALUE_PAIR>
+		requires std::is_nothrow_destructible_v<KEY_VALUE_PAIR>
+	class AVLTree : public BinaryTree<ContainerPolicy, AVLTreeNode<KEY_VALUE_PAIR, typename ContainerPolicy::INDEX>> { //! incomplete
 	public:
 
-		using Base = AVLTreeNodeContainer<StoragePolicy, KeyValuePair>;
-
+		using Base = BinaryTree<ContainerPolicy, AVLTreeNode<KEY_VALUE_PAIR, typename ContainerPolicy::INDEX>>;
+		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 		using KEY = T::KEY;
 		using VALUE = T::VALUE;
 
-		constexpr static INDEX invalid_index = StoragePolicy::maximum_index;
-
-	protected:
-
-		using Base::size;
-
-		INDEX root = 0;
-		INDEX free_root = 0;
-		INDEX top = 0;
-
-#pragma region Methods
-
-		[[nodiscard]] INDEX get_height(INDEX index) const noexcept {
-			return index != invalid_index ? Base::get(index).height : 0;
-		}
-
-		void update_height(INDEX index) noexcept {
-			T& node = Base::get(index);
-			INDEX leftHeight = get_height(node.left);
-			INDEX rightHeight = get_height(node.right);
-			node.height = (leftHeight >= rightHeight ? leftHeight : rightHeight) + 1;
-		}
-
-		[[nodiscard]] INDEX rotate_left(INDEX currentIndex) noexcept {
-			T& node = Base::get(currentIndex);
-
-			INDEX rightIndex = node.right;
-			T& rightNode = Base::get(rightIndex);
-
-			node.right = rightNode.left;
-			rightNode.left = currentIndex;
-
-			update_height(currentIndex);
-			update_height(rightIndex);
-
-			return rightIndex;
-		}
-
-		[[nodiscard]] INDEX rotate_right(INDEX currentIndex) noexcept {
-			T& node = Base::get(currentIndex);
-
-			INDEX leftIndex = node.left;
-			T& leftNode = Base::get(leftIndex);
-
-			node.left = leftNode.right;
-			leftNode.right = currentIndex;
-
-			update_height(currentIndex);
-			update_height(leftIndex);
-
-			return leftIndex;
-		}
-
-		[[nodiscard]] INDEX rebalance(INDEX currentIndex) noexcept {
-			update_height(currentIndex);
-
-			T& node = Base::get(currentIndex);
-
-			INDEX leftIndex = node.left;
-			INDEX rightIndex = node.right;
-
-			INDEX leftHeight = get_height(leftIndex);
-			INDEX rightHeight = get_height(rightIndex);
-
-			if (leftHeight > rightHeight + 1) {
-				T& leftNode = Base::get(leftIndex);
-
-				if (get_height(leftNode.left) < get_height(leftNode.right))
-					node.left = rotate_left(leftIndex);
-
-				return rotate_right(currentIndex);
-			}
-
-			if (rightHeight > leftHeight + 1) {
-				T& rightNode = Base::get(rightIndex);
-
-				if (get_height(rightNode.right) < get_height(rightNode.left))
-					node.right = rotate_right(rightIndex);
-
-				return rotate_left(currentIndex);
-			}
-
-			return currentIndex;
-		}
-
-		/*
-		void helper_destroy() {}
-		
-		template <bool GROW>
-		void helper_resize() {}
-		*/
-
-#pragma endregion
-
-	public:
+		constexpr static INDEX invalid_index = Base::invalid_index;
 
 #pragma region Constructors & Destructors
 
-		// too lazy rn
+		using Base::Base;
 
 #pragma endregion
 
@@ -311,375 +230,7 @@ namespace DSA {
 
 #pragma endregion
 
-#pragma region Allocate & Deallocate
-
-		[[nodiscard]] constexpr bool can_allocate(INDEX count = 1) const noexcept {
-			return Base::can_add(count);
-		}
-
-		[[nodiscard]] constexpr INDEX allocate(const T& keyValuePair)
-			noexcept (std::is_nothrow_copy_constructible_v<T>)
-		{
-			INDEX index = free_root;
-			if (index != invalid_index) {
-				T& node = Base::get(index);
-				copy_construct_at(&node.key_value_pair, keyValuePair);
-				free_root = node.right;
-				node.left = invalid_index;
-				node.right = invalid_index;
-			}
-			else {
-				T& node = Base::get(top);
-				copy_construct_at(&node.key_value_pair, keyValuePair);
-				free_root = node.right;
-				node.left = invalid_index;
-				node.right = invalid_index;
-				index = top++;
-			}
-
-			size++;
-
-			return index;
-		}
-
-		[[nodiscard]] constexpr INDEX allocate(T&& keyValuePair)
-			noexcept (std::is_nothrow_move_constructible_v<T>)
-		{
-			INDEX index = free_root;
-			if (index != invalid_index) {
-				T& node = Base::get(index);
-				move_construct_at(&node.key_value_pair, std::move(keyValuePair));
-				free_root = node.right;
-				node.left = invalid_index;
-				node.right = invalid_index;
-			}
-			else {
-				T& node = Base::get(top);
-				move_construct_at(&node.key_value_pair, std::move(keyValuePair));
-				free_root = node.right;
-				node.left = invalid_index;
-				node.right = invalid_index;
-				index = top++;
-			}
-
-			size++;
-
-			return index;
-		}
-
-		[[nodiscard]] constexpr bool can_deallocate(INDEX count = 1) const noexcept {
-			return Base::can_remove(count);
-		}
-
-		constexpr void deallocate(INDEX index) noexcept {
-			T& node = Base::get(index);
-			destroy_at(&node.key_value_pair);
-			node.left = invalid_index;
-			node.right = free_root;
-			free_root = index;
-			size--;
-		}
-
-#pragma endregion
-
 #pragma region Insert, & Upsert
-
-		[[nodiscard]] constexpr bool can_insert(INDEX count = 1) const noexcept {
-			return can_add(count);
-		}
-
-		[[nodiscard]] INDEX insert(const T& keyValuePair)
-			noexcept (std::is_nothrow_copy_constructible_v<T>)
-		{
-			return add(keyValuePair);
-		}
-
-		[[nodiscard]] INDEX insert(const T& keyValuePair, INDEX rootIndex)
-			noexcept (std::is_nothrow_copy_constructible_v<T>)
-		{
-			return add(keyValuePair, rootIndex);
-		}
-
-		[[nodiscard]] INDEX insert(T&& keyValuePair)
-			noexcept (std::is_nothrow_move_constructible_v<T>)
-		{
-			return add(std::move(keyValuePair));
-		}
-
-		[[nodiscard]] INDEX insert(T&& keyValuePair, INDEX rootIndex)
-			noexcept (std::is_nothrow_move_constructible_v<T>)
-		{
-			return add(std::move(keyValuePair), rootIndex);
-		}
-
-		[[nodiscard]] constexpr bool can_upsert(INDEX count = 1) const noexcept {
-			return can_add(count);
-		}
-
-		[[nodiscard]] INDEX upsert(const T& keyValuePair) noexcept(
-			std::is_nothrow_copy_assignable_v<T>
-			&& std::is_nothrow_copy_constructible_v<T>
-			) {
-			INDEX index = root;
-			if (index == invalid_index) {
-				root = allocate(keyValuePair);
-				return root;
-			}
-
-			while (true) {
-				T& node = Base::get(index);
-				KEY& currentKey = node.key_value_pair.key;
-				if (currentKey == keyValuePair.key) {
-					node.key_value_pair.data = keyValuePair.data;
-					return index;
-				}
-				else if (currentKey > keyValuePair.key) {
-					INDEX leftIndex = node.left;
-					if (leftIndex != invalid_index)
-						index = leftIndex;
-					else {
-						INDEX newIndex = allocate(keyValuePair);
-						node.left = newIndex;
-						return newIndex;
-					}
-				}
-				else {
-					INDEX rightIndex = node.right;
-					if (rightIndex != invalid_index)
-						index = rightIndex;
-					else {
-						INDEX newIndex = allocate(keyValuePair);
-						node.right = newIndex;
-						return newIndex;
-					}
-				}
-			}
-		}
-
-		[[nodiscard]] INDEX upsert(T&& keyValuePair) noexcept(
-			std::is_nothrow_move_assignable_v<T>
-			&& std::is_nothrow_move_constructible_v<T>
-			) {
-			INDEX index = root;
-			if (index == invalid_index) {
-				root = allocate(std::move(keyValuePair));
-				return root;
-			}
-
-			while (true) {
-				T& node = Base::get(index);
-				KEY& currentKey = node.key_value_pair.key;
-				if (currentKey == keyValuePair.key) {
-					node.key_value_pair.data = keyValuePair.data;
-					return index;
-				}
-				else if (currentKey > keyValuePair.key) {
-					INDEX leftIndex = node.left;
-					if (leftIndex != invalid_index)
-						index = leftIndex;
-					else {
-						INDEX newIndex = allocate(std::move(keyValuePair));
-						node.left = newIndex;
-						return newIndex;
-					}
-				}
-				else {
-					INDEX rightIndex = node.right;
-					if (rightIndex != invalid_index)
-						index = rightIndex;
-					else {
-						INDEX newIndex = allocate(std::move(keyValuePair));
-						node.right = newIndex;
-						return newIndex;
-					}
-				}
-			}
-		}
-
-#pragma endregion
-
-#pragma region Memory Management
-
-		// ugh...
-
-#pragma endregion
-
-#pragma region Traversal
-
-		[[nodiscard]] constexpr bool can_traverse() const noexcept {
-			return root != invalid_index;
-		}
-
-		template <std::invocable<INDEX> CALLBACK>
-		constexpr void traverse_level_order(CALLBACK callback) noexcept(
-			std::is_nothrow_invocable_v<CALLBACK, INDEX>
-			) {
-			traverse_level_order(callback, root);
-		}
-
-		template <std::invocable<INDEX> CALLBACK>
-		constexpr void traverse_level_order(CALLBACK callback, INDEX index) noexcept(
-			std::is_nothrow_invocable_v<CALLBACK, INDEX>
-			) {
-			INDEX head = invalid_index;
-			INDEX top = invalid_index;
-
-			while (head <= top) {
-				callback(index);
-				top++;
-
-				INDEX left = Base::get(index).left;
-				if (left != invalid_index) {
-					callback(left);
-					top++;
-				}
-
-				INDEX right = Base::get(index).right;
-				if (right != invalid_index) {
-					callback(right);
-					top++;
-				}
-
-				index = Base::get(++head);
-			}
-		}
-
-		template <std::invocable<INDEX> CALLBACK>
-		constexpr void traverse_post_order(CALLBACK callback) noexcept(
-			std::is_nothrow_invocable_v<CALLBACK, INDEX>
-			) {
-			traverse_post_order(callback, root);
-		}
-
-		template <std::invocable<INDEX> CALLBACK>
-		constexpr void traverse_post_order(CALLBACK callback, INDEX rootIndex) noexcept(
-			std::is_nothrow_invocable_v<CALLBACK, INDEX>
-			) {
-			INDEX top = invalid_index;
-			while (rootIndex != invalid_index) {
-				callback(rootIndex);
-
-				INDEX right = Base::get(rootIndex).right;
-				if (right != invalid_index) {
-					callback(right);
-					top++;
-				}
-
-				INDEX left = Base::get(rootIndex).left;
-				if (left != invalid_index) {
-					callback(left);
-					top++;
-				}
-
-				rootIndex = Base::get(--top);
-			}
-		}
-
-		template <std::invocable<INDEX> CALLBACK>
-		constexpr void traverse_pre_order(CALLBACK callback) noexcept(
-			std::is_nothrow_invocable_v<CALLBACK, INDEX>
-			) {
-			traverse_pre_order(callback, root);
-		}
-
-		template <std::invocable<INDEX> CALLBACK>
-		constexpr void traverse_pre_order(CALLBACK callback, INDEX rootIndex) noexcept(
-			std::is_nothrow_invocable_v<CALLBACK, INDEX>
-			) {
-			INDEX top = invalid_index;
-			while (rootIndex != invalid_index) {
-				callback(rootIndex);
-
-				INDEX left = Base::get(rootIndex).left;
-				if (left != invalid_index) {
-					callback(left);
-					top++;
-				}
-
-				INDEX right = Base::get(rootIndex).right;
-				if (right != invalid_index) {
-					callback(right);
-					top++;
-				}
-
-				rootIndex = Base::get(--top);
-			}
-		}
-
-#pragma endregion
-
-#pragma region Search
-
-		[[nodiscard]] constexpr INDEX ceiling(const KEY& key) const noexcept {
-			return ceiling(key, root);
-		}
-
-		[[nodiscard]] constexpr INDEX ceiling(const KEY& key, INDEX rootIndex) const noexcept {
-			INDEX candidate = rootIndex;
-			while (rootIndex != invalid_index) {
-				const T& node = Base::get(rootIndex);
-				if (key == node.key_value_pair.key)
-					return rootIndex;
-				else if (key > node.key_value_pair.key) {
-					candidate = rootIndex;
-					rootIndex = node.right;
-				}
-				else
-					rootIndex = node.left;
-			}
-			return candidate;
-		}
-
-		[[nodiscard]] constexpr INDEX find(const KEY& key) const noexcept {
-			return find(key, root);
-		}
-
-		[[nodiscard]] constexpr INDEX find(const KEY& key, INDEX rootIndex) const noexcept {
-			while (rootIndex != invalid_index) {
-				const T& node = Base::get(rootIndex);
-				if (node.key_value_pair.key == key)
-					return rootIndex;
-				rootIndex = (node.key_value_pair.key > key) ? node.left : node.right;
-			}
-			return invalid_index;
-		}
-
-		[[nodiscard]] constexpr INDEX find_parent_for(const KEY& key) const noexcept {
-			return find_parent_for(key, root);
-		}
-
-		[[nodiscard]] constexpr INDEX find_parent_for(const KEY& key, INDEX rootIndex) const noexcept {
-			INDEX parentIndex = invalid_index;
-			while (rootIndex != invalid_index) {
-				const T& node = Base::get(rootIndex);
-				parentIndex = rootIndex;
-				if (key <= node.key_value_pair.key)
-					rootIndex = node.left;
-				else
-					rootIndex = node.right;
-			}
-			return parentIndex;
-		}
-
-		[[nodiscard]] constexpr INDEX floor(const KEY& key) const noexcept {
-			return floor(key, root);
-		}
-
-		[[nodiscard]] constexpr INDEX floor(const KEY& key, INDEX rootIndex) const noexcept {
-			INDEX candidateIndex = rootIndex;
-			while (rootIndex != invalid_index) {
-				const T& node = Base::get(rootIndex);
-				if (key == node.key_value_pair.key)
-					return rootIndex;
-				else if (key < node.key_value_pair.key) {
-					candidateIndex = rootIndex;
-					rootIndex = node.left;
-				}
-				else
-					rootIndex = node.right;
-			}
-			return candidateIndex;
-		}
 
 #pragma endregion
 

@@ -1,61 +1,112 @@
 #pragma once
 
-#include "Hashable.hpp"
+#include "Bitmask.hpp"
+#include "Collection.hpp"
+#include "hash.hpp"
 
-/*
-template <DSA::concepts::Hashable T>
-class BloomFilter {
-protected:
+namespace DSA {
 
-    size_t bucket_count = 0;
-    size_t hash_count = 0;
+	template <concepts::ContainerPolicy ContainerPolicy, typename KEY>
+	class BloomFilter : public Collection<ContainerPolicy, Bitmask<>> { //! incomplete?
+	public:
 
-    uintmax_t* data;
+		using Base = Collection<ContainerPolicy, Bitmask<>>;
+		using typename Base::INDEX;
+		using typename Base::T;
 
-#pragma region Methods
+		constexpr static auto bit_count = T::bit_count;
+		constexpr static auto bit_shift = T::bit_shift;
 
-    // destination must be hash_count in length
-    constexpr void hashes(T* const destination, const T& key) const noexcept {
-        uintmax_t hash1 = key.hash();
-        uintmax_t hash2 = hash1 ^ 0x5bd1e995; // might want one for 64-bit
-        for (uintmax_t size_t index = 0; index < hash_count; ++index)
-            destination[index] = (hash1 + (index - 1) * hash2) % bucket_count;
-    }
+	protected:
+
+#pragma region Properties
+
+		INDEX bucket_count = 0;
+		INDEX hash_count = 0;
+
+		T* data;
 
 #pragma endregion
 
-public:
+#pragma region Methods
+
+		constexpr uintmax_t hash_again(const uintmax_t hash) noexcept {
+			uintmax_t result = hash ^ 0x9e3779b97f4a7c15ULL;
+
+			result ^= result >> 30;
+			result *= 0xbf58476d1ce4e5b9ULL;
+			result ^= result >> 27;
+			result *= 0x94d049bb133111ebULL;
+			result ^= result >> 31;
+
+			return result | 1;
+		}
+
+		constexpr void hashes(T* const destination, const KEY& key) const noexcept {
+			const uintmax_t hash1 = Algorithms::hash(key);
+			const uintmax_t hash2 = hash_again(hash1);
+			for (size_t index = 0; index < hash_count; ++index)
+				destination[index] = (hash1 + index * hash2) % bucket_count;
+		}
+
+		constexpr void hashes_power_of_2(T* const destination, const KEY& key) const noexcept {
+			const uintmax_t hash1 = Algorithms::hash(key);
+			const uintmax_t hash2 = hash_again(hash1);
+			for (size_t index = 0; index < hash_count; ++index)
+				destination[index] = (hash1 + index * hash2) & bucket_count;
+		}
+
+#pragma endregion
+
+	public:
 
 #pragma region Constructors & Destructors
 
-    BloomFilter(size_t bucketCount, size_t hashCount)
-        noexcept (concepts::NothrowAllocatedStorage<Base, T>)
-        : bucket_count(bucketCount * BitCount), hash_count(hashCount) {
-    } // allocate only bucketCount ??
+		BloomFilter(size_t initialCapacity, double falsePositiveProbability)
+			noexcept (concepts::NothrowResizableStorage<Base>)
+		: bucket_count(initialCapacity * -Math::natural_logarithm(falsePositiveProbability) / Constants::squared_natural_logarithm_of_2),
+			hash_count(bucket_count * Constants::natural_logarithm_of_2 / initialCapacity), Base(bucket_count >> bit_shift) {}
 
 #pragma endregion
 
 #pragma region Methods
 
-    void add(const T& key) noexcept {
-        // alloca?
-        hashes(destination, key);
-        for (size_t index = 0; index < hash_count; ++index) {
-            uintmax_t bucket = destination[index] >> BitShift;
-            data[bucket >> BitShift] |= 1 << (bucket & (BitCount - 1));
-        }
-    }
+#pragma region Add & Contains
 
-    [[nodiscard]] constexpr bool contains() const noexcept {
-        for (size_t index = 0; index < hash_count; ++index) {
-            uintmax_t bucket = destination[index] >> BitShift;
-            if (data[bucket] & (1 << (bucket & (BitCount - 1))) == 0)
-                return false;
-        }
-        return true;
-    }
+		constexpr void add(const KEY& key) noexcept {
+			const uintmax_t hash1 = Algorithms::hash(key);
+			const uintmax_t hash2 = hash_again(hash1);
+
+			for (size_t index = 0; index < hash_count; ++index) {
+				const size_t bucket = (hash1 + index * hash2) % bucket_count;
+				data[bucket >> bit_shift].set(bucket & (bit_count - 1));
+			}
+
+			++Base::size;
+		}
+
+		constexpr [[nodiscard]] bool contains(const KEY& key) const noexcept {
+			const uintmax_t hash1 = Algorithms::hash(key);
+			const uintmax_t hash2 = hash_again(hash1);
+
+			for (size_t index = 0; index < hash_count; ++index) {
+				const size_t bucket = (hash1 + index * hash2) % bucket_count;
+				if (data[bucket >> bit_shift].get(bucket & (bit_count - 1)) == 0)
+					return false;
+			}
+
+			return true;
+		}
+
+		// add_many
+		// contains_all
+		// get_load_factor
+		// get_false_positive_probability
 
 #pragma endregion
 
-};
-*/
+#pragma endregion
+
+	};
+
+}

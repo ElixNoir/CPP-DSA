@@ -10,23 +10,22 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy, typename _T>
-	class PointerHashmap : public Collection<StoragePolicy, _T*> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename _T>
+	class PointerHashmap : public Collection<ContainerPolicy, _T*> {
 	public:
 
-		using Base = Collection<StoragePolicy, _T*>;
+		using Base = Collection<ContainerPolicy, _T*>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 	protected:
 
-		using BitsetPolicy = InlineStoragePolicy<((StoragePolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>;
-		/*std::conditional_t<
-			concepts::DynamicStoragePolicy<StoragePolicy>,
-			HeapStoragePolicy<INDEX, typename StoragePolicy::ALLOCATOR_TEMPLATE>,
-			InlineStoragePolicy<((StoragePolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
-		>;*/
+		using BitsetPolicy = std::conditional_t<
+			concepts::DynamicStoragePolicy<ContainerPolicy>,
+			HeapStoragePolicy<INDEX, typename ContainerPolicy::ALLOCATOR_TEMPLATE>,
+			InlineStoragePolicy<((ContainerPolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
+		>;
 
 		Bitset<BitsetPolicy> key_states;
 
@@ -35,14 +34,12 @@ namespace DSA {
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
 		constexpr void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
-			constexpr INDEX keyStatesCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
-			constexpr INDEX newKeyStatesCapacity = (newCapacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
 
-			Bitset<BitsetPolicy> newKeyStates(newKeyStatesCapacity);
+			Bitset<BitsetPolicy> newKeyStates((newCapacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift);
 			newKeyStates.zero();
 
 			const INDEX size = Base::get_size();
@@ -55,7 +52,7 @@ namespace DSA {
 			else
 				count = Aggregation::minimum(newCapacity, size);
 
-			for (INDEX index : key_states.ones(keyStatesCapacity)) {
+			for (INDEX index : key_states.ones()) {
 				if (count == 0)
 					break;
 				T key = oldData[index];
@@ -142,9 +139,9 @@ namespace DSA {
 			const INDEX begin = Algorithms::hash_pointer(key) % capacity;
 
 			// the first zero bit is guaranteed to be either deleted or empty
-			INDEX index = key_states.find_first_bit_after<true, true, false>(begin);//, { capacity });
+			INDEX index = key_states.find_first_bit_at_or_after<true>(begin);//, { capacity });
 			if (index == capacity) // if no zero bit was found...
-				index = key_states.find_first_bit<true, true, false>(0, begin >> Bitmask<>::bit_shift); // wrap around
+				index = key_states.find_first_bit<true>(0, begin >> Bitmask<>::bit_shift); // wrap around
 
 			return index;
 		}
@@ -154,8 +151,9 @@ namespace DSA {
 		}
 
 		constexpr INDEX insert_at(const T key, INDEX index) noexcept {
-			key_states.get_bitmask_from_bitIndex(index);
 			Base::get(index) = key;
+			key_states.set_bit_at(index);
+			++Base::size;
 			return index;
 		}
 
@@ -184,7 +182,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		constexpr void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -192,7 +190,7 @@ namespace DSA {
 		}
 
 		constexpr void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -200,21 +198,21 @@ namespace DSA {
 		}
 
 		constexpr void empty()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
 			key_states.zero();
 			Base::set_size(0);
 		}
 
 		constexpr void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize(newCapacity);
 		}
 
 		constexpr void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();

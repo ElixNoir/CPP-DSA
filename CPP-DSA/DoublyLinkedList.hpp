@@ -7,7 +7,7 @@ namespace DSA {
 
 	template <concepts::StoragePolicy StoragePolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class DoublyLinkedList : public Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>> {
+	class DoublyLinkedList : public Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>> { //! incomplete
 	public:
 
 		using Base = Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>>;
@@ -16,7 +16,7 @@ namespace DSA {
 
 		using VALUE = typename T::T;
 
-		constexpr static INDEX invalid_index = Base::maximum_index;
+		constexpr static INDEX invalid_index = Base::invalid_index;
 
 	protected:
 
@@ -49,7 +49,7 @@ namespace DSA {
 
 		// To-Do: shrink
 		void helper_resize(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicContainer<Base>
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
@@ -117,7 +117,7 @@ namespace DSA {
 
 		// `initialCapacity` must be at least 1, since the head node is always allocated.
 		DoublyLinkedList(INDEX initialCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires Base::is_dynamic
 		: Base(initialCapacity)
 		{
@@ -268,7 +268,7 @@ namespace DSA {
 #pragma region Memory Management
 
 		void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -282,7 +282,7 @@ namespace DSA {
 		}
 
 		void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -290,7 +290,7 @@ namespace DSA {
 		}
 
 		void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -298,7 +298,7 @@ namespace DSA {
 		}
 
 		constexpr void normalize()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires Base::is_dynamic
 		{
 			using ALLOCATOR = Base::ALLOCATOR;
@@ -351,7 +351,7 @@ namespace DSA {
 		}
 
 		void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -361,7 +361,7 @@ namespace DSA {
 
 		/*
 		void trim()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::HasCapacity<Base>
 		{
 

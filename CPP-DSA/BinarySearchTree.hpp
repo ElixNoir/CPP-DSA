@@ -6,8 +6,29 @@
 
 namespace DSA {
 
+	namespace concepts {
+
+		template <typename T>
+		concept BinarySearchTreeNode = BinaryTreeNode<T> && requires(T t) {
+
+			{ t.data } -> std::same_as<typename T::T>;
+
+		};
+
+	}
+
 	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
-	using BinarySearchTreeNode = BinaryTreeNode<KEY_VALUE_PAIR, NODE_REFERENCE_TYPE>;
+	struct BinarySearchTreeNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
+
+		using T = KEY_VALUE_PAIR;
+
+#pragma region Properties
+
+		KEY_VALUE_PAIR data;
+
+#pragma endregion
+
+	};
 
 	template <concepts::ContainerPolicy ContainerPolicy, concepts::KeyValuePair KEY_VALUE_PAIR>
 		requires std::is_nothrow_destructible_v<KEY_VALUE_PAIR>
@@ -21,11 +42,7 @@ namespace DSA {
 		using KEY = T::KEY;
 		using VALUE = T::VALUE;
 
-		constexpr static INDEX invalid_index = ContainerPolicy::maximum_index;
-
-	protected:
-
-	public:
+		constexpr static INDEX invalid_index = Base::invalid_index;
 
 #pragma region Constructors & Destructors
 		
@@ -99,7 +116,7 @@ namespace DSA {
 			if (leftIndex == invalid_index || rightIndex == invalid_index) {
 				INDEX replacementIndex = leftIndex != invalid_index ? leftIndex : rightIndex;
 				if (parentIndex == invalid_index)
-					root = replacementIndex;
+					Base::set_root(replacementIndex);
 				else if (Base::get(parentIndex).left == index)
 					Base::get(parentIndex).left = replacementIndex;
 				else
@@ -139,7 +156,7 @@ namespace DSA {
 #pragma region Ceiling, Find, Floor, Insert, & Upsert
 
 		[[nodiscard]] constexpr INDEX ceiling(const KEY& key) const noexcept {
-			return ceiling(key, root);
+			return ceiling(key, Base::get_root());
 		}
 
 		[[nodiscard]] constexpr INDEX ceiling(const KEY& key, INDEX rootIndex) const noexcept {
@@ -159,7 +176,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr INDEX find(const KEY& key) const noexcept {
-			return find(key, root);
+			return find(key, Base::get_root());
 		}
 
 		[[nodiscard]] constexpr INDEX find(const KEY& key, INDEX rootIndex) const noexcept {
@@ -173,7 +190,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr INDEX find_parent_for(const KEY& key) const noexcept {
-			return find_parent_for(key, root);
+			return find_parent_for(key, Base::get_root());
 		}
 
 		[[nodiscard]] constexpr INDEX find_parent_for(const KEY& key, INDEX rootIndex) const noexcept {
@@ -190,7 +207,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr INDEX floor(const KEY& key) const noexcept {
-			return floor(key, root);
+			return floor(key, Base::get_root());
 		}
 
 		[[nodiscard]] constexpr INDEX floor(const KEY& key, INDEX rootIndex) const noexcept {
@@ -239,8 +256,9 @@ namespace DSA {
 		{
 			INDEX index = Base::get_root();
 			if (index == invalid_index) {
-				root = Base::allocate(keyValuePair);
-				return root;
+				const INDEX newRoot = Base::allocate(keyValuePair);
+				Base::set_root(newRoot);
+				return newRoot;
 			}
 
 			while (true) {
@@ -279,8 +297,9 @@ namespace DSA {
 		{
 			INDEX index = Base::get_root();
 			if (index == invalid_index) {
-				root = Base::allocate(std::move(keyValuePair));
-				return root;
+				const INDEX newRoot = Base::allocate(std::move(keyValuePair));
+				Base::set_root(newRoot);
+				return newRoot;
 			}
 
 			while (true) {

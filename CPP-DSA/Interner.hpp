@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DSA.hpp"
+#include "BuddyArena.hpp"
 #include "PointerHashmap.hpp"
 
 #include <memory_resource>
@@ -18,26 +18,27 @@ namespace DSA {
 
 	protected:
 
-		std::pmr::monotonic_buffer_resource arena; // need to change this to a genuine arena
+		BuddyArena<ContainerPolicy> arena;
 		PointerHashmap<ContainerPolicy, T> map;
 
 	public:
 
-		INDEX add(const T& key) {
-			INDEX index = map.find_unoccupied(&key);
-			if (index == map.get_capacity())
+		/*
+		constexpr INDEX add(const T& key) {
+			const INDEX index = map.find_unoccupied(&key);
+			if (index == map::invalid_index)
 				return index;
 
-			T* destination = reinterpret_cast<T*>(arena.allocate(sizeof(T), alignof(T)));
-			copy_construct_at(destination, key);
-			map.insert_at(destination, index);
+			const INDEX destination = arena.allocate<T>();
+			copy_construct_at(arena.get_pointer(destination), key);
+			map.insert_at(arena.get_pointer(destination), index);
 
 			return index;
 		}
 
-		INDEX upsert(const T& key) {
-			INDEX index = map.find_occupied(&key);
-			if (index != map.get_capacity())
+		constexpr INDEX upsert(const T& key) {
+			const INDEX index = map.find_occupied(&key);
+			if (index != map::invalid_index)
 				return index;
 			else {
 				T* const destination = reinterpret_cast<T*>(arena.allocate(sizeof(T), alignof(T)));
@@ -45,8 +46,9 @@ namespace DSA {
 				return map.insert(destination);
 			}
 		}
+		*/
 
-		//void remove_at(INDEX index) noexcept {
+		//constexpr void remove_at(INDEX index) noexcept {
 			//destroy_at();
 		//}
 

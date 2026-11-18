@@ -139,12 +139,14 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="legv8_decoder.hpp" />
     <ClInclude Include="Runtime.hpp" />
     <ClInclude Include="Input.hpp" />
     <ClInclude Include="JPEG.hpp" />
     <ClInclude Include="Socket.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="NetworkError.hpp" />
     <ClCompile Include="NetworkingNative.hpp" />
     <ClCompile Include="SocketHandle.hpp" />

@@ -5,32 +5,32 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy>
-	class Bitset : public ContainerPolicy<StoragePolicy>::template STRUCTURE<Bitmask<>> { //StoragePolicy::template STRUCTURE<Bitmask<>> {
+	template <concepts::ContainerPolicy ContainerPolicy, std::unsigned_integral _T = uintmax_t>
+	class Bitset : public ContainerPolicy::template STRUCTURE<Bitmask<_T>> {
 	public:
 
-		using Base = StoragePolicy::template STRUCTURE<Bitmask<>>;
+		using Base = ContainerPolicy::template STRUCTURE<Bitmask<_T>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using BitIndex = promoted_t<INDEX>;
 
-		constexpr static Bitmask<>::T bit_count = Bitmask<>::bit_count;
-		constexpr static Bitmask<>::T bit_shift = Bitmask<>::bit_shift;
+		constexpr static _T bit_count = Bitmask<T>::bit_count;
+		constexpr static _T bit_shift = Bitmask<T>::bit_shift;
 
 #pragma region Methods
 
 #pragma region Getters
 
-		constexpr Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) noexcept {
+		constexpr Bitmask<T>& get_bitmask_from_bitIndex(BitIndex bitIndex) noexcept {
 			return Base::get(bitIndex >> bit_shift);
 		}
 
-		constexpr const Bitmask<>& get_bitmask_from_bitIndex(BitIndex bitIndex) const noexcept {
+		constexpr const Bitmask<T>& get_bitmask_from_bitIndex(BitIndex bitIndex) const noexcept {
 			return Base::get(bitIndex >> bit_shift);
 		}
 
-		constexpr Bitmask<>::T get_bit_at(BitIndex bitIndex) const noexcept {
+		constexpr Bitmask<T>::T get_bit_at(BitIndex bitIndex) const noexcept {
 			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (bit_count - 1));
 		}
 
@@ -49,7 +49,7 @@ namespace DSA {
 			int bitOffset;
 			if constexpr (DIRECTION == Direction::Forward) {
 				while (begin < end) {
-					const Bitmask<>& mask = Base::get(begin);
+					const Bitmask<T>& mask = Base::get(begin);
 					if constexpr (ONES)
 						bitOffset = mask.index_of_trailing_one();
 					else
@@ -61,7 +61,7 @@ namespace DSA {
 			}
 			else {
 				while (begin < end) {
-					const Bitmask<>& mask = Base::get(--end);
+					const Bitmask<T>& mask = Base::get(--end);
 					if constexpr (ONES)
 						bitOffset = mask.index_of_leading_one();
 					else
@@ -88,9 +88,9 @@ namespace DSA {
 
 		template <bool ONES>
 		constexpr BitIndex find_first_bit_at_or_after(BitIndex bitBegin, INDEX end) const noexcept {
-			const Bitmask<>::T initialOffset = bitBegin & (bit_count - 1);
+			const Bitmask<T>::T initialOffset = bitBegin & (bit_count - 1);
 			const INDEX begin = bitBegin >> bit_shift;
-			const Bitmask<>::T bitmask = Base::get(begin);
+			const Bitmask<T>::T bitmask = Base::get(begin);
 			int bitOffset;
 			if constexpr (ONES)
 				bitOffset = bitmask.index_of_trailing_one(initialOffset);
@@ -117,9 +117,9 @@ namespace DSA {
 
 		template <bool ONES>
 		constexpr BitIndex find_last_bit_at_or_before(INDEX begin, BitIndex bitEnd) const noexcept {
-			const Bitmask<>::T initialOffset = bitEnd & (bit_count - 1);
+			const Bitmask<T>::T initialOffset = bitEnd & (bit_count - 1);
 			const INDEX end = bitEnd >> bit_shift;
-			const Bitmask<>::T bitmask = Base::get(end);
+			const Bitmask<T>::T bitmask = Base::get(end);
 			int bitOffset;
 			if constexpr (ONES)
 				bitOffset = bitmask.index_of_leading_one(initialOffset);

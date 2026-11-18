@@ -12,13 +12,16 @@
 
 namespace DSA { //! incomplete
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename KEY, typename VALUE = void>
-	class StaticPerfectHashArray : public ContainerPolicy::template STRUCTURE<KeyValuePair<KEY, VALUE>> {
+	template <concepts::ContainerPolicy ContainerPolicy, concepts::KeyValuePair KEY_VALUE_PAIR>
+	class StaticPerfectHashArray : public ContainerPolicy::template STRUCTURE<KEY_VALUE_PAIR> {
 	public:
 
-		using Base = ContainerPolicy::template STRUCTURE<KeyValuePair<KEY, VALUE>>;
+		using Base = ContainerPolicy::template STRUCTURE<KEY_VALUE_PAIR>;
 		using typename Base::INDEX;
 		using typename Base::T;
+
+		using KEY = T::KEY;
+		using VALUE = T::VALUE;
 
 	protected:
 
@@ -33,9 +36,9 @@ namespace DSA { //! incomplete
 #pragma region Constructors & Destructors
 
 		constexpr StaticPerfectHashArray(std::initializer_list<T> list)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
-			insert_many(list);
+			overwrite(list);
 		}
 
 #pragma endregion
@@ -75,14 +78,14 @@ namespace DSA { //! incomplete
 		}
 
 		constexpr void overwrite(std::initializer_list<T> list)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
 			overwrite(list.begin(), list.size());
 		}
 
 		template <concepts::InputIterator<T> ITERATOR>
 		constexpr void overwrite(ITERATOR begin, INDEX count)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
 			const INDEX capacity = Base::get_capacity();
 
@@ -131,7 +134,7 @@ namespace DSA { //! incomplete
 
 		/*
 		constexpr void double_capacity()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -139,7 +142,7 @@ namespace DSA { //! incomplete
 		}
 
 		constexpr void expand(float ratio = 1.5)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -147,21 +150,21 @@ namespace DSA { //! incomplete
 		}
 
 		constexpr void empty()
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
 			key_states.zero();
 			Base::set_size(0);
 		}
 
 		constexpr void grow(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			helper_resize(newCapacity);
 		}
 
 		constexpr void reserve(INDEX newCapacity)
-			noexcept (concepts::NothrowResizableStorage<Base, T>)
+			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires concepts::DynamicStorage<Base>
 		{
 			const INDEX capacity = Base::get_capacity();

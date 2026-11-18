@@ -65,7 +65,6 @@ namespace DSA {
 
 			constexpr static bool is_dynamic = Base::is_dynamic;
 			constexpr static INDEX maximum_capacity = Base::maximum_capacity;
-			constexpr static INDEX maximum_index = Base::maximum_index;
 
 			constexpr static bool is_offset = D::is_offset;
 
@@ -82,7 +81,7 @@ namespace DSA {
 			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
 			constexpr void resize_from_capacity(INDEX newCapacity, INDEX capacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
 				T* const oldData = Base::get_data();
 				if constexpr (concepts::ReallocatableAllocator<ALLOCATOR>)
@@ -113,7 +112,7 @@ namespace DSA {
 			STRUCTURE() : Base() {}
 
 			STRUCTURE(INDEX initialCapacity)
-				noexcept (concepts::NothrowResizableStorage<Base, T>)
+				noexcept (concepts::NothrowResizableStorage<Base>)
 				requires is_dynamic
 			: Base(initialCapacity), capacity(initialCapacity) {}
 
@@ -122,8 +121,8 @@ namespace DSA {
 			: Base(initializerList), capacity(initializerList.size()) {}
 
 			STRUCTURE& operator=(const STRUCTURE& other)
-				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires (is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
+				noexcept (concepts::NothrowResizableStorage<Base>)
+				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				const T* const data = Base::get_data();
@@ -139,21 +138,21 @@ namespace DSA {
 			}
 
 			STRUCTURE& operator=(const STRUCTURE& other)
-				requires (!is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
 				std::memcpy(Base::get_data(), other.get_data(), get_capacity());
 			}
 
 			STRUCTURE(const STRUCTURE& other)
-				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires (is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
+				noexcept (concepts::NothrowResizableStorage<Base>)
+				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			: Base(other.get_capacity()), capacity(other.get_capacity()) {
 				std::memcpy(Base::get_data(), other.get_data(), other.get_capacity());
 			}
 
 			STRUCTURE(const STRUCTURE& other)
-				noexcept (concepts::NothrowResizableStorage<Base, T>)
-				requires (!is_dynamic && !is_offset && std::is_trivially_move_constructible_v<T>)
+				noexcept (concepts::NothrowResizableStorage<Base>)
+				requires (!is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
 				std::memcpy(Base::get_data(), other.get_data(), get_capacity());
 			}
@@ -182,7 +181,7 @@ namespace DSA {
 
 			constexpr void double_capacity()
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				grow(capacity << 1);
@@ -190,7 +189,7 @@ namespace DSA {
 
 			constexpr void expand(float ratio = 1.5)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				grow(Math::ceiling(capacity * ratio));
@@ -198,7 +197,7 @@ namespace DSA {
 
 			constexpr void grow(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
 				resize<ResizeOperation::GROW>(newCapacity);
 			}
@@ -216,26 +215,24 @@ namespace DSA {
 
 			constexpr void reserve(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
 				const INDEX capacity = get_capacity();
 				if (newCapacity > capacity)
 					grow(newCapacity);
 			}
 
-			const INDEX capacity = Base::get_capacity();
-
 			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
 			constexpr void resize(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				resize_from_capacity<RESIZE_OPERATION>(newCapacity, Base::get_capacity());
+				resize_from_capacity<RESIZE_OPERATION>(newCapacity, get_capacity());
 			}
 
 			constexpr void shrink(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
-				requires (!is_offset && std::is_trivially_move_constructible_v<T>)
+				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
 				resize<ResizeOperation::SHRINK>(newCapacity);
 			}
