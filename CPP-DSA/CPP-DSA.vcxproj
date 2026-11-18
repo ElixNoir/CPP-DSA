@@ -160,7 +160,7 @@
     <ClInclude Include="A.hpp" />
     <ClInclude Include="Comparable.hpp" />
     <ClInclude Include="compare.hpp" />
-    <ClInclude Include="Constants.hpp" />
+    <ClInclude Include="MathConstants.hpp" />
     <ClInclude Include="dct.hpp" />
     <ClInclude Include="dct8x8.hpp" />
     <ClInclude Include="DoublyLinkedList.hpp" />
@@ -237,6 +237,7 @@
     <ClCompile Include="PerfectHashArray.hpp" />
     <ClCompile Include="random.hpp" />
     <ClCompile Include="Selection.hpp" />
+    <ClCompile Include="sha256.hpp" />
     <ClCompile Include="String.hpp" />
     <ClCompile Include="unroll.hpp" />
     <ClCompile Include="View.hpp" />

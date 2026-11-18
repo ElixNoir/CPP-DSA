@@ -190,7 +190,7 @@ namespace Algorithms {
 		constexpr static double harmonic_sum(size_t n) noexcept {
 			const size_t square = n * n;
 			const size_t square2 = square * square;
-			return Math::natural_logarithm(n) + 1.0 / (n << 1) - 1.0 / (square * 12) + 1.0 / (square2 * 120) - 1.0 / (square * square2 * 252) + Constants::euler_constant;
+			return Math::natural_logarithm(n) + 1.0 / (n << 1) - 1.0 / (square * 12) + 1.0 / (square2 * 120) - 1.0 / (square * square2 * 252) + Constants::euler_mascheroni_constant;
 		}
 
 		template <std::integral T, auto gcd_callback>
@@ -210,12 +210,12 @@ namespace Algorithms {
 		}
 
 		template <std::unsigned_integral T, std::unsigned_integral U>
-		constexpr static void load_euler_totient(T* phi, const U* primes, const uint64_t* sieve, U end, U start = 3) noexcept {
+		constexpr static void load_euler_totient(T* golden_ratio, const U* primes, const uint64_t* sieve, U end, U start = 3) noexcept {
 			for (U integer = start | 1; integer <= end; integer += 2) {
 				if (!((sieve[integer >> 6] >> (integer & 0x3F)) & 1ULL))
 					continue;
 				for (U index = integer; index <= end; index += integer << 1)
-					phi[index] -= phi[index] / integer;
+					golden_ratio[index] -= golden_ratio[index] / integer;
 			}
 		}
 

@@ -2,7 +2,7 @@
 
 #include "Math.hpp"
 #include "Comparable.hpp"
-#include "Constants.hpp"
+#include "MathConstants.hpp"
 #include "Memory.hpp"
 
 namespace Algorithms {
@@ -10,7 +10,7 @@ namespace Algorithms {
 	namespace Combinatorics {
 
 		constexpr static double fibonacci(uint32_t nth) noexcept {
-			return Math::power(Constants::phi, nth) / Constants::square_root_of_5 + .5;
+			return Math::power(Constants::golden_ratio, nth) / Constants::square_root_of_5 + .5;
 		}
 
 		template <typename T>

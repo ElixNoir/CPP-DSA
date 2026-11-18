@@ -58,18 +58,18 @@
     <Filter Include="Header Files\Algorithms\Categories\General">
       <UniqueIdentifier>{d0ee5da2-7164-4a5f-89dc-a152f9f5bb77}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Algorithms\Categories\Hashing">
+      <UniqueIdentifier>{8c592073-2abe-4432-a4d1-38629495f21d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Arenas">
+      <UniqueIdentifier>{8622cb30-e4ce-4c97-a385-a9d73257c7c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Arbitrary">
+      <UniqueIdentifier>{81a2e7ac-3763-4857-ae8e-0c22139e3739}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Traits.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DSA.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Hashes.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Test.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AVLTree.hpp">
@@ -192,26 +192,14 @@
     <ClInclude Include="TransitionMatrix.hpp">
       <Filter>Header Files\General</Filter>
     </ClInclude>
-    <ClInclude Include="A.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Vector2.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Interner.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BumpArena.hpp">
-      <Filter>Header Files\General</Filter>
-    </ClInclude>
-    <ClInclude Include="BuddyArena.hpp">
-      <Filter>Header Files\General</Filter>
-    </ClInclude>
     <ClInclude Include="PointerHashmap.hpp">
       <Filter>Header Files\Maps</Filter>
-    </ClInclude>
-    <ClInclude Include="ALL.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BinaryTree.hpp">
       <Filter>Header Files\Trees</Filter>
@@ -234,7 +222,7 @@
     <ClInclude Include="Arithmetic.hpp">
       <Filter>Header Files\Algorithms\Categories\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Constants.hpp">
+    <ClInclude Include="MathConstants.hpp">
       <Filter>Header Files\Algorithms\Categories\Math</Filter>
     </ClInclude>
     <ClInclude Include="Geometry.hpp">
@@ -309,6 +297,27 @@
     <ClInclude Include="Memory.hpp">
       <Filter>Header Files\Algorithms\Categories\General</Filter>
     </ClInclude>
+    <ClInclude Include="Hashes.hpp">
+      <Filter>Header Files\Algorithms\Categories\Hashing</Filter>
+    </ClInclude>
+    <ClInclude Include="Traits.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="BuddyArena.hpp">
+      <Filter>Header Files\Arenas</Filter>
+    </ClInclude>
+    <ClInclude Include="BumpArena.hpp">
+      <Filter>Header Files\Arenas</Filter>
+    </ClInclude>
+    <ClInclude Include="A.hpp">
+      <Filter>Header Files\Arbitrary</Filter>
+    </ClInclude>
+    <ClInclude Include="Test.hpp">
+      <Filter>Header Files\Arbitrary</Filter>
+    </ClInclude>
+    <ClInclude Include="ALL.hpp">
+      <Filter>Header Files\Arbitrary</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -361,6 +370,9 @@
     </ClCompile>
     <ClCompile Include="BlockedBloomFilter.hpp">
       <Filter>Header Files\Maps</Filter>
+    </ClCompile>
+    <ClCompile Include="sha256.hpp">
+      <Filter>Header Files\Algorithms\Categories\Hashing</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -40,7 +40,7 @@ namespace DSA {
 	};
 
 	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
-	struct ParentedAVLTreeNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> { //! incomplete
+	struct ParentedAVLTreeNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
 
 		using T = KEY_VALUE_PAIR;
 

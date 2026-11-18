@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Addable.hpp"
-#include "Constants.hpp"
+#include "MathConstants.hpp"
 #include "Multipliable.hpp"
 #include "Traits.hpp"
 
@@ -12,6 +12,86 @@
 namespace Algorithms {
 
 	namespace Math {
+
+		namespace internal {
+
+			// Maximum error is < 1.5e-7 for float, extendable for double
+			constexpr double atan_poly(double z) noexcept {
+				const double z2 = z * z;
+				// Estrin's / Horner's method for high-precision minimax coefficients on [0, 1]
+				double res = 0.0028662257;
+				res = res * z2 - 0.0161657367;
+				res = res * z2 + 0.0429096138;
+				res = res * z2 - 0.0752896400;
+				res = res * z2 + 0.1065626393;
+				res = res * z2 - 0.1420889944;
+				res = res * z2 + 0.1999355085;
+				res = res * z2 - 0.3333314528;
+				res = res * z2 + 1.0;
+				return z * res;
+			}
+
+			constexpr double atan_approx(double x) noexcept {
+				if (x < 0.0)
+					return -atan_approx(-x);
+				if (x > 1.0)
+					return (Constants::pi / 2.0) - atan_approx(1.0 / x);
+				return atan_poly(x);
+			}
+
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto absolute_value(T value) noexcept {
+			if consteval {
+				constexpr auto t = [](auto x) { return std::abs(x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::abs(value);
+				else
+					return value < 0 ? -value : value;
+			}
+			else {
+				return std::abs(value);
+			}
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto arctan2(T y, T x) noexcept {
+			if consteval {
+				constexpr auto t = [](auto y, auto x) { return std::atan2(y, x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::atan2(y, x);
+				else {
+					if (x == 0.0 && y == 0.0)
+						return 0.0;
+					if (x == 0.0)
+						return (y > 0.0) ? (Constants::pi / 2.0) : (-Constants::pi / 2.0);
+					if (y == 0.0)
+						return (x > 0.0) ? 0.0 : Constants::pi;
+
+					// Reduce to first octant [0, 1] via reciprocal identity
+					const double abs_x = (x < 0.0) ? -x : x;
+					const double abs_y = (y < 0.0) ? -y : y;
+
+					double angle = (abs_y <= abs_x)
+						? detail::atan_poly(abs_y / abs_x)
+						: (Constants::pi / 2.0) - detail::atan_poly(abs_x / abs_y);
+
+					// Adjust for quadrant
+					if (x < 0.0)
+						angle = Constants::pi - angle;
+					if (y < 0.0)
+						angle = -angle;
+
+					return T(angle);
+				}
+			}
+			else {
+				return std::atan2(y, x);
+			}
+		}
 
 		template <typename T>
 			requires std::is_fundamental_v<T>
@@ -24,7 +104,7 @@ namespace Algorithms {
 					return value;
 				else {
 					const int64_t v = static_cast<int64_t>(value);
-					return value > v ? (v + 1) : v;
+					return value > T(v) ? T(v + 1) : T(v);
 				}
 			}
 			else {
@@ -43,12 +123,55 @@ namespace Algorithms {
 					return value;
 				else {
 					const int64_t v = static_cast<int64_t>(value);
-					return value < v ? (v - 1) : v;
+					return value < T(v) ? T(v - 1) : T(v);
 				}
 			}
 			else {
 				return std::floor(value);
 			}
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto round(T value) noexcept {
+			if consteval {
+				constexpr auto t = [](auto x) { return std::round(x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::round(value);
+				else if constexpr (std::is_integral_v<T>)
+					return value;
+				else {
+					const int64_t v = static_cast<int64_t>(value);
+					return (value - T(v)) < 0.5 ? T(v) : T(v + 1);
+				}
+			}
+			else {
+				return std::round(value);
+			}
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto is_finite(T value) noexcept {
+			if consteval {
+				constexpr auto t = [](auto x) { return std::isfinite(x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::isfinite(value);
+				else {
+					if constexpr (std::is_floating_point_v<T>)
+						return (value - value) == T(0);
+					else
+						return true;
+				}
+			}
+			else
+				return std::isfinite(value);
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto sign_number(T value) noexcept {
+			return (T(0) < value) - (value < T(0));
 		}
 
 #pragma region e
@@ -106,7 +229,7 @@ namespace Algorithms {
 							++k;
 						}
 					}
-					while (m < Constants::inverted_square_root_of_2) {
+					while (m < Constants::inverse_square_root_of_2) {
 						if (m < 9.31322574615478515625e-10) {
 							m *= 1073741824.0;
 							k -= 30;
@@ -259,6 +382,25 @@ namespace Algorithms {
 			}
 			else {
 				return std::sqrt(value);
+			}
+		}
+
+#pragma endregion
+
+#pragma region Geometry
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto hypotenuse(T x, T y) noexcept {
+			if consteval {
+				constexpr auto t = [](auto x, auto y) { return std::hypot(x, y); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::hypot(x, y);
+				else
+					return square_root(x * x + y * y);
+			}
+			else {
+				return std::hypot(x, y);
 			}
 		}
 

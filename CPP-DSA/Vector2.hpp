@@ -1,14 +1,23 @@
 #pragma once
 
-#include "Constants.hpp"
+#include "Math.hpp"
 
 #include <concepts>
 
 namespace DSA {
 
 	template <typename T>
-		requires std::is_fundamental_v<T>
+		requires std::is_arithmetic_v<T>
 	struct Vector2 {
+
+		enum class InterpolationType {
+
+			LINEAR,
+			QUADRATIC,
+			CUBIC,
+			QUINTIC
+
+		};
 
 		using Self = Vector2<T>;
 
@@ -17,102 +26,283 @@ namespace DSA {
 
 #pragma region Methods
 
-		constexpr T cross_product(Self other) const noexcept {
+		[[nodiscard]] constexpr Self absolute() const noexcept {
+			return Self{ Algorithms::Math::absolute_value(x), Algorithms::Math::absolute_value(y) };
+		}
+
+		[[nodiscard]] constexpr Self maximum_between(Self other) const noexcept {
+			return Self{ x > other.x ? x : other.x, y > other.y ? y : other.y };
+		}
+
+		[[nodiscard]] constexpr T maximum_component() const noexcept {
+			return x > y ? x : y;
+		}
+
+		[[nodiscard]] constexpr Self minimum_between(Self other) const noexcept {
+			return Self{ x < other.x ? x : other.x, y < other.y ? y : other.y };
+		}
+
+		[[nodiscard]] constexpr T minimum_component() const noexcept {
+			return x < y ? x : y;
+		}
+
+		[[nodiscard]] constexpr Self sign_numbers() const noexcept {
+			return Self{ Algorithms::Math::sign_number(x), Algorithms::Math::sign_number(y) };
+		}
+
+		// centroid, wrap, trunc, angle_to_cardinal
+
+#pragma region Checks
+
+		[[nodiscard]] constexpr bool is_approximately_equal_to(Self other, T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Algorithms::Math::absolute_value(x - other.x) <= epsilon
+				&& Algorithms::Math::absolute_value(y - other.y) <= epsilon;
+		}
+
+		[[nodiscard]] constexpr bool is_finite() const noexcept {
+			return Algorithms::Math::is_finite(x) & Algorithms::Math::is_finite(y);
+		}
+
+		[[nodiscard]] constexpr bool is_normalized(T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Algorithms::Math::absolute_value(x * x + y * y - T(1)) <= epsilon;
+		}
+
+		[[nodiscard]] constexpr bool is_parallel_to(Self other, T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Algorithms::Math::absolute_value(cross_product(other)) <= epsilon;
+		}
+
+		[[nodiscard]] constexpr bool is_perpendicular_to(Self other, T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Algorithms::Math::absolute_value(dot_product(other)) <= epsilon;
+		}
+
+		[[nodiscard]] constexpr bool is_zero() const noexcept {
+			return (x == 0) & (y == 0);
+		}
+
+#pragma endregion
+
+#pragma region Space
+
+#pragma region Products
+
+		[[nodiscard]] constexpr T cross_product(Self other) const noexcept {
 			return x * other.y - y * other.x;
 		}
 
-		constexpr T dot_product(Self other) const noexcept {
-			return x * other.x - y * other.y;
+		[[nodiscard]] constexpr T dot_product(Self other) const noexcept {
+			return x * other.x + y * other.y;
 		}
 
-		constexpr auto distance_from(Self other) const noexcept {
-			const Self difference = (*this - other);
-			return difference.magnitude();
+		[[nodiscard]] constexpr T triple_product(Self other) const noexcept {
+			const T cross = cross_product(other);
+			return Self{ -y * cross, x * cross };
 		}
 
-		constexpr auto magnitude() const noexcept {
-			if constexpr (std::same_as<T, double>)
-				return hypot(x, y);
-			else if constexpr (std::same_as<T, float>)
-				return hypotf(x, y);
-			else
-				return hypotl(x, y);
+#pragma endregion
+
+#pragma region Magnitude
+
+		[[nodiscard]] constexpr auto distance_from(Self other) const noexcept {
+			return Algorithms::Math::square_root(x - other.x, y - other.y);
 		}
 
-#pragma region Mutation
-
-		constexpr void flip_over_x_axis() noexcept {
-			y = -y;
+		[[nodiscard]] constexpr auto chebyshev_magnitude() const noexcept {
+			return -Algorithms::Math::maximum(Algorithms::Math::absolute_value(x) + Algorithms::Math::absolute_value(y));
 		}
 
-		constexpr void flip_over_y_axis() noexcept {
-			x = -x;
+		[[nodiscard]] constexpr auto magnitude() const noexcept {
+			return Algorithms::Math::hypotenuse(x, y);
+		}
+
+		[[nodiscard]] constexpr auto manhattan_magnitude() const noexcept {
+			return -Algorithms::Math::absolute_value(x) + Algorithms::Math::absolute_value(y);
+		}
+
+		[[nodiscard]] constexpr Self normalize() const noexcept {
+			return *this / static_cast<T>(magnitude());
+		}
+
+		[[nodiscard]] constexpr auto squared_distance_from(Self other) const noexcept {
+			const auto dx = x - other.x;
+			const auto dy = y - other.y;
+
+			return dx * dx + dy * dy;
+		}
+
+		[[nodiscard]] constexpr T squared_magnitude() const noexcept {
+			return x * x + y * y;
+		}
+
+#pragma endregion
+
+#pragma region Transformation
+
+#pragma region Reflection
+
+		[[nodiscard]] constexpr Self perpendicular() const noexcept {
+			return Self{ -y, x };
+		}
+
+		[[nodiscard]] constexpr Self reflect(Self normal) const noexcept {
+			return *this - normal * (T{ 2 } * dot_product(normal));
+		}
+
+		[[nodiscard]] constexpr Self reflect_over_x_axis(Self normal) const noexcept {
+			return Self{ x, -y };
+		}
+
+		[[nodiscard]] constexpr Self reflect_over_y_axis(Self normal) const noexcept {
+			return Self{ -x, y };
+		}
+
+#pragma endregion
+
+#pragma region Rotation
+
+		[[nodiscard]] constexpr auto angle_to(Self other) const noexcept {
+			return Algorithms::Math::arctan2(cross_product(other), dot_product(other));
 		}
 
 		template <std::floating_point U>
-		constexpr void rotate(U angle) noexcept {
+		[[nodiscard]] constexpr Self rotate(U angle) const noexcept {
 			const auto c = Math::cosine(angle);
 			const auto s = Math::sine(angle);
-			const T xt = x;
-			x = xt * c - y * s;
-			y = xt * s + y * c;
+			return Self{ x * c - y * s, x * s + y * c };
 		}
 
 		template <std::floating_point U>
-		constexpr void rotate(U angle, Self pivot) noexcept {
+		[[nodiscard]] constexpr Self rotate(U angle, Self pivot) const noexcept {
 			const auto c = Math::cosine(angle);
 			const auto s = Math::sine(angle);
 			const T xt = x - pivot.x;
 			const T yt = y - pivot.y;
-			x = xt * c - yt * s;
-			y = xt * s + yt * c;
+			return Self{ pivot.x + xt * c - yt * s, pivot.y + xt * s + yt * c };
 		}
 
-		constexpr void rotate_45l() noexcept {
-			const T xt = x;
-			const T yt = y;
-			x = Constants::square_root_of_2 * (xt - yt);
-			y = Constants::square_root_of_2 * (xt + yt);
+		[[nodiscard]] constexpr Self rotate_45l() const noexcept {
+			return Self{ (x - y) * Constants::inverse_square_root_of_2, (x + y) * Constants::inverse_square_root_of_2 };
 		}
 
-		constexpr void rotate_90l() noexcept {
-			const T xt = x;
-			x = y;
-			y = -xt;
+		[[nodiscard]] constexpr Self rotate_90l() const noexcept {
+			return Self{ y, -x };
 		}
 
-		constexpr void rotate_45r() noexcept {
-			const T xt = x;
-			const T yt = y;
-			x = Constants::square_root_of_2 * (xt + yt);
-			y = Constants::square_root_of_2 * (yt - xt);
+		[[nodiscard]] constexpr Self rotate_45r() const noexcept {
+			return Self{ (x + y) * Constants::inverse_square_root_of_2, (y - x) * Constants::inverse_square_root_of_2 };
 		}
 
-		constexpr void rotate_90r() noexcept {
-			const T xt = x;
-			x = -y;
-			y = xt;
+		[[nodiscard]] constexpr Self rotate_90r() const noexcept {
+			return Self{ -y, x };
 		}
+
+#pragma endregion
+
+#pragma region Translation
+
+		[[nodiscard]] constexpr Self ceiling() const noexcept {
+			if constexpr (std::is_floating_point_v<T>)
+				return Self{ Algorithms::Math::ceiling(x), Algorithms::Math::ceiling(y) };
+			else
+				return *this;
+		}
+
+		[[nodiscard]] constexpr Self clamp_between(Self minimum, Self maximum) const noexcept {
+			return maximum_between(minimum).minimum_between(maximum);
+		}
+
+		[[nodiscard]] constexpr Self floor() const noexcept {
+			if constexpr (std::is_floating_point_v<T>)
+				return Self{ Algorithms::Math::floor(x), Algorithms::Math::floor(y) };
+			else
+				return *this;
+		}
+
+		template <InterpolationType INTERPOLATION_TYPE = InterpolationType::LINEAR, std::floating_point U>
+		[[nodiscard]] constexpr Self interpolate(Self other, U time) const noexcept {
+			if constexpr (INTERPOLATION_TYPE == InterpolationType::QUADRATIC)
+				time = time < T(0.5)
+				? T(2) * time * time
+				: T(1) - ((-T(2) * time + T(2)) * (-T(2) * time + T(2))) / T(2);
+			else if constexpr (INTERPOLATION_TYPE == InterpolationType::CUBIC)
+				time *= time * (T(3) - T(2) * time);
+			else if constexpr (INTERPOLATION_TYPE == InterpolationType::QUINTIC)
+				time *= time * time * (time * (time * T(6) - T(15)) + T(10));
+
+			return Self{ x + (other.x - x) * time, y + (other.y - y) * time };
+		}
+
+		[[nodiscard]] constexpr Self project_onto(Self other) const noexcept {
+			return other * (dot_product(other) / other.squared_magnitude());
+		}
+
+		[[nodiscard]] constexpr Self rejection_from(Self other) const noexcept {
+			return *this - project_onto(other);
+		}
+
+		[[nodiscard]] constexpr Self snap(T xyScalar = 1) const noexcept {
+			return snap(xyScalar, xyScalar);
+		}
+
+		[[nodiscard]] constexpr Self snap(T xScalar, T yScalar) const noexcept {
+			if constexpr (std::is_floating_point_v<T>)
+				return Self{ Algorithms::Math::round(x / xScalar) * xScalar, Algorithms::Math::round(y / yScalar) * yScalar };
+			else
+				return *this;
+		}
+
+#pragma endregion
+
+#pragma endregion
 
 #pragma endregion
 
 #pragma region Operators
 
-		constexpr Self operator+(Self other) const noexcept {
+#pragma region Arithmetic
+
+		[[nodiscard]] constexpr Self operator+(Self other) const noexcept {
 			return Self{ x + other.x, y + other.y };
 		}
 
-		constexpr Self operator/(Self other) const noexcept {
+		[[nodiscard]] constexpr Self operator/(Self other) const noexcept {
 			return Self{ x / other.x, y / other.y };
 		}
 
-		constexpr Self operator*(Self other) const noexcept {
+		[[nodiscard]] constexpr Self operator*(Self other) const noexcept {
 			return Self{ x * other.x, y * other.y };
 		}
 
-		constexpr Self operator-(Self other) const noexcept {
+		[[nodiscard]] constexpr Self operator-(Self other) const noexcept {
 			return Self{ x - other.x, y - other.y };
 		}
+
+		constexpr void operator+=(Self other) const noexcept {
+			*this = { *this + other };
+		}
+
+		constexpr void operator/=(Self other) const noexcept {
+			*this = { *this / other };
+		}
+
+		constexpr void operator*=(Self other) const noexcept {
+			*this = { *this * other };
+		}
+
+		constexpr void operator-=(Self other) const noexcept {
+			*this = { *this - other };
+		}
+
+		[[nodiscard]] constexpr Self operator-() const noexcept {
+			return Self{ -x, -y };
+		}
+
+#pragma endregion
+
+#pragma region Comparison
+
+		// uhhh
+
+#pragma endregion
 
 #pragma endregion
 

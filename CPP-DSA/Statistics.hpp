@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Combinatorics.hpp"
-#include "Constants.hpp"
+#include "MathConstants.hpp"
 #include "Selection.hpp"
 
 namespace Algorithms {
