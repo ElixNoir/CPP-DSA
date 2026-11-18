@@ -3,6 +3,7 @@
 #include "Math.hpp"
 
 #include <concepts>
+#include <iostream>
 
 namespace DSA {
 
@@ -49,8 +50,6 @@ namespace DSA {
 		[[nodiscard]] constexpr Self sign_numbers() const noexcept {
 			return Self{ Algorithms::Math::sign_number(x), Algorithms::Math::sign_number(y) };
 		}
-
-		// centroid, wrap, trunc, angle_to_cardinal
 
 #pragma region Checks
 
@@ -102,12 +101,20 @@ namespace DSA {
 
 #pragma region Magnitude
 
-		[[nodiscard]] constexpr auto distance_from(Self other) const noexcept {
-			return Algorithms::Math::square_root(x - other.x, y - other.y);
+		[[nodiscard]] constexpr auto cardinal_magnitude() const noexcept {
+			return Self{ x * (x > y), y * (y > x) };
+		}
+
+		[[nodiscard]] constexpr auto cardinal_normal() const noexcept {
+			return Self{ x > y, y > x };
 		}
 
 		[[nodiscard]] constexpr auto chebyshev_magnitude() const noexcept {
 			return -Algorithms::Math::maximum(Algorithms::Math::absolute_value(x) + Algorithms::Math::absolute_value(y));
+		}
+
+		[[nodiscard]] constexpr auto distance_from(Self other) const noexcept {
+			return Algorithms::Math::square_root(x - other.x, y - other.y);
 		}
 
 		[[nodiscard]] constexpr auto magnitude() const noexcept {
@@ -250,6 +257,13 @@ namespace DSA {
 				return *this;
 		}
 
+		[[nodiscard]] constexpr Self truncate() const noexcept {
+			if constexpr (std::is_floating_point_v<T>)
+				return Self{ Algorithms::Math::truncate(x), Algorithms::Math::truncate(y) };
+			else
+				return *this;
+		}
+
 #pragma endregion
 
 #pragma endregion
@@ -277,32 +291,63 @@ namespace DSA {
 		}
 
 		constexpr void operator+=(Self other) const noexcept {
-			*this = { *this + other };
+			*this = *this + other;
 		}
 
 		constexpr void operator/=(Self other) const noexcept {
-			*this = { *this / other };
+			*this = *this / other;
 		}
 
 		constexpr void operator*=(Self other) const noexcept {
-			*this = { *this * other };
+			*this = *this * other;
 		}
 
-		constexpr void operator-=(Self other) const noexcept {
-			*this = { *this - other };
+		constexpr void operator/=(Self other) const noexcept {
+			*this = *this / other;
 		}
 
 		[[nodiscard]] constexpr Self operator-() const noexcept {
 			return Self{ -x, -y };
 		}
 
+		template <typename U>
+			requires std::is_arithmetic_v<U>
+		[[nodiscard]] constexpr Self operator/(U divisor) const noexcept {
+			return Self{ x / divisor, y / divisor };
+		}
+
+		template <typename U>
+			requires std::is_arithmetic_v<U>
+		[[nodiscard]] constexpr Self operator*(U multiplier) const noexcept {
+			return Self{ x * multiplier, y * multiplier };
+		}
+
+		constexpr void operator/=(U divisor) const noexcept {
+			*this = *this / divisor;
+		}
+
+		constexpr void operator*=(U multiplier) const noexcept {
+			*this = *this * multiplier;
+		}
+
 #pragma endregion
 
 #pragma region Comparison
 
-		// uhhh
+		[[nodiscard]] constexpr bool operator==(Self other) const noexcept {
+			return (x == other.x) & (y == other.y);
+		}
+
+		[[nodiscard]] constexpr bool operator!=(Self other) const noexcept {
+			return (x != other.x) | (y != other.y);
+		}
 
 #pragma endregion
+
+		friend std::ostream& operator<<(std::ostream& ostream, const Vector2 t) {
+			ostream << "{ " << t.x << ", " << t.y << " }";
+			return ostream;
+		}
 
 #pragma endregion
 

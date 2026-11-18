@@ -76,8 +76,8 @@ namespace Algorithms {
 					const double abs_y = (y < 0.0) ? -y : y;
 
 					double angle = (abs_y <= abs_x)
-						? detail::atan_poly(abs_y / abs_x)
-						: (Constants::pi / 2.0) - detail::atan_poly(abs_x / abs_y);
+						? internal::atan_poly(abs_y / abs_x)
+						: (Constants::pi / 2.0) - internal::atan_poly(abs_x / abs_y);
 
 					// Adjust for quadrant
 					if (x < 0.0)
@@ -164,14 +164,35 @@ namespace Algorithms {
 						return true;
 				}
 			}
-			else
+			else {
 				return std::isfinite(value);
+			}
 		}
 
 		template <typename T>
 			requires std::is_fundamental_v<T>
 		[[nodiscard]] constexpr static auto sign_number(T value) noexcept {
 			return (T(0) < value) - (value < T(0));
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto truncate(T value) noexcept {
+			if consteval {
+				constexpr auto t = [](auto x) { return std::trunc(x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::trunc(value);
+				else {
+					constexpr T max_exact_int = static_cast<T>(1ULL << std::numeric_limits<T>::digits);
+					if constexpr (std::is_floating_point_v<T>)
+						return value >= max_exact_int | value <= -max_exact_int || value != value;
+					else
+						return true;
+				}
+			}
+			else {
+				return std::trunc(value);
+			}
 		}
 
 #pragma region e
