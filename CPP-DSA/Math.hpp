@@ -13,34 +13,6 @@ namespace Algorithms {
 
 	namespace Math {
 
-		namespace internal {
-
-			// Maximum error is < 1.5e-7 for float, extendable for double
-			constexpr double atan_poly(double z) noexcept {
-				const double z2 = z * z;
-				// Estrin's / Horner's method for high-precision minimax coefficients on [0, 1]
-				double res = 0.0028662257;
-				res = res * z2 - 0.0161657367;
-				res = res * z2 + 0.0429096138;
-				res = res * z2 - 0.0752896400;
-				res = res * z2 + 0.1065626393;
-				res = res * z2 - 0.1420889944;
-				res = res * z2 + 0.1999355085;
-				res = res * z2 - 0.3333314528;
-				res = res * z2 + 1.0;
-				return z * res;
-			}
-
-			constexpr double atan_approx(double x) noexcept {
-				if (x < 0.0)
-					return -atan_approx(-x);
-				if (x > 1.0)
-					return (Constants::pi / 2.0) - atan_approx(1.0 / x);
-				return atan_poly(x);
-			}
-
-		}
-
 		template <typename T>
 			requires std::is_fundamental_v<T>
 		[[nodiscard]] constexpr static auto absolute_value(T value) noexcept {
@@ -53,43 +25,6 @@ namespace Algorithms {
 			}
 			else {
 				return std::abs(value);
-			}
-		}
-
-		template <typename T>
-			requires std::is_fundamental_v<T>
-		[[nodiscard]] constexpr static auto arctan2(T y, T x) noexcept {
-			if consteval {
-				constexpr auto t = [](auto y, auto x) { return std::atan2(y, x); };
-				if constexpr (!is_const_invocable<decltype(t), T>)
-					return std::atan2(y, x);
-				else {
-					if (x == 0.0 && y == 0.0)
-						return 0.0;
-					if (x == 0.0)
-						return (y > 0.0) ? (Constants::pi / 2.0) : (-Constants::pi / 2.0);
-					if (y == 0.0)
-						return (x > 0.0) ? 0.0 : Constants::pi;
-
-					// Reduce to first octant [0, 1] via reciprocal identity
-					const double abs_x = (x < 0.0) ? -x : x;
-					const double abs_y = (y < 0.0) ? -y : y;
-
-					double angle = (abs_y <= abs_x)
-						? internal::atan_poly(abs_y / abs_x)
-						: (Constants::pi / 2.0) - internal::atan_poly(abs_x / abs_y);
-
-					// Adjust for quadrant
-					if (x < 0.0)
-						angle = Constants::pi - angle;
-					if (y < 0.0)
-						angle = -angle;
-
-					return T(angle);
-				}
-			}
-			else {
-				return std::atan2(y, x);
 			}
 		}
 
@@ -428,6 +363,98 @@ namespace Algorithms {
 #pragma endregion
 
 #pragma region Trigonometry
+
+		namespace internal {
+
+			// Maximum error is < 1.5e-7 for float, extendable for double
+			[[nodiscard]] constexpr static double atan_polynomial(double z) noexcept {
+				double res = 0.0028662257;
+				res *= z * z - 0.0161657367;
+				res *= z + 0.0429096138;
+				res *= z - 0.0752896400;
+				res *= z + 0.1065626393;
+				res *= z - 0.1420889944;
+				res *= z + 0.1999355085;
+				res *= z - 0.3333314528;
+				res *= z + 1.0;
+				return z * res;
+			}
+
+			// Maximum error is < 1.5e-7 for float, extendable for double
+			[[nodiscard]] constexpr static double atan_approximate(double x) noexcept {
+				if (x < 0.0)
+					return -atan_approximate(-x);
+				if (x > 1.0)
+					return (Constants::pi / 2.0) - atan_approximate(1.0 / x);
+				atan_polynomial(x);
+			}
+
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto arccosine(T value) noexcept {
+			if consteval {
+				constexpr auto t = [](auto x) { return std::acos(x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::acos(value);
+				else {
+					if (value < T{ -1 } || value > T{ 1 })
+						return std::numeric_limits<T>::quiet_NaN();
+
+					const bool negate = value < T{ 0 };
+					const T abs_x = negate ? -value : value;
+
+					T ret = T{ -0.0187293 };
+					ret *= abs_x + T{ 0.0742610 };
+					ret *= abs_x + T{ -0.2121144 };
+					ret *= abs_x + T{ 1.5707288 };
+					ret *= square_root(T{ 1 } - abs_x);
+
+					return negate ? (Constants::pi - ret) : ret;
+				}
+			}
+			else {
+				return std::acos(value);
+			}
+		}
+
+		template <typename T>
+			requires std::is_fundamental_v<T>
+		[[nodiscard]] constexpr static auto arctan2(T y, T x) noexcept {
+			if consteval {
+				constexpr auto t = [](auto y, auto x) { return std::atan2(y, x); };
+				if constexpr (!is_const_invocable<decltype(t), T>)
+					return std::atan2(y, x);
+				else {
+					if (x == 0.0 && y == 0.0)
+						return 0.0;
+					if (x == 0.0)
+						return (y > 0.0) ? (Constants::pi / 2.0) : (-Constants::pi / 2.0);
+					if (y == 0.0)
+						return (x > 0.0) ? 0.0 : Constants::pi;
+
+					// Reduce to first octant [0, 1] via reciprocal identity
+					const double abs_x = (x < 0.0) ? -x : x;
+					const double abs_y = (y < 0.0) ? -y : y;
+
+					double angle = (abs_y <= abs_x)
+						? internal::atan_polynomial(abs_y / abs_x)
+						: (Constants::pi / 2.0) - internal::atan_polynomial(abs_x / abs_y);
+
+					// Adjust for quadrant
+					if (x < 0.0)
+						angle = Constants::pi - angle;
+					if (y < 0.0)
+						angle = -angle;
+
+					return T(angle);
+				}
+			}
+			else {
+				return std::atan2(y, x);
+			}
+		}
 
 		template <typename T>
 			requires std::is_fundamental_v<T>

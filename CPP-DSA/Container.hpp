@@ -247,6 +247,10 @@ namespace DSA {
 				capacity = newCapacity;
 			}
 
+			constexpr void fill_to_capacity(const T& value) noexcept {
+				return std::fill_n(Base::get_data(), Base::get_capacity(), value);
+			}
+
 			constexpr void one() noexcept {
 				Base::one(get_capacity());
 			}

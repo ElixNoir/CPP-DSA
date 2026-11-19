@@ -143,6 +143,8 @@
     <ClInclude Include="Aggregation.hpp" />
     <ClInclude Include="ALL.hpp" />
     <ClInclude Include="Allocator.hpp" />
+    <ClInclude Include="Bitfield.hpp" />
+    <ClInclude Include="Bounds3.hpp" />
     <ClInclude Include="BuddyArena.hpp" />
     <ClInclude Include="BumpArena.hpp" />
     <ClInclude Include="AVLTree.hpp" />
@@ -177,6 +179,7 @@
     <ClInclude Include="Multipliable.hpp" />
     <ClInclude Include="Parameter.hpp" />
     <ClInclude Include="Quantization.hpp" />
+    <ClInclude Include="RTree.hpp" />
     <ClInclude Include="SegmentTree.hpp" />
     <ClInclude Include="GapBuffer.hpp" />
     <ClInclude Include="grail_sort.hpp" />
@@ -222,10 +225,12 @@
     <ClInclude Include="TransitionMatrix.hpp" />
     <ClInclude Include="BinaryTree.hpp" />
     <ClInclude Include="Vector2.hpp" />
+    <ClInclude Include="Vector3.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bitwise.hpp" />
     <ClCompile Include="BlockedBloomFilter.hpp" />
+    <ClCompile Include="Bounds2.hpp" />
     <ClCompile Include="Combinatorics.hpp" />
     <ClCompile Include="hash.hpp" />
     <ClCompile Include="HierarchicalBitset2.hpp" />

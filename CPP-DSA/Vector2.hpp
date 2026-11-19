@@ -22,8 +22,7 @@ namespace DSA {
 
 		using Self = Vector2<T>;
 
-		T x;
-		T y;
+		T x, y;
 
 #pragma region Methods
 
@@ -110,7 +109,9 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr auto chebyshev_magnitude() const noexcept {
-			return -Algorithms::Math::maximum(Algorithms::Math::absolute_value(x) + Algorithms::Math::absolute_value(y));
+			const T xt = Algorithms::Math::absolute_value(x);
+			const T yt = Algorithms::Math::absolute_value(y);
+			return xt > yt ? xt : yt;
 		}
 
 		[[nodiscard]] constexpr auto distance_from(Self other) const noexcept {
@@ -172,15 +173,15 @@ namespace DSA {
 
 		template <std::floating_point U>
 		[[nodiscard]] constexpr Self rotate(U angle) const noexcept {
-			const auto c = Math::cosine(angle);
-			const auto s = Math::sine(angle);
+			const auto c = Algorithms::Math::cosine(angle);
+			const auto s = Algorithms::Math::sine(angle);
 			return Self{ x * c - y * s, x * s + y * c };
 		}
 
 		template <std::floating_point U>
 		[[nodiscard]] constexpr Self rotate(U angle, Self pivot) const noexcept {
-			const auto c = Math::cosine(angle);
-			const auto s = Math::sine(angle);
+			const auto c = Algorithms::Math::cosine(angle);
+			const auto s = Algorithms::Math::sine(angle);
 			const T xt = x - pivot.x;
 			const T yt = y - pivot.y;
 			return Self{ pivot.x + xt * c - yt * s, pivot.y + xt * s + yt * c };
@@ -290,20 +291,20 @@ namespace DSA {
 			return Self{ x - other.x, y - other.y };
 		}
 
-		constexpr void operator+=(Self other) const noexcept {
+		constexpr void operator+=(Self other) noexcept {
 			*this = *this + other;
 		}
 
-		constexpr void operator/=(Self other) const noexcept {
+		constexpr void operator/=(Self other) noexcept {
 			*this = *this / other;
 		}
 
-		constexpr void operator*=(Self other) const noexcept {
+		constexpr void operator*=(Self other) noexcept {
 			*this = *this * other;
 		}
 
-		constexpr void operator/=(Self other) const noexcept {
-			*this = *this / other;
+		constexpr void operator-=(Self other) noexcept {
+			*this = *this - other;
 		}
 
 		[[nodiscard]] constexpr Self operator-() const noexcept {
@@ -322,10 +323,14 @@ namespace DSA {
 			return Self{ x * multiplier, y * multiplier };
 		}
 
+		template <typename U>
+			requires std::is_arithmetic_v<U>
 		constexpr void operator/=(U divisor) const noexcept {
 			*this = *this / divisor;
 		}
 
+		template <typename U>
+			requires std::is_arithmetic_v<U>
 		constexpr void operator*=(U multiplier) const noexcept {
 			*this = *this * multiplier;
 		}

@@ -192,9 +192,6 @@
     <ClInclude Include="TransitionMatrix.hpp">
       <Filter>Header Files\General</Filter>
     </ClInclude>
-    <ClInclude Include="Vector2.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Interner.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -318,6 +315,21 @@
     <ClInclude Include="ALL.hpp">
       <Filter>Header Files\Arbitrary</Filter>
     </ClInclude>
+    <ClInclude Include="RTree.hpp">
+      <Filter>Header Files\Trees</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector2.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Bitfield.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Bounds3.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -373,6 +385,9 @@
     </ClCompile>
     <ClCompile Include="sha256.hpp">
       <Filter>Header Files\Algorithms\Categories\Hashing</Filter>
+    </ClCompile>
+    <ClCompile Include="Bounds2.hpp">
+      <Filter>Header Files\General</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

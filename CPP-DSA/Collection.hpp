@@ -278,6 +278,10 @@ namespace DSA {
 
 #pragma region Setters
 
+		constexpr void fill_to_size(const T& value) noexcept {
+			return std::fill_n(Base::get_data(), Base::get_capacity(), value);
+		}
+
 		constexpr void set_size(INDEX newSize) noexcept {
 			size = newSize;
 		}

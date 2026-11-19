@@ -1,13 +1,14 @@
 #pragma once
 
 #include "Collection.hpp"
+#include "Iterator.hpp"
 
 #include <bit>
 
 namespace DSA {
 
 	template <concepts::ContainerPolicy ContainerPolicy>
-	class FenwickTree : public Collection<ContainerPolicy, uintmax_t> { //! incomplete
+	class FenwickTree : public Collection<ContainerPolicy, uintmax_t> {
 	public:
 
 		using Base = Collection<ContainerPolicy, uintmax_t>;
@@ -21,60 +22,122 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
-		FenwickTree(T* data, size_t size) noexcept
-			requires (!is_dynamic)
-		{
-			for (size_t index = 0; index < size; ++index) {
-				while (index < size) {
-					Base::get(index) += data[index];
-					index += index & -index;
-				}
+		FenwickTree(std::initializer_list<T> initializerList) noexcept : Base(initializerList.size()) {
+			const INDEX size = Base::get_size();
+			Base::zero();
+			const auto iterator = initializerList.begin();
+			for (INDEX index = 0; index < size; ++index) {
+				Base::get(index) += *(iterator++);
+				INDEX parentIndex = index + (index & -index);
+				if (parentIndex < size)
+					Base::get(parentIndex) += Base::get(index);
 			}
-
-			Base::set_size(size);
 		}
 
-		FenwickTree(T* data, size_t size)
-			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires is_dynamic
-		: Base(size) {
-			for (size_t index = 0; index < size; ++index) {
-				while (index < size) {
-					Base::get(index) += data[index];
-					index += index & -index;
-				}
+		template <concepts::InputIterator ITERATOR>
+		FenwickTree(ITERATOR iterator, INDEX count) noexcept : Base(count) {
+			Base::zero();
+			for (INDEX index = 0; index < count; ++index) {
+				Base::get(index) += *(iterator++);
+				INDEX parentIndex = index + (index & -index);
+				if (parentIndex < count)
+					Base::get(parentIndex) += Base::get(index);
+			}
+		}
+
+		template <concepts::InputIterator ITERATOR>
+		constexpr void build(ITERATOR iterator) {
+			const INDEX size = Base::get_size();
+
+			INDEX index = 0;
+			for (const auto& value : iterator) {
+				if (index == size)
+					break;
+
+				Base::get(index) = value;
+				++index;
 			}
 
-			Base::set_size(size);
+			for (index = 0; index < size; ++index) {
+				INDEX parentIndex = index | (index + 1);
+				if (parentIndex < size)
+					Base::get(parentIndex) += Base::get(index);
+			}
+		}
+
+		constexpr void build_ones(const INDEX length) noexcept {
+			for (INDEX index = 0; index < length; ++index)
+				Base::get(index) = index & -index;
 		}
 
 #pragma endregion
 
 #pragma region Methods
 
-		constexpr void build_all(size_t length) noexcept {
-			for (size_t index = 0; index < length; ++index)
-				Base::get(index) = index & -index;
-		}
+#pragma region Lower Bound & Upper Bound
 
-		constexpr T find_kth(T length, T k) {
-			INDEX bit = 1 << (bit_count - std::countl_zero(length) - 1);
+		[[nodiscard]] constexpr INDEX lower_bound(T target) const noexcept {
 			INDEX index = 0;
-			while (bit > 0) {
-				INDEX next = index + bit;
-				T data = Base::get(next);
-				if (next <= length && data < k) {
-					k -= data;
+			T sum{};
+
+			// Start from the highest power of 2 <= n_
+			const INDEX size = Base::get_size();
+			for (INDEX step = highest_power_of_two(size); step > 0; step >>= 1) {
+				INDEX next = index + step;
+				const T value = Base::get(next);
+				if (next <= size && sum + value < target) {
 					index = next;
+					sum += value;
 				}
-				bit >>= 1;
 			}
 
-			return index;
+			return index + 1;
 		}
 
-		constexpr T prefix_sum(size_t index) const noexcept {
-			T sum = 0;
+		[[nodiscard]] constexpr INDEX upper_bound(T target) const noexcept {
+			INDEX index = 0;
+			T sum{};
+
+			const INDEX size = Base::get_size();
+			for (INDEX step = highest_power_of_two(size); step > 0; step >>= 1) {
+				INDEX next = index + step;
+				const T value = Base::get(next);
+				if (next <= size && sum + value <= target) {
+					index = next;
+					sum += value;
+				}
+			}
+
+			return index + 1;
+		}
+
+#pragma endregion
+
+#pragma region Mutation
+
+		[[nodiscard]] constexpr bool can_set_value(INDEX index, T newValue) const noexcept {
+			return newValue >= Base::get(index);
+		}
+
+		constexpr void set_value(INDEX index, T data) noexcept {
+			update(index, data - Base::get(index));
+		}
+
+		constexpr void update(INDEX index, T delta) noexcept {
+			const INDEX size = Base::get_size();
+			while (index < size) {
+				Base::get(index) += delta;
+				index |= index + 1;
+			}
+		}
+
+#pragma endregion
+
+#pragma region Queries
+
+		[[nodiscard]] constexpr T prefix_sum(INDEX index) const noexcept {
+			T sum = Base::get(0);
+
 			while (index > 0) {
 				sum += Base::get(index);
 				index -= index & -index;
@@ -83,25 +146,21 @@ namespace DSA {
 			return sum;
 		}
 
-		constexpr T range_sum(size_t left, size_t right) const noexcept {
-			return prefix_sum(right) - prefix_sum(left - 1);
+		[[nodiscard]] constexpr T range_sum(INDEX left, INDEX right) const noexcept {
+			return prefix_sum(right) - prefix_sum(left);
 		}
 
-		constexpr T point_query(size_t index) const noexcept {
-			return range_sum(index, index);
-		}
+		[[nodiscard]] constexpr T total_sum() const noexcept {
+			T sum = Base::get(0);
 
-		constexpr void set_value(size_t index, T data) noexcept {
-			update(index, data - point_query(index));
-		}
-
-		constexpr void update(size_t index, T delta) noexcept {
 			const INDEX size = Base::get_size();
-			while (index < size) {
-				Base::get(index) += delta;
-				index += index & -index;
-			}
+			for (INDEX index = size; index > 0; index -= (index & -index))
+				sum += Base::get(index);
+
+			return sum;
 		}
+
+#pragma endregion
 
 #pragma endregion
 

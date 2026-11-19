@@ -209,6 +209,10 @@ namespace DSA {
 				data = static_cast<std::byte*>(newData);
 			}
 
+			constexpr void fill(const T& value, const INDEX count, const INDEX begin = 0) noexcept {
+				return std::fill_n(get_data() + begin, count, value);
+			}
+
 			constexpr void one(INDEX count, INDEX begin = 0) noexcept {
 				std::memset(get_raw_data() + begin, 0xFF, count * sizeof(T));
 			}
@@ -335,6 +339,10 @@ namespace DSA {
 #pragma endregion
 
 #pragma region Setters
+
+			constexpr void fill(const T& value, const INDEX count) noexcept {
+				return std::fill_n(get_data(), count, value);
+			}
 
 			constexpr void one() noexcept {
 				one(get_capacity());

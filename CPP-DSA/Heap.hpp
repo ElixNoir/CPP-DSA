@@ -3,28 +3,29 @@
 #include "Collection.hpp"
 #include "swap.hpp"
 
+#include <bit>
+
 #include <iostream>
 
 namespace DSA {
 
-	enum HeapType : uint8_t {
+	enum class HeapType : uint8_t {
 
-		MAX_HEAP,
-		MIN_HEAP
+		BIDIRECTIONAL,
+		MAXIMUM,
+		MINIMUM
 
 	};
 
-	template <concepts::StoragePolicy StoragePolicy, typename T, HeapType HEAP_TYPE = HeapType::MAX_HEAP>
+	template <concepts::ContainerPolicy ContainerPolicy, typename T, HeapType HEAP_TYPE = HeapType::MAXIMUM>
 		requires std::is_nothrow_destructible_v<T>
-	class Heap : public Collection<StoragePolicy, T> {
+	class Heap : public Collection<ContainerPolicy, T> {
 	public:
 
-		using Base = Collection<StoragePolicy, T>;
+		using Base = Collection<ContainerPolicy, T>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
-
-		constexpr static bool is_dynamic = Base::is_dynamic;
 
 		constexpr static INDEX invalid_index = Base::invalid_index;
 
@@ -32,9 +33,48 @@ namespace DSA {
 
 #pragma region Methods
 
+		constexpr bool is_min_level(INDEX index) const noexcept {
+			return ((std::bit_width(INDEX(index + INDEX(1))) - 1) & 1) == 0;
+		}
+
 		constexpr INDEX parent_of(INDEX index) const noexcept { return (index - 1) >> 1; }
 		constexpr INDEX left_of(INDEX index) const noexcept { return (index << 1) + 1; }
 		constexpr INDEX right_of(INDEX index) const noexcept { return (index << 1) + 2; }
+
+		template <bool MAXIMUM>
+		constexpr INDEX extreme_descendant(INDEX index) const noexcept {
+			INDEX extreme = index;
+
+			const INDEX size = Base::get_size();
+			const INDEX firstChild = left_of(index);
+			const INDEX lastChild = right_of(index);
+			for (INDEX child = firstChild; child < size && child <= lastChild; ++child) {
+				if constexpr (MAXIMUM) {
+					if (Base::get(child) > Base::get(extreme))
+						extreme = child;
+				}
+				else {
+					if (Base::get(child) < Base::get(extreme))
+						extreme = child;
+				}
+
+				const INDEX firstGrandchild = left_of(child);
+				const INDEX lastGrandchild = right_of(child);
+
+				for (INDEX grandchild = firstGrandchild; grandchild < size && grandchild <= lastGrandchild; ++grandchild) {
+					if constexpr (MAXIMUM) {
+						if (Base::get(grandchild) > Base::get(extreme))
+							extreme = grandchild;
+					}
+					else {
+						if (Base::get(grandchild) < Base::get(extreme))
+							extreme = grandchild;
+					}
+				}
+			}
+
+			return extreme;
+		}
 
 #pragma endregion
 
@@ -50,22 +90,20 @@ namespace DSA {
 
 #pragma region Add & Remove
 
-		constexpr void add(const T& data)
+		constexpr void add(const T& value)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
 			const INDEX index = Base::get_size();
-			Base::get(index) = data;
-
+			copy_construct_at(Base::get_data() + index, value);
 			++Base::size;
 			bubble_up(index);
 		}
 
-		constexpr void add(T&& data)
+		constexpr void add(T&& value)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX index = Base::get_size();
-			Base::get(index) = std::move(data);
-
+			move_construct_at(Base::get_data() + index, std::move(value));
 			++Base::size;
 			bubble_up(index);
 		}
@@ -76,7 +114,6 @@ namespace DSA {
 		{
 			const INDEX index = Base::get_size();
 			construct_at<T>(Base::get_data() + index, forward<ARGUMENTS>(arguments)...);
-
 			++Base::size;
 			bubble_up(index);
 		}
@@ -91,87 +128,250 @@ namespace DSA {
 			destroy_at(Base::get_data() + index);
 			--Base::size;
 
-			heapify(index);
+			if (index != 0) {
+				const INDEX parentIndex = parent_of(index);
+
+				if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+					if (is_min_level(index)
+						? Base::get(index) > Base::get(parentIndex)
+						: Base::get(index) < Base::get(parentIndex))
+					{
+						bubble_up(index);
+						return;
+					}
+				}
+				else if constexpr (HEAP_TYPE == HeapType::MAXIMUM) {
+					if (Base::get(index) > Base::get(parentIndex)) {
+						bubble_up(index);
+						return;
+					}
+				}
+				else {
+					if (Base::get(index) < Base::get(parentIndex)) {
+						bubble_up(index);
+						return;
+					}
+				}
+			}
+
+			trickle_down(index);
 		}
 
 #pragma endregion
 
-#pragma region Bubble Up, Extract, Heapify, & Insert
+#pragma region Bubble Up & Trickle Down
 
 		constexpr void bubble_up(INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 		{
-			if constexpr (HEAP_TYPE == MAX_HEAP) {
-				while (index != 0) {
-					const INDEX parentIndex = parent(index);
-					if (Base::get(parentIndex) >= Base::get(index))
-						return;
-					swap(Base::get(index), Base::get(parentIndex));
-					index = parentIndex;
+			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+				const INDEX parentIndex = parent_of(index);
+				if (is_min_level(index)) {
+					if (Base::get(index) > Base::get(parentIndex)) {
+						Algorithms::swap(Base::get(index), Base::get(parentIndex));
+						bubble_up_max(parentIndex);
+					}
+					else
+						bubble_up_min(index);
+				}
+				else {
+					if (Base::get(index) < Base::get(parentIndex)) {
+						Algorithms::swap(Base::get(index), Base::get(parentIndex));
+						bubble_up_min(parentIndex);
+					}
+					else
+						bubble_up_max(index);
+				}
+			}
+			else if constexpr (HEAP_TYPE == HeapType::MAXIMUM)
+				bubble_up_max(index);
+			else
+				bubble_up_min(index);
+		}
+
+		constexpr void bubble_up_max(INDEX index)
+			noexcept (std::is_nothrow_swappable_v<T>)
+			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MAXIMUM)
+		{
+			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+				while (index >= 3) {
+					const INDEX grandparent = parent_of(parent_of(index));
+					if (Base::get(index) <= Base::get(grandparent))
+						break;
+
+					Algorithms::swap(Base::get(index), Base::get(grandparent));
+					index = grandparent;
 				}
 			}
 			else {
 				while (index != 0) {
-					const INDEX parentIndex = parent(index);
-					if (Base::get(parentIndex) <= Base::get(index))
+					const INDEX parentIndex = parent_of(index);
+					if (Base::get(parentIndex) >= Base::get(index))
 						return;
-					swap(Base::get(index), Base::get(parentIndex));
+
+					Algorithms::swap(Base::get(index), Base::get(parentIndex));
 					index = parentIndex;
 				}
 			}
 		}
+
+		constexpr void bubble_up_min(INDEX index)
+			noexcept (std::is_nothrow_swappable_v<T>)
+			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MINIMUM)
+		{
+			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+				while (index >= 3) {
+					const INDEX grandparent = parent_of(parent_of(index));
+					if (Base::get(index) >= Base::get(grandparent))
+						break;
+
+					Algorithms::swap(Base::get(index), Base::get(grandparent));
+					index = grandparent;
+				}
+			}
+			else {
+				while (index != 0) {
+					const INDEX parentIndex = parent_of(index);
+					if (Base::get(parentIndex) <= Base::get(index))
+						return;
+
+					Algorithms::swap(Base::get(index), Base::get(parentIndex));
+					index = parentIndex;
+				}
+			}
+		}
+
+		constexpr void trickle_down(INDEX index)
+			noexcept (std::is_nothrow_swappable_v<T>)
+		{
+			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+				if (is_min_level(index))
+					trickle_down_min(index);
+				else
+					trickle_down_max(index);
+			}
+			else if constexpr (HEAP_TYPE == HeapType::MAXIMUM)
+				trickle_down_max(index);
+			else
+				trickle_down_min(index);
+		}
+
+		constexpr void trickle_down_max(INDEX index)
+			noexcept (std::is_nothrow_swappable_v<T>)
+			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MAXIMUM)
+		{
+			const INDEX size = Base::get_size();
+			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+				while (true) {
+					const INDEX extreme = extreme_descendant<true>(index);
+					if (extreme == index)
+						return;
+
+					const INDEX parentIndex = parent_of(extreme);
+					if (parentIndex == index) {
+						if (Base::get(extreme) > Base::get(index))
+							Algorithms::swap(Base::get(extreme), Base::get(index));
+
+						return;
+					}
+					if (Base::get(extreme) > Base::get(index)) {
+						Algorithms::swap(Base::get(extreme), Base::get(index));
+						if (Base::get(extreme) < Base::get(parentIndex))
+							Algorithms::swap(Base::get(extreme), Base::get(parentIndex));
+
+						index = extreme;
+					}
+				}
+			}
+			else {
+				while (true) {
+					INDEX extreme = index;
+
+					const INDEX leftIndex = left_of(index);
+					const INDEX rightIndex = right_of(index);
+					if (leftIndex < size && Base::get(leftIndex) > Base::get(extreme))
+						extreme = leftIndex;
+					if (rightIndex < size && Base::get(rightIndex) > Base::get(extreme))
+						extreme = rightIndex;
+					if (extreme == index)
+						return;
+
+					Algorithms::swap(Base::get(index), Base::get(extreme));
+					index = extreme;
+				}
+			}
+		}
+
+		constexpr void trickle_down_min(INDEX index)
+			noexcept (std::is_nothrow_swappable_v<T>)
+			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MINIMUM)
+		{
+			const INDEX size = Base::get_size();
+			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
+				while (true) {
+					const INDEX extreme = extreme_descendant<false>(index);
+					if (extreme == index)
+						return;
+
+					const INDEX parentIndex = parent_of(extreme);
+					if (parentIndex == index) {
+						if (Base::get(extreme) < Base::get(index))
+							Algorithms::swap(Base::get(extreme), Base::get(index));
+
+						return;
+					}
+					if (Base::get(extreme) < Base::get(index)) {
+						Algorithms::swap(Base::get(extreme), Base::get(index));
+						if (Base::get(extreme) > Base::get(parentIndex))
+							Algorithms::swap(Base::get(extreme), Base::get(parentIndex));
+
+						index = extreme;
+					}
+				}
+			}
+			else {
+				while (true) {
+					INDEX extreme = index;
+
+					const INDEX leftIndex = left_of(index);
+					const INDEX rightIndex = right_of(index);
+					if (leftIndex < size && Base::get(leftIndex) < Base::get(extreme))
+						extreme = leftIndex;
+					if (rightIndex < size && Base::get(rightIndex) < Base::get(extreme))
+						extreme = rightIndex;
+					if (extreme == index)
+						return;
+
+					Algorithms::swap(Base::get(index), Base::get(extreme));
+					index = extreme;
+				}
+			}
+		}
+
+#pragma endregion
+
+#pragma region Extract & Insert
 
 		[[nodiscard]] constexpr bool can_extract() const noexcept {
 			return !Base::is_empty();
 		}
 
 		constexpr T extract()
-			noexcept (std::is_nothrow_swappable_v<T>)
+			noexcept (std::is_nothrow_move_constructible_v<T> && std::is_nothrow_swappable_v<T>)
 		{
-			const INDEX size = Base::get_size();
-
 			T root = std::move(Base::get(0));
+
+			const INDEX lastIndex = Base::get_size() - 1;
+			if (lastIndex != 0)
+				reconstruct_at(Base::get_data(), std::move(Base::get(lastIndex)));
+
 			destroy_at(Base::get_data());
 
-			if (size == 1) {
-				--Base::size;
-				return root;
-			}
-
-			swap(Base::get(0), Base::get(size - 1));
 			--Base::size;
-
-			heapify(0);
+			if (Base::get_size() != 0)
+				trickle_down(0);
 
 			return root;
-		}
-
-		constexpr void heapify(INDEX i)
-			noexcept (std::is_nothrow_swappable_v<T>)
-		{
-			const INDEX size = Base::get_size();
-
-			INDEX leftIndex = left_of(i);
-			INDEX rightIndex = right_of(i);
-			INDEX extremeIndex = i;
-
-			if constexpr (HEAP_TYPE == MAX_HEAP) {
-				if ((leftIndex < size) && (Base::get(leftIndex) > Base::get(extremeIndex)))
-					extremeIndex = leftIndex;
-				if ((rightIndex < size) && (Base::get(rightIndex) > Base::get(extremeIndex)))
-					extremeIndex = rightIndex;
-			}
-			else {
-				if ((leftIndex < size) && (Base::get(leftIndex) < Base::get(extremeIndex)))
-					extremeIndex = leftIndex;
-				if ((rightIndex < size) && (Base::get(rightIndex) < Base::get(extremeIndex)))
-					extremeIndex = rightIndex;
-			}
-
-			if (extremeIndex != i) {
-				swap(Base::get(i), Base::get(extremeIndex));
-				heapify(extremeIndex);
-			}
 		}
 
 		[[nodiscard]] constexpr bool can_insert(INDEX count = 1) const noexcept {

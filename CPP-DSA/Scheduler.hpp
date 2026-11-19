@@ -9,7 +9,7 @@ namespace DSA {
 	class StaticScheduler {
 	public:
 
-		using Callback = void (*)(ArgsType);
+		using OPERATION = void (*)(ArgsType);
 
 		struct TaskKey {
 
@@ -20,7 +20,7 @@ namespace DSA {
 
 		struct Task {
 
-			Callback callback;
+			OPERATION callback;
 			[[no_unique_address]] ArgsType args;
 
 		};
@@ -67,7 +67,7 @@ namespace DSA {
 			return deques[(frame_offset + frame_counter) % FRAMES].can_enqueue_back(count);
 		}
 
-		constexpr TaskKey schedule(Callback function, uint16_t frame_offset, ArgsType args = ArgsType{}) noexcept {
+		constexpr TaskKey schedule(OPERATION function, uint16_t frame_offset, ArgsType args = ArgsType{}) noexcept {
 			const uint16_t frame = (frame_offset + frame_counter) % FRAMES;
 			auto& deque = deques[frame];
 			const uint32_t index = deque.enqueue_back(Task{ function, args });
@@ -75,7 +75,7 @@ namespace DSA {
 			return TaskKey{ index, frame };
 		}
 
-		constexpr void schedule_at(Callback function, uint16_t frame, uint32_t index, ArgsType args = ArgsType{}) noexcept {
+		constexpr void schedule_at(OPERATION function, uint16_t frame, uint32_t index, ArgsType args = ArgsType{}) noexcept {
 			auto& deque = deques[frame];
 			deque.get(index) = Task{ function, args };
 			deque.track(index);
