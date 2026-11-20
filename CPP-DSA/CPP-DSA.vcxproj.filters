@@ -306,7 +306,7 @@
     <ClInclude Include="BumpArena.hpp">
       <Filter>Header Files\Arenas</Filter>
     </ClInclude>
-    <ClInclude Include="A.hpp">
+    <ClInclude Include="asdfqagfwq.hpp">
       <Filter>Header Files\Arbitrary</Filter>
     </ClInclude>
     <ClInclude Include="Test.hpp">
@@ -388,6 +388,12 @@
     </ClCompile>
     <ClCompile Include="Bounds2.hpp">
       <Filter>Header Files\General</Filter>
+    </ClCompile>
+    <ClCompile Include="Polygon.hpp">
+      <Filter>Header Files\General</Filter>
+    </ClCompile>
+    <ClCompile Include="Conversion.hpp">
+      <Filter>Header Files\Algorithms\Categories\Math</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

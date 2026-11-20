@@ -16,6 +16,8 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
+		constexpr static bool is_dynamic = Base::is_dynamic;
+
 	protected:
 
 #pragma region Properties
@@ -29,7 +31,10 @@ namespace DSA {
 
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
-		constexpr void helper_resize(INDEX newCapacity) {
+		constexpr void helper_resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base>)
+			requires is_dynamic
+		{
 			const INDEX capacity = Base::get_capacity();
 			const INDEX size = Base::get_size();
 
@@ -50,53 +55,45 @@ namespace DSA {
 			}
 			*/
 
-			T* const oldData = Base::get_data();
 			T* const newData = ALLOCATOR::allocate(newCapacity);
+			T* const oldData = Base::get_data();
+			const INDEX targetSize = Base::get_target_size();
 
-			INDEX targetSize;
-			if constexpr (RESIZE_OPERATION = ResizeOperation::GROW)
-				targetSize = size;
-			else
-				targetSize = Aggregation::minimum(size, newCapacity);
-
-			auto moveToNew = [&]() {
-				const INDEX firstChunk = Aggregation::minimum(targetSize, capacity - front);
-				move_construct_range<Direction::Forward, true, false>(newData, newData + firstChunk, oldData + front);
-				if (targetSize - firstChunk != 0) {
-					if constexpr (std::is_nothrow_move_constructible_v<T>)
-						move_construct_range<Direction::Forward, true, false>(newData + firstChunk, newData + targetSize, oldData);
-					else {
-						try {
-							move_construct_range<Direction::Forward, true, false>(newData + firstChunk, newData + targetSize, oldData);
-						}
-						catch (...) {
-							destroy_range(newData, newData + firstChunk);
-							throw;
-						}
-					}
-				}
-			};
-
-			if constexpr (std::is_nothrow_move_constructible_v<T>)
-				moveToNew();
+			const INDEX firstChunk = Aggregation::minimum(targetSize, capacity - front);
+			if constexpr (std::is_nothrow_move_constructible_v<T>) {
+				reconstruct_range<Direction::Forward, true, false>(newData, newData + firstChunk, oldData + front);
+				if (targetSize - firstChunk != 0)
+					reconstruct_range<Direction::Forward, true, false>(newData + firstChunk, newData + targetSize, oldData);
+			}
 			else {
 				try {
-					moveToNew();
+					move_construct_range<Direction::Forward, true, false>(newData, newData + firstChunk, oldData + front);
 				}
 				catch (...) {
 					ALLOCATOR::deallocate(newData);
 					throw;
 				}
-			}
 
-			if constexpr (!std::is_trivially_destructible_v<T>) {
-				const INDEX oldFirstChunk = Aggregation::minimum(size, capacity - front);
-				const INDEX oldSecondChunk = size - oldFirstChunk;
+				if (targetSize - firstChunk != 0) {
+					try {
+						move_construct_range<Direction::Forward, true, false>(newData + firstChunk, newData + targetSize, oldData);
+					}
+					catch (...) {
+						destroy_range(newData, newData + firstChunk);
+						ALLOCATOR::deallocate(newData);
+						throw;
+					}
+				}
 
-				if (oldSecondChunk != 0)
-					destroy_range<Direction::Backward>(oldData, oldData + oldSecondChunk);
+				if constexpr (!std::is_trivially_destructible_v<T>) {
+					const INDEX oldFirstChunk = Aggregation::minimum(size, capacity - front);
+					const INDEX oldSecondChunk = size - oldFirstChunk;
 
-				destroy_range<Direction::Backward>(oldData + front, oldData + front + oldFirstChunk);
+					if (oldSecondChunk != 0)
+						destroy_range<Direction::Backward>(oldData, oldData + oldSecondChunk);
+
+					destroy_range<Direction::Backward>(oldData + front, oldData + front + oldFirstChunk);
+				}
 			}
 
 			ALLOCATOR::deallocate(oldData);
@@ -374,7 +371,7 @@ namespace DSA {
 
 		constexpr void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(capacity << 1);
@@ -389,7 +386,7 @@ namespace DSA {
 
 		constexpr void expand(float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(Math::ceiling(capacity * ratio));
@@ -397,14 +394,14 @@ namespace DSA {
 
 		constexpr void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			helper_resize<ResizeOperation::GROW>(newCapacity);
 		}
 
 		constexpr void resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			if (newCapacity >= capacity)
@@ -415,7 +412,7 @@ namespace DSA {
 
 		constexpr void reserve(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
@@ -424,7 +421,7 @@ namespace DSA {
 
 		constexpr void shrink(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			helper_resize<ResizeOperation::SHRINK>(newCapacity);
 		}

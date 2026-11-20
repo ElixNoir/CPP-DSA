@@ -1,17 +1,15 @@
 
 #pragma once
 
-#include "BinaryTree.hpp"
-#include "KeyValuePair.hpp"
+#include "BinarySearchTree.hpp"
 
 namespace DSA {
 
 	namespace concepts {
 
 		template <typename T>
-		concept AVLTreeNode = BinaryTreeNode<T> && requires(T t) {
+		concept AVLTreeNode = BinarySearchTreeNode<T> && requires(T t) {
 
-			{ t.data } -> std::same_as<typename T::T>;
 			{ t.height } -> std::same_as<uint16_t>;
 
 		};
@@ -33,7 +31,7 @@ namespace DSA {
 #pragma region Properties
 
 		uint16_t height = 1;
-		KEY_VALUE_PAIR data;
+		KEY_VALUE_PAIR value;
 
 #pragma endregion
 
@@ -48,7 +46,7 @@ namespace DSA {
 
 		NODE_REFERENCE_TYPE parent;
 		uint16_t height = 1;
-		KEY_VALUE_PAIR data;
+		KEY_VALUE_PAIR value;
 
 #pragma endregion
 
@@ -262,13 +260,13 @@ namespace DSA {
 				if (index == Base::get_root() || index == invalid_index)
 					return invalid_index;
 
-				const KEY& key = Base::get(index).data.key;
+				const KEY& key = Base::get(index).value.key;
 				INDEX current = Base::get_root();
 				INDEX parent;
 				while (current != invalid_index && current != index) {
 					parent = current;
 					const T& node = Base::get(current);
-					current = key < node.data.key ? node.left : node.right;
+					current = key < node.value.key ? node.left : node.right;
 				}
 
 				return current == index ? parent : invalid_index;
@@ -288,14 +286,14 @@ namespace DSA {
 			while (current != invalid_index) {
 				parent = current;
 				const T& node = Base::get(current);
-				current = keyValuePair.key < node.data.key ? node.left : node.right;
+				current = keyValuePair.key < node.value.key ? node.left : node.right;
 			}
 
 			const INDEX newIndex = Base::allocate(std::forward<T>(keyValuePair));
 
 			if (parent == invalid_index)
 				Base::set_root(newIndex);
-			else if (Base::get(newIndex).data.key < Base::get(parent).data.key)
+			else if (Base::get(newIndex).value.key < Base::get(parent).value.key)
 				Base::get(parent).left = newIndex;
 			else
 				Base::get(parent).right = newIndex;
@@ -314,14 +312,14 @@ namespace DSA {
 			while (current != invalid_index) {
 				parent = current;
 				const T& node = Base::get(current);
-				current = keyValuePair.key < node.data.key ? node.left : node.right;
+				current = keyValuePair.key < node.value.key ? node.left : node.right;
 			}
 
 			const INDEX newIndex = Base::allocate(std::forward<T>(keyValuePair));
 
 			if (parent == invalid_index)
 				Base::set_root(newIndex);
-			else if (Base::get(newIndex).data.key < Base::get(parent).data.key)
+			else if (Base::get(newIndex).value.key < Base::get(parent).value.key)
 				Base::get(parent).left = newIndex;
 			else
 				Base::get(parent).right = newIndex;
@@ -490,7 +488,7 @@ namespace DSA {
 		[[nodiscard]] constexpr INDEX upsert(const T& keyValuePair) {
 			const INDEX existing_index = find(keyValuePair.key);
 			if (existing_index != invalid_index) {
-				Base::get(existing_index).data = keyValuePair;
+				Base::get(existing_index).value = keyValuePair;
 				return existing_index;
 			}
 
@@ -500,7 +498,7 @@ namespace DSA {
 		[[nodiscard]] constexpr INDEX upsert(T&& keyValuePair) {
 			const INDEX existing_index = find(keyValuePair.key);
 			if (existing_index != invalid_index) {
-				Base::get(existing_index).data = std::move(keyValuePair);
+				Base::get(existing_index).value = std::move(keyValuePair);
 				return existing_index;
 			}
 

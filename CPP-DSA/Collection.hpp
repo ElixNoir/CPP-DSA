@@ -69,6 +69,23 @@ namespace DSA {
 #pragma region Methods
 
 		template <ResizeOperation RESIZE_OPERATION>
+		[[nodiscard]] constexpr INDEX get_target_size(INDEX newCapacity) {
+			if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
+				return get_size();
+			else
+				return Aggregation::minimum(newCapacity, get_size());
+		}
+
+		template <ResizeOperation RESIZE_OPERATION>
+			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
+		constexpr void helper_resize(INDEX newCapacity)
+			noexcept (concepts::NothrowResizableStorage<Base>)
+			requires (is_dynamic && !is_offset)
+		{
+			resize_from_size<RESIZE_OPERATION>(newCapacity, Base::get_size());
+		}
+
+		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
 		constexpr void resize_from_size(INDEX newCapacity, INDEX size)
 			noexcept (concepts::NothrowResizableStorage<Base>)
@@ -87,7 +104,6 @@ namespace DSA {
 					reconstruct_range(newData, newData + size, oldData);
 				else {
 					reconstruct_range(newData, newData + newCapacity, oldData);
-					destroy_range<Direction::Backward>(oldData + newCapacity, oldData + size);
 					Base::set_size(newCapacity);
 				}
 			}
@@ -236,7 +252,7 @@ namespace DSA {
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
-			resize_from_size<ResizeOperation::GROW>(newCapacity, Base::get_size());
+			helper_resize<ResizeOperation::GROW>(newCapacity, Base::get_size());
 		}
 
 		constexpr void reserve(INDEX newCapacity)
@@ -264,7 +280,7 @@ namespace DSA {
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
-			resize_from_size<ResizeOperation::SHRINK>(newCapacity, Base::get_size());
+			helper_resize<ResizeOperation::SHRINK>(newCapacity, Base::get_size());
 		}
 
 		constexpr void shrink_to_fit()

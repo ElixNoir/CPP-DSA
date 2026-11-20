@@ -53,8 +53,8 @@
 #include "StackIterator.hpp"
 #include "Storage.hpp"
 #include "Swappable.hpp"
-
 #include "SWAR.hpp"
+
 #include "TrackedContainer.hpp"
 
 #include "Vector2.hpp"

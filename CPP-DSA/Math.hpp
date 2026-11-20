@@ -386,7 +386,7 @@ namespace Algorithms {
 					return -atan_approximate(-x);
 				if (x > 1.0)
 					return (Constants::pi / 2.0) - atan_approximate(1.0 / x);
-				atan_polynomial(x);
+				return atan_polynomial(x);
 			}
 
 		}

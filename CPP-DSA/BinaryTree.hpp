@@ -17,6 +17,15 @@ namespace DSA {
 
 		};
 
+		template <typename T>
+		concept BinaryTreeValueNode = requires(T t) {
+
+			typename T::T;
+
+			{ t.value } -> std::same_as<typename T::T>;
+
+		};
+
 	}
 
 	template <std::unsigned_integral _NODE_REFERENCE_TYPE = uint32_t>
@@ -28,6 +37,19 @@ namespace DSA {
 
 		NODE_REFERENCE_TYPE left;
 		NODE_REFERENCE_TYPE right;
+
+#pragma endregion
+
+	};
+
+	template <typename _T, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
+	struct BinaryTreeValueNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
+
+		using T = _T;
+
+#pragma region Properties
+
+		T value;
 
 #pragma endregion
 
@@ -74,22 +96,34 @@ namespace DSA {
 			return Base::can_add(count);
 		}
 
+		[[nodiscard]] constexpr INDEX allocate() noexcept {
+			INDEX index = free_root;
+			if (index != invalid_index)
+				free_root = right_of(index);
+			else
+				index = allocated_top++;
+
+			++Base::size;
+
+			return index;
+		}
+
 		template <typename... ARGUMENTS>
 		[[nodiscard]] constexpr INDEX allocate(ARGUMENTS&&... arguments)
 			noexcept (std::is_nothrow_constructible_v<T, ARGUMENTS&&...>)
+			requires concepts::BinaryTreeValueNode<T>
 		{
 			INDEX index = free_root;
 			if (index != invalid_index) {
 				T& node = Base::get(index);
-				construct_at(&node.data, std::forward<ARGUMENTS>(arguments)...);
+				construct_at(&node.value, std::forward<ARGUMENTS>(arguments)...);
 				free_root = node.right;
 				node.left = invalid_index;
 				node.right = invalid_index;
 			}
 			else {
 				T& node = Base::get(allocated_top);
-				construct_at(&node.data, std::forward<ARGUMENTS>(arguments)...);
-				free_root = node.right;
+				construct_at(&node.value, std::forward<ARGUMENTS>(arguments)...);
 				index = allocated_top++;
 				node.left = invalid_index;
 				node.right = invalid_index;
@@ -106,7 +140,8 @@ namespace DSA {
 
 		constexpr void deallocate(INDEX index) noexcept {
 			T& node = Base::get(index);
-			destroy_at(&node.key_value_pair);
+			if constexpr (concepts::BinaryTreeValueNode<T>)
+				destroy_at(&node.value);
 			node.right = free_root;
 			free_root = index;
 			--Base::size;
@@ -121,45 +156,86 @@ namespace DSA {
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
-			if constexpr (std::is_trivially_move_constructible_v<T> && IS_DENSE) {
-				Base::resize_from_size(newCapacity, Base::get_allocated_top());
+			if constexpr (std::is_trivially_copyable_v<T> && IS_DENSE) {
+				Base::resize_from_size<RESIZE_OPERATION>(newCapacity, get_allocated_top());
 				return;
 			}
 
-			T* const oldData = Base::get_data();
 			T* const newData = ALLOCATOR::allocate(newCapacity);
+			T* const oldData = Base::get_data();
+			const INDEX targetSize = Base::get_target_size();
 
-			const INDEX newSize = Aggregation::minimum(newCapacity, Base::get_size());
-			const INDEX root = Base::get_root();
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
-				Base::pre_order([](INDEX index) {
-					reconstruct_at(newData + index, std::move(Base::get(index)));
-				}, root);
+				INDEX count = targetSize;
+				if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK) {
+					pre_order([](INDEX index) -> bool {
+						if (count == 0)
+							return false;
+						reconstruct_at(newData + index, std::move(Base::get(index)));
+						--count;
+						return true;
+					}, root);
+				}
+				else {
+					pre_order([](INDEX index) {
+						reconstruct_at(newData + index, std::move(Base::get(index)));
+					}, root);
+				}
 			}
 			else {
-				try {
-					Base::pre_order([](INDEX index) {
-						move_construct_at(newData + index, std::move(Base::get(index)));
+				INDEX count = targetSize;
+				if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK) {
+					try {
+						pre_order([](INDEX index) -> bool {
+							if (count == 0)
+								return false;
+							move_construct_at(newData + index, std::move(Base::get(index)));
+							--count;
+							return true;
 						}, root);
-				}
-				catch (...) {
-					Base::post_order([](INDEX index) {
-						destroy_at(newData + index);
+					}
+					catch (...) {
+						post_order([](INDEX index) -> bool {
+							if (count == targetSize)
+								return false;
+							destroy_at(newData + index);
+							++count;
+							return true;
 						}, root);
 
-					ALLOCATOR::deallocate(newData);
-					throw;
+						ALLOCATOR::deallocate(newData);
+						throw;
+					}
+				}
+				else {
+					try {
+						pre_order([](INDEX index) {
+							move_construct_at(newData + index, std::move(Base::get(index)));
+						}, root);
+					}
+					catch (...) {
+						post_order([](INDEX index) {
+							destroy_at(newData + index);
+						}, root);
+
+						ALLOCATOR::deallocate(newData);
+						throw;
+					}
 				}
 
-				Base::post_order([](INDEX index) {
-					destroy_at(oldData + index);
-				}, root);
+				if constexpr (!std::is_trivially_destructible_v<T>) {
+					post_order([](INDEX index) {
+						destroy_at(oldData + index);
+					}, root);
+				}
 			}
 
 			ALLOCATOR::deallocate(oldData);
 
 			Base::set_capacity(newCapacity);
 			Base::set_data(newData);
+			if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK)
+				Base::set_size(targetSize);
 		}
 
 #pragma endregion
@@ -182,7 +258,7 @@ namespace DSA {
 
 		constexpr void destroy() noexcept {
 			if constexpr (!std::is_trivially_destructible_v<T>) {
-				Base::post_order([](INDEX index) {
+				post_order([](INDEX index) {
 					destroy_at(Base::get_data() + index);
 				}, root);
 			}
@@ -235,6 +311,20 @@ namespace DSA {
 
 		[[nodiscard]] constexpr INDEX get_allocated_top() const noexcept {
 			return allocated_top;
+		}
+
+		[[nodiscard]] constexpr INDEX left_of(INDEX index) const noexcept {
+			return Base::get(index).left;
+		}
+
+		[[nodiscard]] constexpr INDEX right_of(INDEX index) const noexcept {
+			return Base::get(index).right;
+		}
+
+		[[nodiscard]] constexpr auto value_of(INDEX index) const noexcept
+			requires concepts::BinaryTreeValueNode<T>
+		{
+			return Base::get(index).value;
 		}
 
 #pragma endregion
@@ -303,16 +393,16 @@ namespace DSA {
 
 #pragma region Setters
 
+		constexpr void set_allocated_top(INDEX newAllocatedTop) noexcept {
+			allocated_top = newAllocatedTop;
+		}
+
 		constexpr void set_root(INDEX newRoot) noexcept {
 			root = newRoot;
 		}
 
 		constexpr void set_free_root(INDEX newFreeRoot) noexcept {
 			free_root = newFreeRoot;
-		}
-
-		constexpr void set_allocated_top(INDEX newFreeTop) noexcept {
-			allocated_top = newFreeTop;
 		}
 
 #pragma endregion
@@ -327,10 +417,11 @@ namespace DSA {
 				return;
 
 			T& node = Base::get(index);
+			const INDEX rightIndex = node.right;
 
 			in_order(operation, node.left);
 			std::invoke(operation, index);
-			in_order(operation, node.right);
+			in_order(operation, rightIndex);
 		}
 
 		template <std::predicate<INDEX> PREDICATE>
@@ -341,14 +432,14 @@ namespace DSA {
 				return true;
 
 			T& node = Base::get(index);
+			const INDEX rightIndex = node.right;
 
 			if (!in_order(predicate, node.left))
 				return false;
-
 			if (!std::invoke(predicate, index))
 				return false;
 
-			return in_order(predicate, node.right);
+			return in_order(predicate, rightIndex);
 		}
 
 		template <std::invocable<INDEX> OPERATION>
@@ -376,7 +467,6 @@ namespace DSA {
 
 			if (!post_order(predicate, node.left))
 				return false;
-
 			if (!post_order(predicate, node.right))
 				return false;
 
@@ -391,10 +481,12 @@ namespace DSA {
 				return;
 
 			T& node = Base::get(index);
+			const INDEX leftIndex = node.left;
+			const INDEX rightIndex = node.right;
 
 			std::invoke(operation, index);
-			in_order(operation, node.left);
-			in_order(operation, node.right);
+			in_order(operation, leftIndex);
+			in_order(operation, rightIndex);
 		}
 
 		template <std::predicate<INDEX> PREDICATE>
@@ -405,14 +497,15 @@ namespace DSA {
 				return true;
 
 			T& node = Base::get(index);
+			const INDEX leftIndex = node.left;
+			const INDEX rightIndex = node.right;
 
 			if (!std::invoke(predicate, index))
 				return false;
-
-			if (!pre_order(predicate, node.left))
+			if (!pre_order(predicate, leftIndex))
 				return false;
 
-			return pre_order(predicate, node.right);
+			return pre_order(predicate, rightIndex);
 		}
 
 #pragma endregion

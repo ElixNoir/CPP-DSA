@@ -9,26 +9,12 @@ namespace DSA {
 	namespace concepts {
 
 		template <typename T>
-		concept BinarySearchTreeNode = BinaryTreeNode<T> && requires(T t) {
-
-			{ t.data } -> std::same_as<typename T::T>;
-
-		};
+		concept BinarySearchTreeNode = BinaryTreeValueNode<T>;
 
 	}
 
 	template <concepts::KeyValuePair KEY_VALUE_PAIR, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
-	struct BinarySearchTreeNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
-
-		using T = KEY_VALUE_PAIR;
-
-#pragma region Properties
-
-		KEY_VALUE_PAIR data;
-
-#pragma endregion
-
-	};
+	using BinarySearchTreeNode = BinaryTreeValueNode<KEY_VALUE_PAIR, NODE_REFERENCE_TYPE>;
 
 	template <concepts::ContainerPolicy ContainerPolicy, concepts::KeyValuePair KEY_VALUE_PAIR>
 		requires std::is_nothrow_destructible_v<KEY_VALUE_PAIR>
@@ -66,18 +52,6 @@ namespace DSA {
 			return add(keyValuePair, root);
 		}
 
-		[[nodiscard]] constexpr INDEX add(T&& keyValuePair)
-			noexcept (std::is_nothrow_move_constructible_v<T>)
-		{
-			const INDEX root = Base::get_root();
-			if (root == invalid_index) {
-				root = Base::allocate(std::move(keyValuePair));
-				return root;
-			}
-
-			return add(std::move(keyValuePair), root);
-		}
-
 		[[nodiscard]] constexpr INDEX add(const T& keyValuePair, INDEX rootIndex)
 			noexcept (std::is_nothrow_copy_constructible_v<T>)
 		{
@@ -90,6 +64,18 @@ namespace DSA {
 				parent.right = newIndex;
 
 			return newIndex;
+		}
+
+		[[nodiscard]] constexpr INDEX add(T&& keyValuePair)
+			noexcept (std::is_nothrow_move_constructible_v<T>)
+		{
+			const INDEX root = Base::get_root();
+			if (root == invalid_index) {
+				root = Base::allocate(std::move(keyValuePair));
+				return root;
+			}
+
+			return add(std::move(keyValuePair), root);
 		}
 
 		[[nodiscard]] constexpr INDEX add(T&& keyValuePair, INDEX rootIndex)
@@ -163,9 +149,9 @@ namespace DSA {
 			INDEX candidate = rootIndex;
 			while (rootIndex != invalid_index) {
 				const T& node = Base::get(rootIndex);
-				if (key == node.key_value_pair.key)
+				if (key == node.value.key)
 					return rootIndex;
-				else if (key > node.key_value_pair.key) {
+				else if (key > node.value.key) {
 					candidate = rootIndex;
 					rootIndex = node.right;
 				}
@@ -183,9 +169,9 @@ namespace DSA {
 		[[nodiscard]] constexpr INDEX find(const KEY& key, INDEX rootIndex) const noexcept {
 			while (rootIndex != invalid_index) {
 				const T& node = Base::get(rootIndex);
-				if (node.key_value_pair.key == key)
+				if (node.value.key == key)
 					return rootIndex;
-				rootIndex = (node.key_value_pair.key > key) ? node.left : node.right;
+				rootIndex = (node.value.key > key) ? node.left : node.right;
 			}
 
 			return invalid_index;
@@ -200,7 +186,7 @@ namespace DSA {
 			while (rootIndex != invalid_index) {
 				const T& node = Base::get(rootIndex);
 				parentIndex = rootIndex;
-				if (key <= node.key_value_pair.key)
+				if (key <= node.value.key)
 					rootIndex = node.left;
 				else
 					rootIndex = node.right;
@@ -217,9 +203,9 @@ namespace DSA {
 			INDEX candidateIndex = rootIndex;
 			while (rootIndex != invalid_index) {
 				const T& node = Base::get(rootIndex);
-				if (key == node.key_value_pair.key)
+				if (key == node.value.key)
 					return rootIndex;
-				else if (key < node.key_value_pair.key) {
+				else if (key < node.value.key) {
 					candidateIndex = rootIndex;
 					rootIndex = node.left;
 				}
@@ -267,9 +253,9 @@ namespace DSA {
 
 			while (true) {
 				T& node = Base::get(index);
-				KEY& currentKey = node.key_value_pair.key;
+				KEY& currentKey = node.value.key;
 				if (currentKey == keyValuePair.key) {
-					node.key_value_pair.data = keyValuePair.data;
+					node.value.value = keyValuePair.value;
 					return index;
 				}
 				else if (currentKey > keyValuePair.key) {
@@ -277,7 +263,7 @@ namespace DSA {
 					if (leftIndex != invalid_index)
 						index = leftIndex;
 					else {
-						INDEX newIndex = allocate(keyValuePair);
+						INDEX newIndex = Base::allocate(keyValuePair);
 						node.left = newIndex;
 						return newIndex;
 					}
@@ -287,7 +273,7 @@ namespace DSA {
 					if (rightIndex != invalid_index)
 						index = rightIndex;
 					else {
-						INDEX newIndex = allocate(keyValuePair);
+						INDEX newIndex = Base::allocate(keyValuePair);
 						node.right = newIndex;
 						return newIndex;
 					}
@@ -308,9 +294,9 @@ namespace DSA {
 
 			while (true) {
 				T& node = Base::get(index);
-				KEY& currentKey = node.key_value_pair.key;
+				KEY& currentKey = node.value.key;
 				if (currentKey == keyValuePair.key) {
-					node.key_value_pair.data = keyValuePair.data;
+					node.value.value = keyValuePair.value;
 					return index;
 				}
 				else if (currentKey > keyValuePair.key) {
@@ -318,7 +304,7 @@ namespace DSA {
 					if (leftIndex != invalid_index)
 						index = leftIndex;
 					else {
-						INDEX newIndex = allocate(std::move(keyValuePair));
+						INDEX newIndex = Base::allocate(std::move(keyValuePair));
 						node.left = newIndex;
 						return newIndex;
 					}
@@ -328,7 +314,7 @@ namespace DSA {
 					if (rightIndex != invalid_index)
 						index = rightIndex;
 					else {
-						INDEX newIndex = allocate(std::move(keyValuePair));
+						INDEX newIndex = Base::allocate(std::move(keyValuePair));
 						node.right = newIndex;
 						return newIndex;
 					}

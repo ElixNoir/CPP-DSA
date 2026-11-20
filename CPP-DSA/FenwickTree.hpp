@@ -34,7 +34,7 @@ namespace DSA {
 			}
 		}
 
-		template <concepts::InputIterator ITERATOR>
+		template <concepts::InputIterator<T> ITERATOR>
 		FenwickTree(ITERATOR iterator, INDEX count) noexcept : Base(count) {
 			Base::zero();
 			for (INDEX index = 0; index < count; ++index) {
@@ -45,7 +45,7 @@ namespace DSA {
 			}
 		}
 
-		template <concepts::InputIterator ITERATOR>
+		template <concepts::InputIterator<T> ITERATOR>
 		constexpr void build(ITERATOR iterator) {
 			const INDEX size = Base::get_size();
 

@@ -43,8 +43,8 @@ namespace DSA {
 
 	protected:
 
-		Bitset<ContainerPolicy> leaves;
 		INDEX rootIndex = invalid_index;
+		Bitset<ContainerPolicy> leaves;
 
 	public:
 

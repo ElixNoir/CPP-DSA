@@ -79,6 +79,14 @@ namespace DSA {
 #pragma region Methods
 
 			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
+			constexpr void helper_resize(INDEX newCapacity)
+				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
+				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
+			{
+				resize_from_capacity(newCapacity, Base::get_capacity());
+			}
+
+			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
 			constexpr void resize_from_capacity(INDEX newCapacity, INDEX capacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
@@ -199,7 +207,7 @@ namespace DSA {
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				resize<ResizeOperation::GROW>(newCapacity);
+				helper_resize<ResizeOperation::GROW>(newCapacity);
 			}
 
 			constexpr void no_move_resize(INDEX newCapacity)
@@ -227,14 +235,14 @@ namespace DSA {
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				resize_from_capacity<RESIZE_OPERATION>(newCapacity, get_capacity());
+				helper_resize<RESIZE_OPERATION>(newCapacity);
 			}
 
 			constexpr void shrink(INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				resize<ResizeOperation::SHRINK>(newCapacity);
+				helper_resize<ResizeOperation::SHRINK>(newCapacity);
 			}
 
 #pragma endregion

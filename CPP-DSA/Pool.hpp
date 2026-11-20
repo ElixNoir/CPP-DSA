@@ -7,25 +7,28 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy, typename T>
+	template <concepts::ContainerPolicy ContainerPolicy, typename T>
 		requires std::is_nothrow_destructible_v<T>
-	class Pool : public Collection<StoragePolicy, T> {
+	class Pool : public Collection<ContainerPolicy, T> {
 	public:
 
-		using Base = Collection<StoragePolicy, T>;
+		using Base = Collection<ContainerPolicy, T>;
+		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using BitsetPolicy = std::conditional_t<
-			concepts::DynamicStoragePolicy<StoragePolicy>,
-			HeapStoragePolicy<INDEX, typename StoragePolicy::ALLOCATOR_TEMPLATE>,
-			InlineStoragePolicy<((StoragePolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
+			concepts::DynamicStoragePolicy<ContainerPolicy>,
+			HeapStoragePolicy<INDEX, typename ContainerPolicy::ALLOCATOR_TEMPLATE>,
+			InlineStoragePolicy<((ContainerPolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
 		>;
+
+		constexpr static bool is_dynamic = Base::is_dynamic;
 
 	protected:
 
 		INDEX allocated_top = 0;
-		Stack<StoragePolicy, INDEX> free_stack;
+		Stack<ContainerPolicy, INDEX> free_stack;
 
 #pragma region Methods
 
@@ -33,10 +36,10 @@ namespace DSA {
 			requires (!std::is_trivially_destructible_v<T>)
 		{
 			const INDEX capacity = Base::get_capacity();
-			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
+			const INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
 
 			Bitset<BitsetPolicy> bitset;
-			if constexpr (concepts::DynamicStorage<Base>) {
+			if constexpr (is_dynamic) {
 				if constexpr (concepts::NothrowResizableStorage<Base>)
 					bitset = Bitset<BitsetPolicy>(bitsetCapacity);
 				else {
@@ -63,7 +66,7 @@ namespace DSA {
 					}
 				}
 			}
-			bitset.zero_raw(capacity);
+			bitset.zero();
 
 			for (INDEX index : free_stack)
 				bitset.set_bit_at(index);
@@ -77,70 +80,75 @@ namespace DSA {
 			}
 		}
 
+		template <ResizeOperation RESIZE_OPERATION>
+			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
 		void helper_resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
-			using ALLOCATOR = Base::ALLOCATOR;
-
 			free_stack.grow(newCapacity);
 			
 			const INDEX capacity = Base::get_capacity();
-			constexpr INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
-
-			Bitset<BitsetPolicy> bitset(bitsetCapacity);
-			bitset.zero_raw(capacity);
-
+			const INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
 			const INDEX size = Base::get_size();
 
-			bitset.zero_raw(capacity);
+			Bitset<BitsetPolicy> bitset(bitsetCapacity);
+			bitset.zero();
 			for (INDEX index : free_stack)
 				bitset.set_bit_at(index);
 
 			T* const oldData = Base::get_data();
 			T* const newData = ALLOCATOR::allocate(newCapacity);
+			const INDEX targetSize = Base::get_target_size();
 
-			INDEX count = size;
-
-			try {
-				for (INDEX index : bitset.zeros(bitsetCapacity)) {
+			INDEX count = targetSize;
+			if constexpr (std::is_nothrow_move_constructible_v<T>) {
+				for (INDEX index : bitset.zeros()) {
 					if (count == 0)
 						break;
-					move_construct_at(newData + index, std::move(oldData[index]));
+					reconstruct_at(newData + index, std::move(oldData[index]));
 					--count;
 				}
 			}
-			catch (...) {
+			else {
+				try {
+					for (INDEX index : bitset.zeros()) {
+						if (count == 0)
+							break;
+						move_construct_at(newData + index, std::move(oldData[index]));
+						--count;
+					}
+				}
+				catch (...) {
+					if constexpr (!std::is_trivially_destructible_v<T>) {
+						for (INDEX index : bitset.zeros()) {
+							if (count == size)
+								break;
+							destroy_at(newData + index);
+							++count;
+						}
+					}
+
+					ALLOCATOR::deallocate(newData);
+					throw;
+				}
+
 				if constexpr (!std::is_trivially_destructible_v<T>) {
-					for (INDEX index : bitset.zeros(bitsetCapacity)) {
+					for (INDEX index : bitset.zeros()) {
 						if (count == size)
 							break;
-						destroy_at(newData + index);
+						destroy_at(oldData + index);
 						++count;
 					}
 				}
-
-				ALLOCATOR::deallocate(newData);
-
-				throw;
 			}
-
-			if constexpr (!std::is_trivially_destructible_v<T>) {
-				for (INDEX index : bitset.zeros(bitsetCapacity)) {
-					if (count == size)
-						break;
-					destroy_at(oldData + index);
-					++count;
-				}
-			}
-
-			bitset.destroy(bitsetCapacity);
 
 			ALLOCATOR::deallocate(oldData);
 
+			Base::set_capacity(newCapacity);
 			Base::set_data(newData);
-			if (concepts::HasMutableCapacity<Base>)
-				Base::set_capacity(newCapacity);
+			if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK)
+				Base::set_size(targetSize);
 		}
 
 #pragma endregion
@@ -273,7 +281,7 @@ namespace DSA {
 
 		void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(capacity << 1, capacity);
@@ -281,7 +289,7 @@ namespace DSA {
 
 		void expand(float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(Math::ceiling(capacity * ratio), capacity);
@@ -298,14 +306,14 @@ namespace DSA {
 
 		void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			helper_resize(newCapacity, capacity);
 		}
 
 		void reserve(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
