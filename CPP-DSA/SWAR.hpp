@@ -59,12 +59,22 @@ struct swar8x8 {
 		return ((data & ~msbon) + (other.data & ~msbon)) ^ ((data ^ other.data) & msbon);
 	}
 
+	[[nodiscard]] constexpr Self add_saturated(Self other) const noexcept {
+		const T sum = data + other.data;
+		return (sum < data) ? 0xFF : sum;
+	}
+
 	[[nodiscard]] constexpr Self sub(Self other) const noexcept {
 		return data - other.data;
 	}
 
 	[[nodiscard]] constexpr Self sub_no_overflow(Self other) const noexcept {
 		return Self{ ((data | msbon) - (other.data & ~msbon)) ^ ((data ^ ~other.data) & msbon) };
+	}
+
+	[[nodiscard]] constexpr Self sub_saturated(Self other) const noexcept {
+		const T sum = data - other.data;
+		return (sum > data) ? 0xFF : sum;
 	}
 
 #pragma endregion
@@ -164,12 +174,22 @@ struct swar16x4 {
 		return ((data & ~msbon) + (other.data & ~msbon)) ^ ((data ^ other.data) & msbon);
 	}
 
+	[[nodiscard]] constexpr Self add_saturated() const noexcept {
+		const T sum = data + other.data;
+		return (sum < data) ? 0xFFFF : sum;
+	}
+
 	[[nodiscard]] constexpr Self sub(Self other) const noexcept {
 		return data - other.data;
 	}
 
 	[[nodiscard]] constexpr Self sub_no_overflow(Self other) const noexcept {
 		return Self{ ((data | msbon) - (other.data & ~msbon)) ^ ((data ^ ~other.data) & msbon) };
+	}
+
+	[[nodiscard]] constexpr Self sub_saturated() const noexcept {
+		const T sum = data - other.data;
+		return (sum > data) ? 0xFFFF : sum;
 	}
 
 #pragma endregion
