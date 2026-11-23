@@ -291,7 +291,7 @@ namespace DSA {
 #pragma region Add & Remove
 
 		[[nodiscard]] constexpr INDEX add(const T::T& value)
-			noexcept (concepts::is_nothrow_copyable_v<T>&& concepts::is_nothrow_moveable_v<T>)
+			noexcept (concepts::is_nothrow_copyable_v<T>)
 			requires concepts::LinkedValueNode<T>
 		{
 			const INDEX index = allocate(value);
@@ -341,7 +341,29 @@ namespace DSA {
 
 #pragma endregion
 
-#pragma region Prepend & Pop
+#pragma region Append, Pop, & Prepend
+
+		[[nodiscard]] constexpr INDEX append_to(const T::T& value, const INDEX index)
+			noexcept (concepts::is_nothrow_copyable_v<T>)
+			requires concepts::LinkedValueNode<T>
+		{
+			const INDEX newIndex = allocate(value);
+			const INDEX nextIndex = next_of(index);
+			Base::get(newIndex).next = nextIndex;
+			Base::get(index).next = newIndex;
+			return newIndex;
+		}
+
+		[[nodiscard]] constexpr INDEX append_to(T::T&& value, const INDEX index)
+			noexcept (concepts::is_nothrow_moveable_v<T>)
+			requires concepts::LinkedValueNode<T>
+		{
+			const INDEX newIndex = allocate(std::move(value));
+			const INDEX nextIndex = next_of(index);
+			Base::get(newIndex).next = nextIndex;
+			Base::get(index).next = newIndex;
+			return newIndex;
+		}
 
 		[[nodiscard]] constexpr INDEX prepend(const T::T& value)
 			noexcept (concepts::is_nothrow_moveable_v<T>)
@@ -399,28 +421,28 @@ namespace DSA {
 #pragma region Iteration
 
 		/*
-		constexpr StackIterator<T> begin() noexcept {
-			return StackIterator<T>(Base::get_data());
+		constexpr Iterator<T> begin() noexcept {
+			return Iterator<T>(Base::get_data());
 		}
 
-		constexpr StackIterator<const T> begin() const noexcept {
-			return StackIterator<const T>(Base::get_data());
+		constexpr Iterator<const T> begin() const noexcept {
+			return Iterator<const T>(Base::get_data());
 		}
 
-		constexpr StackIterator<T> end() noexcept {
-			return StackIterator<T>(Base::get_data() + Base::get_size());
+		constexpr Iterator<T> end() noexcept {
+			return Iterator<T>(Base::get_data() + Base::get_size());
 		}
 
-		constexpr StackIterator<const T> end() const noexcept {
-			return StackIterator<const T>(Base::get_data() + Base::get_size());
+		constexpr Iterator<const T> end() const noexcept {
+			return Iterator<const T>(Base::get_data() + Base::get_size());
 		}
 
-		constexpr StackIterator<T> iterator_at(INDEX index) noexcept {
-			return StackIterator<T>(Base::get_data() + index);
+		constexpr Iterator<T> iterator_at(INDEX index) noexcept {
+			return Iterator<T>(Base::get_data() + index);
 		}
 
-		constexpr StackIterator<const T> iterator_at(INDEX index) const noexcept {
-			return StackIterator<const T>(Base::get_data() + index);
+		constexpr Iterator<const T> iterator_at(INDEX index) const noexcept {
+			return Iterator<const T>(Base::get_data() + index);
 		}
 		*/
 
@@ -531,6 +553,8 @@ namespace DSA {
 
 				current = nextIndex;
 			}
+
+			return invalid_index;
 		}
 
 #pragma endregion
