@@ -9,8 +9,7 @@ namespace DSA {
 
 		struct SteadyState {
 
-			T pi1;
-			T pi2;
+			T pi1, pi2;
 
 			friend std::ostream& operator<<(std::ostream& ostream, const SteadyState t) {
 				ostream << '{' << t.pi1 << ", " << t.pi2 << '}';

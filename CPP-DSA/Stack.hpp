@@ -5,12 +5,12 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class Stack : public Collection<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class Stack : public Collection<ContainerPolicy, T_> {
 	public:
 
-		using Base = Collection<ContainerPolicy, T>;
+		using Base = Collection<ContainerPolicy, T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -117,7 +117,7 @@ namespace DSA {
 			return data;
 		}
 
-		[[nodiscard]] constexpr void pop_many(T* destination, INDEX count) 
+		constexpr void pop_many(T* destination, INDEX count)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			T* const address = Base::get_data() + Base::get_size() - count;

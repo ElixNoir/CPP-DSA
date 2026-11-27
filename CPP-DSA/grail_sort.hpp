@@ -294,9 +294,9 @@ namespace Algorithms {
             T* keys,
             T* midkey,
             T* data,
-            size_t block_count,
+            const size_t block_count,
             size_t block_length,
-            size_t second_stream_blocks,
+            const size_t second_stream_blocks,
             size_t last_block_length
         ) noexcept {
             if (!block_count) {
@@ -310,12 +310,10 @@ namespace Algorithms {
 
             size_t position = block_length;
 
-            for (size_t T = 1; T < block_count; ++T) {
+            for (size_t i = 1; i < block_count; ++i) {
                 size_t start = position - remaining;
 
-                const bool next_stream = compare<ASCENDING>(keys[T], *midkey);
-
-                if (next_stream == stream) {
+                if (const bool next_stream = compare<ASCENDING>(keys[i], *midkey); next_stream == stream) {
                     swap_many(
                         data + start - block_length,
                         data + start,

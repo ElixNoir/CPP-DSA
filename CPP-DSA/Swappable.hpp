@@ -2,18 +2,14 @@
 
 #include <concepts>
 
-namespace DSA {
+namespace DSA::concepts {
 
-	namespace concepts {
+	template <typename T>
+	concept Swappable = requires(T& t, T& other) {
 
-		template <typename T>
-		concept Swappable = requires(T& t, T& other) {
+		{ t.swap(other) };
 
-			{ t.swap(other) };
-
-		};
-
-	}
+	};
 
 }
 

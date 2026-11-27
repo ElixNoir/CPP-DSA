@@ -16,7 +16,7 @@ namespace Constants {
 	constexpr static double natural_logarithm_of_2 = 0.693147180559945;
 	constexpr static double squared_natural_logarithm_of_2 = 0.480453013918201;
 	
-	constexpr static double pies = Constants::pi * 2;
+	constexpr static double pies = pi * 2.0;
 	constexpr static double square_root_of_pi = 1.772453850905516;
 
 	constexpr static double inverse_square_root_of_2 = 0.7071067811865475;
@@ -25,7 +25,7 @@ namespace Constants {
 	constexpr static double square_root_of_3 = 1.7320508075688772;
 	constexpr static double square_root_of_5 = 2.23606797749979;
 
-	const static uint64_t Factorials[] = {
+	constexpr static uint64_t Factorials[] = {
 		1, 1, 2, 6, 24, 120, 720, 5040, 40320,
 		362880, 3628800, 39916800, 479001600,
 		6227020800, 87178291200, 1307674368000,

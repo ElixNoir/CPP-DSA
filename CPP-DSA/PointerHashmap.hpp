@@ -6,15 +6,13 @@
 #include "hash.hpp"
 #include "Math.hpp"
 
-#include <iostream>
-
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename _T>
-	class PointerHashmap : public Collection<ContainerPolicy, _T*> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+	class PointerHashmap : public Collection<ContainerPolicy, T_*> {
 	public:
 
-		using Base = Collection<ContainerPolicy, _T*>;
+		using Base = Collection<ContainerPolicy, T_*>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -23,7 +21,7 @@ namespace DSA {
 
 		using BitsetPolicy = std::conditional_t<
 			concepts::DynamicStoragePolicy<ContainerPolicy>,
-			HeapStoragePolicy<INDEX, typename ContainerPolicy::ALLOCATOR_TEMPLATE>,
+			HeapStoragePolicy<INDEX, ContainerPolicy::template ALLOCATOR_TEMPLATE>,
 			InlineStoragePolicy<((ContainerPolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
 		>;
 
@@ -139,9 +137,9 @@ namespace DSA {
 			const INDEX begin = Algorithms::hash_pointer(key) % capacity;
 
 			// the first zero bit is guaranteed to be either deleted or empty
-			INDEX index = key_states.find_first_bit_at_or_after<true>(begin);//, { capacity });
+			INDEX index = key_states.template find_first_bit_at_or_after<true>(begin);//, { capacity });
 			if (index == capacity) // if no zero bit was found...
-				index = key_states.find_first_bit<true>(0, begin >> Bitmask<>::bit_shift); // wrap around
+				index = key_states.template find_first_bit<true>(0, begin >> Bitmask<>::bit_shift); // wrap around
 
 			return index;
 		}

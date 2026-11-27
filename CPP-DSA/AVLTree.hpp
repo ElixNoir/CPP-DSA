@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "BinarySearchTree.hpp"
@@ -62,8 +61,8 @@ namespace DSA {
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		using KEY = typename T::KEY;
-		using VALUE = typename T::VALUE;
+		using KEY = T::KEY;
+		using VALUE = T::VALUE;
 
 		constexpr static INDEX invalid_index = Base::invalid_index;
 
@@ -73,7 +72,7 @@ namespace DSA {
 
 #pragma region Helpers
 
-		constexpr void replace_child(INDEX parent, INDEX oldChild, INDEX newChild) noexcept {
+		constexpr void replace_child(const INDEX parent, const INDEX oldChild, const INDEX newChild) noexcept {
 			if (parent == invalid_index)
 				Base::set_root(newChild);
 			else if (Base::get(parent).left == oldChild)
@@ -89,26 +88,24 @@ namespace DSA {
 
 #pragma region Rebalancing
 
-		[[nodiscard]] constexpr int32_t balance_factor(INDEX index) const noexcept {
+		[[nodiscard]] constexpr int32_t balance_factor(const INDEX index) const noexcept {
 			const T& node = Base::get(index);
 			return static_cast<int32_t>(height_of(node.left)) - static_cast<int32_t>(height_of(node.right));
 		}
 
-		[[nodiscard]] constexpr INDEX rebalance(INDEX index) noexcept {
+		[[nodiscard]] constexpr INDEX rebalance(const INDEX index) noexcept {
 			update_height(index);
 
 			const T& node = Base::get(index);
 			const int32_t balance = balance_factor(index);
 			if (balance > 1) {
-				const INDEX left_index = node.left;
-				if (balance_factor(left_index) < 0)
+				if (const INDEX left_index = node.left; balance_factor(left_index) < 0)
 					node.left = rotate_left(left_index);
 
 				return rotate_right(index);
 			}
 			if (balance < -1) {
-				const INDEX right_index = node.right;
-				if (balance_factor(right_index) > 0)
+				if (const INDEX right_index = node.right; balance_factor(right_index) > 0)
 					node.right = rotate_right(right_index);
 
 				return rotate_left(index);
@@ -117,7 +114,7 @@ namespace DSA {
 			return index;
 		}
 
-		constexpr void rebalance_upward(INDEX index) noexcept {
+		constexpr void rebalance_upward(const INDEX index) noexcept {
 			if constexpr (concepts::ParentedAVLTreeNode<T>) {
 				while (index != invalid_index)
 					index = parent_of(rebalance(index));
@@ -143,14 +140,14 @@ namespace DSA {
 
 #pragma region Rotation
 
-		constexpr void update_height(INDEX index) noexcept {
+		constexpr void update_height(const INDEX index) noexcept {
 			T& node = Base::get(index);
 			const uint16_t left_height = height_of(node.left);
 			const uint16_t right_height = height_of(node.right);
 			node.height = 1 + (left_height > right_height ? left_height : right_height);
 		}
 
-		[[nodiscard]] constexpr INDEX rotate_left(INDEX index) noexcept {
+		[[nodiscard]] constexpr INDEX rotate_left(const INDEX index) noexcept {
 			if constexpr (concepts::ParentedAVLTreeNode<T>) {
 				T& node = Base::get(index);
 				const INDEX parent = node.parent;
@@ -189,7 +186,7 @@ namespace DSA {
 			}
 		}
 
-		[[nodiscard]] constexpr INDEX rotate_right(INDEX index) noexcept {
+		[[nodiscard]] constexpr INDEX rotate_right(const INDEX index) noexcept {
 			if constexpr (concepts::ParentedAVLTreeNode<T>) {
 				T& node = Base::get(index);
 				const INDEX parent = node.parent;
@@ -249,11 +246,11 @@ namespace DSA {
 			return root == invalid_index ? 0 : height_of(root);
 		}
 
-		[[nodiscard]] constexpr uint16_t height_of(INDEX index) const noexcept {
+		[[nodiscard]] constexpr uint16_t height_of(const INDEX index) const noexcept {
 			return Base::get(index).height;
 		}
 
-		[[nodiscard]] constexpr INDEX parent_of(INDEX index) const noexcept {
+		[[nodiscard]] constexpr INDEX parent_of(const INDEX index) const noexcept {
 			if constexpr (concepts::ParentedAVLTreeNode<T>)
 				return Base::get(index).parent;
 			else {
@@ -383,8 +380,7 @@ namespace DSA {
 		[[nodiscard]] constexpr INDEX ceiling(const KEY& key, INDEX rootIndex) const noexcept {
 			INDEX candidate = rootIndex;
 			while (rootIndex != invalid_index) {
-				const T& node = Base::get(rootIndex);
-				if (key == node.key_value_pair.key)
+				if (const T& node = Base::get(rootIndex); key == node.key_value_pair.key)
 					return rootIndex;
 				else if (key > node.key_value_pair.key) {
 					candidate = rootIndex;
@@ -437,8 +433,7 @@ namespace DSA {
 		[[nodiscard]] constexpr INDEX floor(const KEY& key, INDEX rootIndex) const noexcept {
 			INDEX candidateIndex = rootIndex;
 			while (rootIndex != invalid_index) {
-				const T& node = Base::get(rootIndex);
-				if (key == node.key_value_pair.key)
+				if (const T& node = Base::get(rootIndex); key == node.key_value_pair.key)
 					return rootIndex;
 				else if (key < node.key_value_pair.key) {
 					candidateIndex = rootIndex;
@@ -455,7 +450,7 @@ namespace DSA {
 
 #pragma region Extract Minimum, Insert, & Upsert
 
-		[[nodiscard]] constexpr INDEX extract_minimum(INDEX index, INDEX& extractedIndex) noexcept {
+		[[nodiscard]] constexpr INDEX extract_minimum(const INDEX index, INDEX& extractedIndex) noexcept {
 			INDEX parent = invalid_index;
 
 			while (Base::get(index).left != invalid_index) {

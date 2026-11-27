@@ -4,10 +4,12 @@
 
 namespace Algorithms {
 
+  using std::size_t;
+
   template <typename T>
     requires std::is_swappable_v<T>
-  constexpr void rotate(T* first, const size_t left, const size_t right)
-      noexcept (std::is_nothrow_swappable<T>)
+  constexpr void rotate(T* first, size_t left, size_t right)
+      noexcept (std::is_nothrow_swappable_v<T>)
   {
     while (left && right) {
       if (left <= right) {

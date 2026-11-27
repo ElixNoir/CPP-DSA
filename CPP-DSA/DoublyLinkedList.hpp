@@ -5,16 +5,16 @@
 
 namespace DSA {
 
-	template <concepts::StoragePolicy StoragePolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class DoublyLinkedList : public Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>> { //! incomplete
+	template <concepts::StoragePolicy StoragePolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class DoublyLinkedList : public Collection<StoragePolicy, DoublyLinkedListNode<T_, typename StoragePolicy::INDEX>> { //! incomplete
 	public:
 
-		using Base = Collection<StoragePolicy, DoublyLinkedListNode<T, typename StoragePolicy::INDEX>>;
+		using Base = Collection<StoragePolicy, DoublyLinkedListNode<T_, typename StoragePolicy::INDEX>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
-		using VALUE = typename T::T;
+		using VALUE = T::T;
 
 		constexpr static INDEX invalid_index = Base::invalid_index;
 

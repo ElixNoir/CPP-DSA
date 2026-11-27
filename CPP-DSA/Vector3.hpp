@@ -20,7 +20,7 @@ namespace DSA {
 
 		};
 
-		using Self = Vector3<T>;
+		using Self = Vector3;
 
 		T x, y, z;
 
@@ -28,17 +28,17 @@ namespace DSA {
 
 		[[nodiscard]] constexpr Self absolute() const noexcept {
 			return Self{
-				Algorithms::Math::absolute_value(x),
-				Algorithms::Math::absolute_value(y),
-				Algorithms::Math::absolute_value(z)
+				.x = Math::absolute_value(x),
+				.y = Math::absolute_value(y),
+				.z = Math::absolute_value(z)
 			};
 		}
 
-		[[nodiscard]] constexpr Self maximum_between(Self other) const noexcept {
+		[[nodiscard]] constexpr Self maximum_between(const Self other) const noexcept {
 			return Self{
-				x > other.x ? x : other.x,
-				y > other.y ? y : other.y,
-				z > other.z ? z : other.z
+				.x = x > other.x ? x : other.x,
+				.y = y > other.y ? y : other.y,
+				.z = z > other.z ? z : other.z
 			};
 		}
 
@@ -47,11 +47,11 @@ namespace DSA {
 			return xy > z ? xy : z;
 		}
 
-		[[nodiscard]] constexpr Self minimum_between(Self other) const noexcept {
+		[[nodiscard]] constexpr Self minimum_between(const Self other) const noexcept {
 			return Self{
-				x < other.x ? x : other.x,
-				y < other.y ? y : other.y,
-				z < other.z ? z : other.z
+				.x = x < other.x ? x : other.x,
+				.y = y < other.y ? y : other.y,
+				.z = z < other.z ? z : other.z
 			};
 		}
 
@@ -62,36 +62,36 @@ namespace DSA {
 
 		[[nodiscard]] constexpr Self sign_numbers() const noexcept {
 			return Self{
-				Algorithms::Math::sign_number(x),
-				Algorithms::Math::sign_number(y),
-				Algorithms::Math::sign_number(z)
+				.x = Math::sign_number(x),
+				.y = Math::sign_number(y),
+				.z = Math::sign_number(z)
 			};
 		}
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool is_approximately_equal_to(Self other, T epsilon = static_cast<T>(1e-5)) const noexcept {
-			return Algorithms::Math::absolute_value(x - other.x) <= epsilon
-				&& Algorithms::Math::absolute_value(y - other.y) <= epsilon
-				&& Algorithms::Math::absolute_value(z - other.z) <= epsilon;
+		[[nodiscard]] constexpr bool is_approximately_equal_to(const Self other, const T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Math::absolute_value(x - other.x) <= epsilon
+				&& Math::absolute_value(y - other.y) <= epsilon
+				&& Math::absolute_value(z - other.z) <= epsilon;
 		}
 
 		[[nodiscard]] constexpr bool is_finite() const noexcept {
-			return Algorithms::Math::is_finite(x)
-				& Algorithms::Math::is_finite(y)
-				& Algorithms::Math::is_finite(z);
+			return Math::is_finite(x)
+				& Math::is_finite(y)
+				& Math::is_finite(z);
 		}
 
-		[[nodiscard]] constexpr bool is_normalized(T epsilon = static_cast<T>(1e-5)) const noexcept {
-			return Algorithms::Math::absolute_value(squared_magnitude() - T(1)) <= epsilon;
+		[[nodiscard]] constexpr bool is_normalized(const T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Math::absolute_value(squared_magnitude() - T(1)) <= epsilon;
 		}
 
-		[[nodiscard]] constexpr bool is_parallel_to(Self other, T epsilon = static_cast<T>(1e-5)) const noexcept {
+		[[nodiscard]] constexpr bool is_parallel_to(const Self other, const T epsilon = static_cast<T>(1e-5)) const noexcept {
 			return cross_product(other).squared_magnitude() <= epsilon * epsilon;
 		}
 
-		[[nodiscard]] constexpr bool is_perpendicular_to(Self other, T epsilon = static_cast<T>(1e-5)) const noexcept {
-			return Algorithms::Math::absolute_value(dot_product(other)) <= epsilon;
+		[[nodiscard]] constexpr bool is_perpendicular_to(const Self other, const T epsilon = static_cast<T>(1e-5)) const noexcept {
+			return Math::absolute_value(dot_product(other)) <= epsilon;
 		}
 
 		[[nodiscard]] constexpr bool is_zero() const noexcept {
@@ -106,9 +106,9 @@ namespace DSA {
 
 		[[nodiscard]] constexpr Self cross_product(Self other) const noexcept {
 			return Self{
-				y * other.z - z * other.y,
-				z * other.x - x * other.z,
-				x * other.y - y * other.x
+				.x = y * other.z - z * other.y,
+				.y = z * other.x - x * other.z,
+				.z = x * other.y - y * other.x
 			};
 		}
 
@@ -126,51 +126,48 @@ namespace DSA {
 
 		[[nodiscard]] constexpr Self cardinal_magnitude() const noexcept {
 			return Self{
-				x * (x > y && x > z),
-				y * (y > x && y > z),
-				z * (z > x && z > y)
+				.x = x * (x > y && x > z),
+				.y = y * (y > x && y > z),
+				.z = z * (z > x && z > y)
 			};
 		}
 
 		[[nodiscard]] constexpr Self cardinal_normal() const noexcept {
 			return Self{
-				x > y && x > z,
-				y > x && y > z,
-				z > x && z > y
+				.x = x > y && x > z,
+				.y = y > x && y > z,
+				.z = z > x && z > y
 			};
 		}
 
 		[[nodiscard]] constexpr T chebyshev_magnitude() const noexcept {
-			const T ax = Algorithms::Math::absolute_value(x);
-			const T ay = Algorithms::Math::absolute_value(y);
-			const T az = Algorithms::Math::absolute_value(z);
+			const T ax = Math::absolute_value(x);
+			const T ay = Math::absolute_value(y);
+			const T az = Math::absolute_value(z);
 			const T xy = ax > ay ? ax : ay;
 			return xy > az ? xy : az;
 		}
 
-		[[nodiscard]] constexpr auto distance_from(Self other) const noexcept {
-			return Algorithms::Math::square_root(squared_distance_from(other));
+		[[nodiscard]] constexpr auto distance_from(const Self other) const noexcept {
+			return Math::square_root(squared_distance_from(other));
 		}
 
 		[[nodiscard]] constexpr auto magnitude() const noexcept {
-			return Algorithms::Math::square_root(squared_magnitude());
+			return Math::square_root(squared_magnitude());
 		}
 
 		[[nodiscard]] constexpr auto manhattan_magnitude() const noexcept {
-			return Algorithms::Math::absolute_value(x)
-				+ Algorithms::Math::absolute_value(y)
-				+ Algorithms::Math::absolute_value(z);
+			return Math::absolute_value(x)
+				+ Math::absolute_value(y)
+				+ Math::absolute_value(z);
 		}
 
 		[[nodiscard]] constexpr Self normalize() const noexcept {
 			return *this / static_cast<T>(magnitude());
 		}
 
-		[[nodiscard]] constexpr auto squared_distance_from(Self other) const noexcept {
-			const auto dx = x - other.x;
-			const auto dy = y - other.y;
-			const auto dz = z - other.z;
-			return dx * dx + dy * dy + dz * dz;
+		[[nodiscard]] constexpr auto squared_distance_from(const Self other) const noexcept {
+			return Math::square(x - other.x) + Math::square(y - other.y) + Math::square(z - other.z);
 		}
 
 		[[nodiscard]] constexpr T squared_magnitude() const noexcept {
@@ -186,11 +183,12 @@ namespace DSA {
 #pragma region Reflection
 
 		[[nodiscard]] constexpr Self arbitrary_perpendicular() const noexcept {
-			return cross_product(Algorithms::Math::absolute_value(x) < Algorithms::Math::absolute_value(y) ? Self{ 1, 0, 0 } : Self{ 0, 1, 0 });
+			return cross_product(Math::absolute_value(x) < Math::absolute_value(y)
+				? Self{ .x = 1, .y = 0, .z = 0 } : Self{ .x = 0, .y = 1, .z = 0 });
 		}
 
 		// Normal must be normalized.
-		[[nodiscard]] constexpr Self reflect(Self normal) const noexcept {
+		[[nodiscard]] constexpr Self reflect(const Self normal) const noexcept {
 			return *this - normal * (T(2) * dot_product(normal));
 		}
 
@@ -199,59 +197,59 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr Self reflect_over_y_axis() const noexcept {
-			return Self{ -x, y, -z };
+			return Self{ .x = -x, .y = y, .z = -z };
 		}
 
 		[[nodiscard]] constexpr Self reflect_over_z_axis() const noexcept {
-			return Self{ -x, -y, z };
+			return Self{ .x = -x, .y = -y, .z = z };
 		}
 
 #pragma endregion
 
 #pragma region Rotation
 
-		[[nodiscard]] constexpr auto angle_to(Self other) const noexcept {
-			return Algorithms::Math::arccosine(dot_product(other) / (magnitude() * other.magnitude()));
+		[[nodiscard]] constexpr auto angle_to(const Self other) const noexcept {
+			return Math::arccosine(dot_product(other) / (magnitude() * other.magnitude()));
 		}
 
 		template <std::floating_point U>
-		[[nodiscard]] constexpr Self rotate_x(U angle) const noexcept {
-			const auto c = Algorithms::Math::cosine(angle);
-			const auto s = Algorithms::Math::sine(angle);
+		[[nodiscard]] constexpr Self rotate_x(const U angle) const noexcept {
+			const auto c = Math::cosine(angle);
+			const auto s = Math::sine(angle);
 			return Self{
-				x,
-				y * c - z * s,
-				y * s + z * c
+				.x = x,
+				.y = y * c - z * s,
+				.z = y * s + z * c
 			};
 		}
 
 		template <std::floating_point U>
-		[[nodiscard]] constexpr Self rotate_y(U angle) const noexcept {
-			const auto c = Algorithms::Math::cosine(angle);
-			const auto s = Algorithms::Math::sine(angle);
+		[[nodiscard]] constexpr Self rotate_y(const U angle) const noexcept {
+			const auto c = Math::cosine(angle);
+			const auto s = Math::sine(angle);
 			return Self{
-				x * c + z * s,
-				y,
-				-x * s + z * c
+				.x = x * c + z * s,
+				.y = y,
+				.z = -x * s + z * c
 			};
 		}
 
 		template <std::floating_point U>
-		[[nodiscard]] constexpr Self rotate_z(U angle) const noexcept {
-			const auto c = Algorithms::Math::cosine(angle);
-			const auto s = Algorithms::Math::sine(angle);
+		[[nodiscard]] constexpr Self rotate_z(const U angle) const noexcept {
+			const auto c = Math::cosine(angle);
+			const auto s = Math::sine(angle);
 			return Self{
-				x * c - y * s,
-				x * s + y * c,
-				z
+				.x = x * c - y * s,
+				.y = x * s + y * c,
+				.z = z
 			};
 		}
 
 		// Axis must be normalized.
 		template <std::floating_point U>
-		[[nodiscard]] constexpr Self rotate(U angle, Self axis) const noexcept {
-			const auto c = Algorithms::Math::cosine(angle);
-			const auto s = Algorithms::Math::sine(angle);
+		[[nodiscard]] constexpr Self rotate(const U angle, const Self axis) const noexcept {
+			const auto c = Math::cosine(angle);
+			const auto s = Math::sine(angle);
 			return *this * c
 				+ axis.cross_product(*this) * s
 				+ axis * (axis.dot_product(*this) * (T(1) - c));
@@ -264,10 +262,10 @@ namespace DSA {
 		[[nodiscard]] constexpr Self ceiling() const noexcept {
 			if constexpr (std::is_floating_point_v<T>)
 				return Self{
-					Algorithms::Math::ceiling(x),
-					Algorithms::Math::ceiling(y),
-					Algorithms::Math::ceiling(z)
-			};
+					.x = Math::ceiling(x),
+					.y = Math::ceiling(y),
+					.z = Math::ceiling(z)
+				};
 			else
 				return *this;
 		}
@@ -279,50 +277,50 @@ namespace DSA {
 		[[nodiscard]] constexpr Self floor() const noexcept {
 			if constexpr (std::is_floating_point_v<T>)
 				return Self{
-					Algorithms::Math::floor(x),
-					Algorithms::Math::floor(y),
-					Algorithms::Math::floor(z)
-			};
+					.x = Math::floor(x),
+					.y = Math::floor(y),
+					.z = Math::floor(z)
+				};
 			else
 				return *this;
 		}
 
 		template <InterpolationType INTERPOLATION_TYPE = InterpolationType::LINEAR, std::floating_point U>
-		[[nodiscard]] constexpr Self interpolate(Self other, U time) const noexcept {
+		[[nodiscard]] constexpr Self interpolate(const Self other, const U time) const noexcept {
 			if constexpr (INTERPOLATION_TYPE == InterpolationType::QUADRATIC)
 				time = time < U(0.5)
 				? U(2) * time * time
-				: U(1) - ((-U(2) * time + U(2)) * (-U(2) * time + U(2))) / U(2);
+				: U(1) - (-U(2) * time + U(2)) * (-U(2) * time + U(2)) / U(2);
 			else if constexpr (INTERPOLATION_TYPE == InterpolationType::CUBIC)
 				time *= time * (U(3) - U(2) * time);
 			else if constexpr (INTERPOLATION_TYPE == InterpolationType::QUINTIC)
 				time *= time * time * (time * (time * U(6) - U(15)) + U(10));
 
 			return Self{
-				x + (other.x - x) * time,
-				y + (other.y - y) * time,
-				z + (other.z - z) * time
+				.x = x + (other.x - x) * time,
+				.y = y + (other.y - y) * time,
+				.z = z + (other.z - z) * time
 			};
 		}
 
-		[[nodiscard]] constexpr Self project_onto(Self other) const noexcept {
+		[[nodiscard]] constexpr Self project_onto(const Self other) const noexcept {
 			return other * (dot_product(other) / other.squared_magnitude());
 		}
 
-		[[nodiscard]] constexpr Self rejection_from(Self other) const noexcept {
+		[[nodiscard]] constexpr Self rejection_from(const Self other) const noexcept {
 			return *this - project_onto(other);
 		}
 
-		[[nodiscard]] constexpr Self snap(T xyzScalar = 1) const noexcept {
+		[[nodiscard]] constexpr Self snap(const T xyzScalar = 1) const noexcept {
 			return snap(xyzScalar, xyzScalar, xyzScalar);
 		}
 
-		[[nodiscard]] constexpr Self snap(T xScalar, T yScalar, T zScalar) const noexcept {
+		[[nodiscard]] constexpr Self snap(const T xScalar, const T yScalar, const T zScalar) const noexcept {
 			if constexpr (std::is_floating_point_v<T>)
 				return Self{
-					Algorithms::Math::round(x / xScalar) * xScalar,
-					Algorithms::Math::round(y / yScalar) * yScalar,
-					Algorithms::Math::round(z / zScalar) * zScalar
+					.x = Math::round(x / xScalar) * xScalar,
+					.y = Math::round(y / yScalar) * yScalar,
+					.z = Math::round(z / zScalar) * zScalar
 				};
 			else
 				return *this;
@@ -331,9 +329,9 @@ namespace DSA {
 		[[nodiscard]] constexpr Self truncate() const noexcept {
 			if constexpr (std::is_floating_point_v<T>)
 				return Self{
-					Algorithms::Math::truncate(x),
-					Algorithms::Math::truncate(y),
-					Algorithms::Math::truncate(z)
+					.x = Math::truncate(x),
+					.y = Math::truncate(y),
+					.z = Math::truncate(z)
 				};
 			else
 				return *this;
@@ -348,19 +346,19 @@ namespace DSA {
 #pragma region Arithmetic
 
 		[[nodiscard]] constexpr Self operator+(Self other) const noexcept {
-			return Self{ x + other.x, y + other.y, z + other.z };
+			return Self{ .x = x + other.x, .y = y + other.y, .z = z + other.z };
 		}
 
 		[[nodiscard]] constexpr Self operator/(Self other) const noexcept {
-			return Self{ x / other.x, y / other.y, z / other.z };
+			return Self{ .x = x / other.x, .y = y / other.y, .z = z / other.z };
 		}
 
 		[[nodiscard]] constexpr Self operator*(Self other) const noexcept {
-			return Self{ x * other.x, y * other.y, z * other.z };
+			return Self{ .x = x * other.x, .y = y * other.y, .z = z * other.z };
 		}
 
 		[[nodiscard]] constexpr Self operator-(Self other) const noexcept {
-			return Self{ x - other.x, y - other.y, z - other.z };
+			return Self{ .x = x - other.x, .y = y - other.y, .z = z - other.z };
 		}
 
 		constexpr void operator+=(Self other) noexcept {

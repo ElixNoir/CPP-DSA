@@ -29,7 +29,7 @@ namespace DSA {
 
 		uint16_t frame_counter = 0;
 
-		SparseDeque<StaticContainerConfiguration<16>, Task> deques[FRAMES];
+		SparseDeque<ContainerPolicy<InlineStoragePolicy<16>>, Task> deques[FRAMES];
 
 	public:
 

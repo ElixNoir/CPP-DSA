@@ -8,7 +8,7 @@ namespace DSA {
 		requires std::is_arithmetic_v<T>
 	struct Bounds3 {
 
-		using Self = Bounds3<T>;
+		using Self = Bounds3;
 		using Vertex = Vector3<T>;
 
 #pragma region Properties

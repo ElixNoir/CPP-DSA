@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "Comparable.hpp"
 
 namespace Algorithms {

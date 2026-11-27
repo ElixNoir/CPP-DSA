@@ -6,12 +6,12 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class Deque : public Collection<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class Deque : public Collection<ContainerPolicy, T_> {
 	public:
 
-		using Base = Collection<ContainerPolicy, T>;
+		using Base = Collection<ContainerPolicy, T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -100,7 +100,7 @@ namespace DSA {
 
 			Base::set_capacity(newCapacity);
 			Base::set_data(newData);
-			if constexpr (RESIZE_OPERATION = ResizeOperation::SHRINK)
+			if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK)
 				Base::set_size(targetSize);
 			back = targetSize;
 			front = 0;
@@ -257,7 +257,7 @@ namespace DSA {
 			return data;
 		}
 
-		[[nodiscard]] constexpr void dequeue_back_many(T* const destination, INDEX count)
+		constexpr void dequeue_back_many(T* const destination, INDEX count)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX capacity = Base::get_capacity();
@@ -292,7 +292,7 @@ namespace DSA {
 			return data;
 		}
 
-		[[nodiscard]] constexpr void dequeue_front_many(T* const destination, INDEX count)
+		constexpr void dequeue_front_many(T* const destination, INDEX count)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			const INDEX capacity = Base::get_capacity();

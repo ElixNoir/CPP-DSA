@@ -26,10 +26,10 @@ namespace DSA {
 
 	}
 
-	template <std::unsigned_integral _NODE_REFERENCE_TYPE = uint32_t>
+	template <std::unsigned_integral NODE_REFERENCE_TYPE_ = uint32_t>
 	struct LinkedNode {
 
-		using NODE_REFERENCE_TYPE = _NODE_REFERENCE_TYPE;
+		using NODE_REFERENCE_TYPE = NODE_REFERENCE_TYPE_;
 
 #pragma region Properties
 
@@ -39,10 +39,10 @@ namespace DSA {
 
 	};
 
-	template <typename _T, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
+	template <typename T_, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
 	struct LinkedValueNode : public LinkedNode<NODE_REFERENCE_TYPE> {
 
-		using T = _T;
+		using T = T_;
 
 #pragma region Properties
 
@@ -151,7 +151,7 @@ namespace DSA {
 			requires is_dynamic
 		{
 			if constexpr (std::is_trivially_copyable_v<T> && IS_DENSE) {
-				Base::resize_from_size<RESIZE_OPERATION>(newCapacity, get_allocated_top());
+				Base::template resize_from_size<RESIZE_OPERATION>(newCapacity, get_allocated_top());
 				return;
 			}
 
@@ -162,40 +162,40 @@ namespace DSA {
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				INDEX count = targetSize;
 				if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK) {
-					forward_order([](INDEX index) -> bool {
+					forward_order([count, newData](INDEX index) -> bool {
 						if (count == 0)
 							return false;
 						reconstruct_at(newData + index, std::move(Base::get(index)));
 						--count;
 						return true;
-						}, head);
+					}, head);
 				}
 				else {
-					forward_order([](INDEX index) {
+					forward_order([newData](INDEX index) {
 						reconstruct_at(newData + index, std::move(Base::get(index)));
-						}, head);
+					}, head);
 				}
 			}
 			else {
 				INDEX count = targetSize;
 				if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK) {
 					try {
-						forward_order([](INDEX index) -> bool {
+						forward_order([count, newData](INDEX index) -> bool {
 							if (count == 0)
 								return false;
 							move_construct_at(newData + index, std::move(Base::get(index)));
 							--count;
 							return true;
-							}, head);
+						}, head);
 					}
 					catch (...) {
-						forward_order([](INDEX index) -> bool {
+						forward_order([count, newData, targetSize](INDEX index) -> bool {
 							if (count == targetSize)
 								return false;
 							destroy_at(newData + index);
 							++count;
 							return true;
-							}, head);
+						}, head);
 
 						ALLOCATOR::deallocate(newData);
 						throw;
@@ -203,14 +203,14 @@ namespace DSA {
 				}
 				else {
 					try {
-						forward_order([](INDEX index) {
+						forward_order([newData](INDEX index) {
 							move_construct_at(newData + index, std::move(Base::get(index)));
-							}, head);
+						}, head);
 					}
 					catch (...) {
-						forward_order([](INDEX index) {
+						forward_order([newData](INDEX index) {
 							destroy_at(newData + index);
-							}, head);
+						}, head);
 
 						ALLOCATOR::deallocate(newData);
 						throw;
@@ -218,9 +218,9 @@ namespace DSA {
 				}
 
 				if constexpr (!std::is_trivially_destructible_v<T>) {
-					forward_order([](INDEX index) {
+					forward_order([oldData](INDEX index) {
 						destroy_at(oldData + index);
-						}, head);
+					}, head);
 				}
 			}
 
@@ -295,7 +295,6 @@ namespace DSA {
 			requires concepts::LinkedValueNode<T>
 		{
 			const INDEX index = allocate(value);
-			T& node = Base::get(index);
 			/*
 			if (head == invalid_index)
 				tail = index;
@@ -309,7 +308,6 @@ namespace DSA {
 			requires concepts::LinkedValueNode<T>
 		{
 			const INDEX index = allocate(std::move(value));
-			T& node = Base::get(index);
 			/*
 			if (head == invalid_index)
 				tail = index;
@@ -332,7 +330,7 @@ namespace DSA {
 			return next_of(index) != invalid_index;
 		}
 
-		[[nodiscard]] constexpr void remove_next_of(INDEX index) noexcept {
+		constexpr void remove_next_of(INDEX index) noexcept {
 			const INDEX nextIndex = next_of(index);
 			const INDEX nextNextIndex = next_of(nextIndex);
 			deallocate(nextIndex);

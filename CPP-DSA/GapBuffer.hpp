@@ -4,12 +4,12 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class GapBuffer : public ContainerPolicy::template STRUCTURE<T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class GapBuffer : public ContainerPolicy::template STRUCTURE<T_> {
 	public:
 
-		using Base = ContainerPolicy::template STRUCTURE<T>;
+		using Base = ContainerPolicy::template STRUCTURE<T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;

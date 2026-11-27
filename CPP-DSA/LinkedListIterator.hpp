@@ -4,12 +4,12 @@
 
 namespace DSA {
 
-	template <concepts::LinkedListNode _T>
+	template <concepts::LinkedListNode T_>
 	class LinkedListIterator {
 	public:
 
-		using INDEX = typename _T::INDEX;
-		using T = _T;
+		using INDEX = T_::INDEX;
+		using T = T_;
 
 #pragma region C++ Iterator Traits
 

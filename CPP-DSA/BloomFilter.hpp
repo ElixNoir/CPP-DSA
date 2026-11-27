@@ -62,10 +62,10 @@ namespace DSA {
 
 #pragma region Constructors & Destructors
 
-		BloomFilter(size_t initialCapacity, double falsePositiveProbability)
+		BloomFilter(const size_t initialCapacity, const double falsePositiveProbability)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-		: bucket_count(initialCapacity * -Math::natural_logarithm(falsePositiveProbability) / Constants::squared_natural_logarithm_of_2),
-			hash_count(bucket_count * Constants::natural_logarithm_of_2 / initialCapacity), Base(bucket_count >> bit_shift) {}
+		: Base(bucket_count >> bit_shift),
+			bucket_count(static_cast<double>(initialCapacity) * -natural_logarithm(falsePositiveProbability) / Constants::squared_natural_logarithm_of_2), hash_count(bucket_count * Constants::natural_logarithm_of_2 / initialCapacity) {}
 
 #pragma endregion
 
@@ -85,7 +85,7 @@ namespace DSA {
 			++Base::size;
 		}
 
-		constexpr [[nodiscard]] bool contains(const KEY& key) const noexcept {
+		[[nodiscard]] constexpr bool contains(const KEY& key) const noexcept {
 			const uintmax_t hash1 = Algorithms::hash(key);
 			const uintmax_t hash2 = hash_again(hash1);
 

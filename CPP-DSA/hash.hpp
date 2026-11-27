@@ -18,12 +18,11 @@ namespace Algorithms {
 	}
 
 	template <typename T>
-	[[nodiscard]] constexpr static auto hash_pointer(const T& value, uintmax_t seed = 0) noexcept {
-		constexpr size_t size = sizeof(value);
+	[[nodiscard]] constexpr static auto hash_pointer(const T* value, const uintmax_t seed = 0) noexcept {
 		constexpr size_t chunkSize = sizeof(uintmax_t);
 		uintmax_t hash = seed;
-		if constexpr (Bitwise::is_multiple_of_power_of_2(size, chunkSize)) {
-			const std::byte* begin = reinterpret_cast<const std::byte*>(&value);
+		if constexpr (constexpr size_t size = sizeof(T); Bitwise::is_multiple_of_power_of_2(size, chunkSize)) {
+			const std::byte* begin = value;
 			const std::byte* end = begin + size;
 			while (begin < end) {
 				hash ^= *reinterpret_cast<const uintmax_t*>(begin);
@@ -31,7 +30,7 @@ namespace Algorithms {
 			}
 		}
 		else {
-			const std::byte* cursor = reinterpret_cast<const std::byte*>(&value);
+			const std::byte* cursor = value;
 			size_t bytes_left = size;
 			while (bytes_left >= chunkSize) {
 				hash ^= *reinterpret_cast<const uintmax_t*>(cursor);
@@ -54,9 +53,7 @@ namespace Algorithms {
 		if constexpr (std::is_pointer_v<T>)
 			return hash_pointer(value);
 		else {
-			constexpr size_t size = sizeof(value);
-			constexpr size_t chunkSize = sizeof(uintmax_t);
-			if constexpr (size == 1)
+			if constexpr (constexpr size_t size = sizeof(value); size == 1)
 				return std::bit_cast<uint8_t>(value);
 			else if constexpr (size == 2)
 				return std::bit_cast<uint16_t>(value);
@@ -74,9 +71,7 @@ namespace Algorithms {
 		if constexpr (std::is_pointer_v<T>)
 			return hash_pointer(value, seed);
 		else {
-			constexpr size_t size = sizeof(value);
-			constexpr size_t chunkSize = sizeof(uintmax_t);
-			if constexpr (size == 1)
+			if constexpr (constexpr size_t size = sizeof(value); size == 1)
 				return seed ^ std::bit_cast<uint8_t>(value);
 			else if constexpr (size == 2)
 				return seed ^ std::bit_cast<uint16_t>(value);

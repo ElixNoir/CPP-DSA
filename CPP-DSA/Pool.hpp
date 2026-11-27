@@ -7,19 +7,19 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class Pool : public Collection<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class Pool : public Collection<ContainerPolicy, T_> {
 	public:
 
-		using Base = Collection<ContainerPolicy, T>;
+		using Base = Collection<ContainerPolicy, T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using BitsetPolicy = std::conditional_t<
 			concepts::DynamicStoragePolicy<ContainerPolicy>,
-			HeapStoragePolicy<INDEX, typename ContainerPolicy::ALLOCATOR_TEMPLATE>,
+			HeapStoragePolicy<INDEX, ContainerPolicy::template ALLOCATOR_TEMPLATE>,
 			InlineStoragePolicy<((ContainerPolicy::maximum_capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift)>
 		>;
 
@@ -32,57 +32,9 @@ namespace DSA {
 
 #pragma region Methods
 
-		void helper_destroy() noexcept
-			requires (!std::is_trivially_destructible_v<T>)
-		{
-			const INDEX capacity = Base::get_capacity();
-			const INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
-
-			Bitset<BitsetPolicy> bitset;
-			if constexpr (is_dynamic) {
-				if constexpr (concepts::NothrowResizableStorage<Base>)
-					bitset = Bitset<BitsetPolicy>(bitsetCapacity);
-				else {
-					try {
-						bitset = Bitset<BitsetPolicy>(bitsetCapacity);
-					}
-					catch (...) { // destroy as efficiently as possible without needing to heap-allocate memory
-						const INDEX freeStackSize = free_stack.get_size();
-						Sorting::heap_sort(free_stack.get_data(), 0, freeStackSize);
-
-						INDEX top = 0;
-						INDEX startIndex = 0;
-						while (top < freeStackSize) {
-							const INDEX excludedIndex = free_stack.get(top);
-							for (INDEX index = startIndex; index < excludedIndex; ++index)
-								destroy_at(Base::get_data() + index);
-							startIndex = excludedIndex + 1;
-							++top;
-						}
-
-						destroy_range(Base::get_data() + freeStackSize, Base::get_data() + allocated_top);
-
-						return;
-					}
-				}
-			}
-			bitset.zero();
-
-			for (INDEX index : free_stack)
-				bitset.set_bit_at(index);
-
-			INDEX count = Base::get_size();
-			for (INDEX index : bitset.zeros(bitsetCapacity)) {
-				if (count == 0)
-					break;
-				destroy_at(Base::get_data() + index);
-				--count;
-			}
-		}
-
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
-		void helper_resize(INDEX newCapacity)
+		constexpr void helper_resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
@@ -159,20 +111,62 @@ namespace DSA {
 
 		Pool() noexcept = default;
 
-		Pool(INDEX initialCapacity)
+		Pool(const INDEX initialCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 		: Base(initialCapacity), free_stack(initialCapacity) {}
 
 		~Pool() noexcept
 			requires concepts::Container<Base>
 		{
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
+			destroy();
 		}
 
 		constexpr void destroy() noexcept {
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				helper_destroy();
+			if constexpr (!std::is_trivially_destructible_v<T>) {
+				const INDEX capacity = Base::get_capacity();
+				const INDEX bitsetCapacity = (capacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift;
+
+				Bitset<BitsetPolicy> bitset;
+				if constexpr (is_dynamic) {
+					if constexpr (concepts::NothrowResizableStorage<Base>)
+						bitset = Bitset<BitsetPolicy>(bitsetCapacity);
+					else {
+						try {
+							bitset = Bitset<BitsetPolicy>(bitsetCapacity);
+						}
+						catch (...) { // destroy as efficiently as possible without needing to heap-allocate memory
+							const INDEX freeStackSize = free_stack.get_size();
+							Sorting::heap_sort(free_stack.get_data(), 0, freeStackSize);
+
+							INDEX top = 0;
+							INDEX startIndex = 0;
+							while (top < freeStackSize) {
+								const INDEX excludedIndex = free_stack.get(top);
+								for (INDEX index = startIndex; index < excludedIndex; ++index)
+									destroy_at(Base::get_data() + index);
+								startIndex = excludedIndex + 1;
+								++top;
+							}
+
+							destroy_range(Base::get_data() + freeStackSize, Base::get_data() + allocated_top);
+
+							return;
+						}
+					}
+				}
+				bitset.zero();
+
+				for (INDEX index : free_stack)
+					bitset.set_bit_at(index);
+
+				INDEX count = Base::get_size();
+				for (INDEX index : bitset.zeros(bitsetCapacity)) {
+					if (count == 0)
+						break;
+					destroy_at(Base::get_data() + index);
+					--count;
+				}
+			}
 		}
 
 #pragma endregion
@@ -245,7 +239,7 @@ namespace DSA {
 			return index;
 		}
 
-		constexpr void remove(INDEX index) noexcept {
+		constexpr void remove(const INDEX index) noexcept {
 			destroy_at(Base::get_data() + index);
 			free_stack.push(index);
 			--Base::size;
@@ -271,7 +265,7 @@ namespace DSA {
 			return add(std::move(data));
 		}
 
-		constexpr void deallocate(INDEX index) noexcept {
+		constexpr void deallocate(const INDEX index) noexcept {
 			remove(index);
 		}
 
@@ -279,39 +273,39 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity()
+		constexpr void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
-			grow(capacity << 1, capacity);
+			grow(capacity << 1);
 		}
 
-		void expand(float ratio = 1.5)
+		constexpr void expand(const float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
-			grow(Math::ceiling(capacity * ratio), capacity);
+			grow(Math::ceiling(capacity * ratio));
 		}
 
 		constexpr void empty()
 			noexcept (concepts::NothrowResizableStorage<Base>)
 		{
-			helper_destroy();
+			destroy();
 			free_stack.empty();
 			allocated_top = 0;
 			Base::set_size(0);
 		}
 
-		void grow(INDEX newCapacity)
+		constexpr void grow(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{
-			helper_resize(newCapacity, capacity);
+			helper_resize(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity)
+		constexpr void reserve(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires is_dynamic
 		{

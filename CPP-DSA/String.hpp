@@ -18,7 +18,7 @@ namespace DSA {
 
 		constexpr String(char* data) noexcept : data(data), size(static_cast<uint32_t>(strlen(data))) {}
 
-		constexpr String(char* data, uint32_t size) noexcept : data(data), size(size) {}
+		constexpr String(char* data, const uint32_t size) noexcept : data(data), size(size) {}
 
 #pragma endregion
 
@@ -35,7 +35,7 @@ namespace DSA {
 		}
 
 		[[nodiscard]] constexpr auto hash() const noexcept {
-			return Algorithms::hash_pointer(data);
+			return hash_pointer(reinterpret_cast<std::byte*>(data));
 		}
 
 #pragma endregion
@@ -86,27 +86,27 @@ namespace DSA {
 
 #pragma region Self
 
-		[[nodiscard]] constexpr bool operator==(String& other) const noexcept {
+		[[nodiscard]] constexpr bool operator==(const String& other) const noexcept {
 			return std::memcmp(data, other.data, size) == 0;
 		}
 
-		[[nodiscard]] constexpr bool operator!=(String& other) const noexcept {
+		[[nodiscard]] constexpr bool operator!=(const String& other) const noexcept {
 			return std::memcmp(data, other.data, size) != 0;
 		}
 
-		[[nodiscard]] constexpr bool operator>=(String& other) const noexcept {
+		[[nodiscard]] constexpr bool operator>=(const String& other) const noexcept {
 			return std::memcmp(data, other.data, size) >= 0;
 		}
 
-		[[nodiscard]] constexpr bool operator>(String& other) const noexcept {
+		[[nodiscard]] constexpr bool operator>(const String& other) const noexcept {
 			return std::memcmp(data, other.data, size) > 0;
 		}
 
-		[[nodiscard]] constexpr bool operator<=(String& other) const noexcept {
+		[[nodiscard]] constexpr bool operator<=(const String& other) const noexcept {
 			return std::memcmp(data, other.data, size) <= 0;
 		}
 
-		[[nodiscard]] constexpr bool operator<(String& other) const noexcept {
+		[[nodiscard]] constexpr bool operator<(const String& other) const noexcept {
 			return std::memcmp(data, other.data, size) < 0;
 		}
 

@@ -5,23 +5,25 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class TrackedContainer : public Collection<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class TrackedContainer : public Collection<ContainerPolicy, T_> {
 	public:
 
-		using Base = Collection<ContainerPolicy, T>;
+		using Base = Collection<ContainerPolicy, T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		constexpr static auto bit_count = Bitmask<>::bit_count;
 		constexpr static auto bit_shift = Bitmask<>::bit_shift;
+		
+		constexpr static bool is_dynamic = Base::is_dynamic;
 
 		using TRACKED = Bitset<
 			std::conditional_t<
 				ContainerPolicy::is_dynamic,
-				HeapStoragePolicy<INDEX, typename ContainerPolicy::ALLOCATOR_TEMPLATE>,
+				HeapStoragePolicy<INDEX, Base::template ALLOCATOR_TEMPLATE>,
 				InlineStoragePolicy<((Base::maximum_capacity + bit_count - 1) >> bit_shift)>
 			>
 		>;
@@ -36,7 +38,7 @@ namespace DSA {
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
 		constexpr void helper_resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			const INDEX size = Base::get_size();
@@ -114,7 +116,7 @@ namespace DSA {
 
 		TrackedContainer(INDEX initialCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires (concepts::DynamicStorage<Base>)
+			requires (is_dynamic)
 		: Base(initialCapacity), tracked((initialCapacity + Bitmask<>::bit_count - 1) >> Bitmask<>::bit_shift) {}
 
 		~TrackedContainer() noexcept = default;
@@ -154,46 +156,46 @@ namespace DSA {
 #pragma region Tracking
 
 		[[nodiscard]] constexpr INDEX find_first_tracked() const noexcept {
-			return tracked.find_first_bit<true>();
+			return tracked.template find_first_bit<true>();
 		}
 
 		[[nodiscard]] constexpr INDEX find_first_tracked_at_or_after(INDEX begin) const noexcept {
-			return tracked.find_first_bit_at_or_after<true>(begin);
+			return tracked.template find_first_bit_at_or_after<true>(begin);
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_tracked() const noexcept {
-			return tracked.find_last_bit<true>();
+			return tracked.template find_last_bit<true>();
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_tracked_at_or_before(INDEX end) const noexcept {
-			return tracked.find_last_bit_at_or_before<true>(end);
+			return tracked.template find_last_bit_at_or_before<true>(end);
 		}
 
 		[[nodiscard]] constexpr INDEX find_first_untracked() const noexcept {
-			return tracked.find_first_bit<false>();
+			return tracked.template find_first_bit<false>();
 		}
 
 		[[nodiscard]] constexpr INDEX find_first_untracked_at_or_after(INDEX begin) const noexcept {
-			return tracked.find_first_bit_at_or_after<false>(begin);
+			return tracked.template find_first_bit_at_or_after<false>(begin);
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_untracked() const noexcept {
-			return tracked.find_last_bit<false>();
+			return tracked.template find_last_bit<false>();
 		}
 
 		[[nodiscard]] constexpr INDEX find_last_untracked_at_or_before(INDEX end) const noexcept {
-			return tracked.find_last_bit_at_or_before<false>(end);
+			return tracked.template find_last_bit_at_or_before<false>(end);
 		}
 
 		[[nodiscard]] constexpr bool is_tracking(INDEX index) const noexcept {
 			return tracked.get_bit_at(index);
 		}
 
-		[[nodiscard]] constexpr void track(INDEX index) noexcept {
+		constexpr void track(INDEX index) noexcept {
 			tracked.set_bit_at(index);
 		}
 
-		[[nodiscard]] constexpr void untrack(INDEX index) noexcept {
+		constexpr void untrack(INDEX index) noexcept {
 			tracked.reset_bit_at(index);
 		}
 
@@ -201,9 +203,9 @@ namespace DSA {
 
 #pragma region Memory Management
 
-		void double_capacity()
+		constexpr void double_capacity()
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(capacity << 1);
@@ -216,34 +218,34 @@ namespace DSA {
 			Base::set_size(0);
 		}
 
-		void expand(float ratio = 1.5)
+		constexpr void expand(float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			grow(Math::ceiling(capacity * ratio), capacity);
 		}
 
-		void grow(INDEX newCapacity)
+		constexpr void grow(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			helper_resize<ResizeOperation::GROW>(newCapacity);
 		}
 
-		void reserve(INDEX newCapacity)
+		constexpr void reserve(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			if (newCapacity > capacity)
 				grow(newCapacity);
 		}
 
-		void resize(INDEX newCapacity)
+		constexpr void resize(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			if (newCapacity >= capacity)
@@ -252,9 +254,9 @@ namespace DSA {
 				shrink(newCapacity);
 		}
 
-		void shrink(INDEX newCapacity)
+		constexpr void shrink(INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
-			requires concepts::DynamicStorage<Base>
+			requires is_dynamic
 		{
 			const INDEX capacity = Base::get_capacity();
 			helper_resize<ResizeOperation::SHRINK>(newCapacity);

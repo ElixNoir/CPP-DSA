@@ -81,13 +81,13 @@ namespace DSA {
 
 	}
 
-	template <std::unsigned_integral _INDEX = uint32_t, template <concepts::AllocatorConfiguration> typename _ALLOCATOR_TEMPLATE = StandardAllocator>
+	template <std::unsigned_integral INDEX_ = uint32_t, template <concepts::AllocatorConfiguration> typename ALLOCATOR_TEMPLATE_ = StandardAllocator>
 	struct HeapStoragePolicy {
 
-		using INDEX = _INDEX;
+		using INDEX = INDEX_;
 
 		template <concepts::AllocatorConfiguration Configuration>
-		using ALLOCATOR_TEMPLATE = StandardAllocator<Configuration>;
+		using ALLOCATOR_TEMPLATE = ALLOCATOR_TEMPLATE_<Configuration>;
 
 		template <typename T>
 		using ALLOCATOR = ALLOCATOR_TEMPLATE<
@@ -100,15 +100,15 @@ namespace DSA {
 		constexpr static INDEX invalid_index = std::numeric_limits<INDEX>::max();
 		constexpr static INDEX maximum_capacity = std::numeric_limits<INDEX>::max();
 
-		template <typename _T>
+		template <typename T_>
 		class STRUCTURE {
 		public:
 
-			using T = _T;
+			using T = T_;
 			using ALLOCATOR = ALLOCATOR<T>;
-			using INDEX = _INDEX;
+			using INDEX = INDEX_;
 
-			using This = STRUCTURE<T>;
+			using Self = STRUCTURE;
 
 			constexpr static bool is_dynamic = is_dynamic;
 			constexpr static INDEX invalid_index = invalid_index;
@@ -144,9 +144,9 @@ namespace DSA {
 				requires (!std::is_trivial_v<T>)
 			{
 				set_data(ALLOCATOR::allocate(initializerList.size()));
-				T* data = get_data();
+				T* cursor = get_data();
 				for (auto& value : initializerList)
-					*(data++) = std::move(value);
+					*(cursor++) = std::move(value);
 			}
 
 			explicit STRUCTURE(INDEX initialCapacity)
@@ -237,10 +237,10 @@ namespace DSA {
 
 	};
 
-	template <size_t CAPACITY, std::unsigned_integral _INDEX = smallest_uint_t<CAPACITY>>
+	template <size_t CAPACITY, std::unsigned_integral INDEX_ = smallest_uint_t<CAPACITY>>
 	struct InlineStoragePolicy {
 
-		using INDEX = _INDEX;
+		using INDEX = INDEX_;
 
 		template <concepts::AllocatorConfiguration Configuration>
 		using ALLOCATOR_TEMPLATE = StandardAllocator<Configuration>;
@@ -248,19 +248,19 @@ namespace DSA {
 		template <typename T>
 		using ALLOCATOR = void;
 
-		using This = InlineStoragePolicy<CAPACITY, INDEX>;
+		using Self = InlineStoragePolicy<CAPACITY, INDEX>;
 
 		constexpr static bool is_dynamic = false;
 		constexpr static INDEX invalid_index = std::numeric_limits<INDEX>::max();
 		constexpr static INDEX maximum_capacity = CAPACITY;
 
-		template <typename _T, size_t ALIGNMENT = alignof(_T)>
+		template <typename T_, size_t ALIGNMENT = alignof(T_)>
 		class STRUCTURE {
 		public:
 
 			using ALLOCATOR = void;
-			using INDEX = _INDEX;
-			using T = _T;
+			using INDEX = INDEX_;
+			using T = T_;
 
 			using This = STRUCTURE<T>;
 
@@ -287,11 +287,11 @@ namespace DSA {
 			}
 
 			STRUCTURE(std::initializer_list<T> initializerList) noexcept
-				requires !std::is_trivial_v<T>
+				requires (!std::is_trivial_v<T>)
 			{
-				T* data = get_data();
-				for (auto& data : initializerList)
-					*(data++) = data;
+				T* cursor = get_data();
+				for (auto& value : initializerList)
+					*(cursor++) = value;
 			}
 
 #pragma endregion

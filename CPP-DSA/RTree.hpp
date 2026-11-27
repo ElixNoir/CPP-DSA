@@ -6,10 +6,11 @@
 #include "Bounds2.hpp"
 #include "Stack.hpp"
 
+/*
 namespace DSA {
 
 	template <concepts::ContainerPolicy ContainerPolicy, typename VALUE_TYPE, typename PRECISION_TYPE = double, size_t NODE_CAPACITY = 16>
-	class RTree : public Collection<ContainerPolicy, T> {
+	class RTree : public Collection<ContainerPolicy, > {
 	public:
 
 		using Base = Collection<ContainerPolicy, T>;
@@ -118,3 +119,4 @@ namespace DSA {
 	};
 
 }
+*/

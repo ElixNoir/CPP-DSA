@@ -43,12 +43,12 @@ namespace DSA {
 		}
 
 		StackIterator<T>& operator++() noexcept {
-			address++;
+			++address;
 			return *this;
 		}
 
 		StackIterator<T>& operator--() noexcept {
-			address--;
+			--address;
 			return *this;
 		}
 

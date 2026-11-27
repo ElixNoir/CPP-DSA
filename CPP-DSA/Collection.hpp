@@ -44,11 +44,11 @@ namespace DSA {
 
 	};
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T, typename D = CollectionDerivation>
-	class Collection : public ContainerPolicy::template STRUCTURE<T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_, typename D = CollectionDerivation>
+	class Collection : public ContainerPolicy::template STRUCTURE<T_> {
 	public:
 
-		using Base = ContainerPolicy::template STRUCTURE<T>;
+		using Base = ContainerPolicy::template STRUCTURE<T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -69,7 +69,7 @@ namespace DSA {
 #pragma region Methods
 
 		template <ResizeOperation RESIZE_OPERATION>
-		[[nodiscard]] constexpr INDEX get_target_size(INDEX newCapacity) {
+		[[nodiscard]] constexpr INDEX get_target_size(const INDEX newCapacity) {
 			if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
 				return get_size();
 			else
@@ -78,7 +78,7 @@ namespace DSA {
 
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
-		constexpr void helper_resize(INDEX newCapacity)
+		constexpr void helper_resize(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset)
 		{
@@ -87,19 +87,19 @@ namespace DSA {
 
 		template <ResizeOperation RESIZE_OPERATION>
 			requires (RESIZE_OPERATION != ResizeOperation::UNKNOWN)
-		constexpr void resize_from_size(INDEX newCapacity, INDEX size)
+		constexpr void resize_from_size(const INDEX newCapacity, const INDEX size)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset)
 		{
 			if constexpr (std::is_trivially_copyable_v<T>) {
-				Base::resize_from_capacity<RESIZE_OPERATION>(newCapacity, size);
+				Base::template resize_from_capacity<RESIZE_OPERATION>(newCapacity, size);
 				return;
 			}
 
 			T* const newData = ALLOCATOR::allocate(newCapacity);
 			T* const oldData = Base::get_data();
 
-			if constexpr (std::is_nothrow_move_constructible_v) {
+			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				if constexpr (RESIZE_OPERATION == ResizeOperation::GROW)
 					reconstruct_range(newData, newData + size, oldData);
 				else {
@@ -138,7 +138,7 @@ namespace DSA {
 
 		Collection() : Base() {}
 
-		Collection(INDEX initialCapacity)
+		Collection(const INDEX initialCapacity)
 			requires is_dynamic
 		: Base(initialCapacity) {}
 
@@ -160,6 +160,8 @@ namespace DSA {
 			}
 
 			set_size(otherSize);
+
+			return *this;
 		}
 
 		constexpr Collection& operator=(const Collection& other) noexcept
@@ -167,6 +169,8 @@ namespace DSA {
 		{
 			std::memcpy(Base::get_data(), other.get_data(), get_size());
 			set_size(other.get_size());
+
+			return *this;
 		}
 
 		Collection(const Collection& other)
@@ -195,12 +199,12 @@ namespace DSA {
 
 #pragma region Checks
 
-		[[nodiscard]] constexpr bool can_add(INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_add(const INDEX count = 1) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return count <= capacity - get_size();
 		}
 
-		[[nodiscard]] constexpr bool can_remove(INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_remove(const INDEX count = 1) const noexcept {
 			return get_size() >= count;
 		}
 
@@ -240,7 +244,7 @@ namespace DSA {
 			Base::set_size(0);
 		}
 
-		constexpr void expand(float ratio = 1.5)
+		constexpr void expand(const float ratio = 1.5)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
@@ -248,14 +252,14 @@ namespace DSA {
 			grow(Math::ceiling(capacity * ratio));
 		}
 
-		constexpr void grow(INDEX newCapacity)
+		constexpr void grow(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
 			helper_resize<ResizeOperation::GROW>(newCapacity, Base::get_size());
 		}
 
-		constexpr void reserve(INDEX newCapacity)
+		constexpr void reserve(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
@@ -264,8 +268,7 @@ namespace DSA {
 				grow(newCapacity);
 		}
 
-		template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
-		constexpr void resize(INDEX newCapacity)
+		constexpr void resize(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
@@ -276,7 +279,7 @@ namespace DSA {
 				shrink(newCapacity);
 		}
 
-		constexpr void shrink(INDEX newCapacity)
+		constexpr void shrink(const INDEX newCapacity)
 			noexcept (concepts::NothrowResizableStorage<Base>)
 			requires (is_dynamic && !is_offset && !is_sparse)
 		{
@@ -298,7 +301,7 @@ namespace DSA {
 			return std::fill_n(Base::get_data(), Base::get_capacity(), value);
 		}
 
-		constexpr void set_size(INDEX newSize) noexcept {
+		constexpr void set_size(const INDEX newSize) noexcept {
 			size = newSize;
 		}
 

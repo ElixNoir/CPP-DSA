@@ -1,16 +1,15 @@
 #pragma once
 
 #include "TrackedContainer.hpp"
-#include "Bitset.hpp"
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class SparseDeque : public TrackedContainer<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class SparseDeque : public TrackedContainer<ContainerPolicy, T_> {
 	public:
 
-		using Base = TrackedContainer<ContainerPolicy, T>;
+		using Base = TrackedContainer<ContainerPolicy, T_>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
@@ -26,21 +25,21 @@ namespace DSA {
 
 #pragma region Methods
 
-		[[nodiscard]] constexpr INDEX next_index(INDEX index) const noexcept {
+		[[nodiscard]] constexpr INDEX next_index(const INDEX index) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return (static_cast<INDEX>(index) + 1 == capacity)
 				? INDEX{ 0 }
 				: static_cast<INDEX>(index + 1);
 		}
 
-		[[nodiscard]] constexpr INDEX previous_index(INDEX index) const noexcept {
+		[[nodiscard]] constexpr INDEX previous_index(const INDEX index) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return index == 0
 				? static_cast<INDEX>(capacity - 1)
 				: static_cast<INDEX>(index - 1);
 		}
 
-		[[nodiscard]] constexpr INDEX distance(INDEX from, INDEX to) const noexcept {
+		[[nodiscard]] constexpr INDEX distance(const INDEX from, const INDEX to) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return from < to ? to - from : capacity - from + to;
 		}
@@ -190,7 +189,7 @@ namespace DSA {
 			return newFront;
 		}
 
-		constexpr void remove(INDEX index) noexcept {
+		constexpr void remove(const INDEX index) noexcept {
 			destroy_at(Base::get_data() + index);
 			Base::untrack(index);
 
@@ -232,7 +231,7 @@ namespace DSA {
 
 #pragma region Dequeue, Enqueue, & Peek
 
-		[[nodiscard]] constexpr bool can_dequeue(INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_dequeue(const INDEX count = 1) const noexcept {
 			return Base::can_remove(count);
 		}
 
@@ -252,7 +251,7 @@ namespace DSA {
 			return data;
 		}
 
-		[[nodiscard]] constexpr bool can_enqueue(INDEX count = 1)
+		[[nodiscard]] constexpr bool can_enqueue(const INDEX count = 1)
 			noexcept (std::is_nothrow_move_constructible_v<T>)
 		{
 			return Base::can_add(count);

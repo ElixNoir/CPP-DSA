@@ -9,7 +9,7 @@ namespace Algorithms {
 	template <typename T>
 		requires std::is_fundamental_v<T>
 	constexpr static T random() noexcept {
-		return 0;
+		return 0; //! incomplete
 	}
 
 	template <typename T>

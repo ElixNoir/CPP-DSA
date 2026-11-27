@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
 
 namespace DSA {
 
@@ -44,13 +45,13 @@ namespace DSA {
 
 	}
 
-	template <typename _T = void, std::unsigned_integral _INDEX = uint32_t, bool _IGNORE_FAILED_ALLOCATION = false>
+	template <typename T_ = void, std::unsigned_integral INDEX_ = uint32_t, bool IGNORE_FAILED_ALLOCATION_ = false>
 	struct AllocatorConfiguration {
 
-		using INDEX = _INDEX;
-		using T = _T;
+		using INDEX = INDEX_;
+		using T = T_;
 
-		constexpr static bool IGNORE_FAILED_ALLOCATION = _IGNORE_FAILED_ALLOCATION;
+		constexpr static bool IGNORE_FAILED_ALLOCATION = IGNORE_FAILED_ALLOCATION_;
 
 	};
 
@@ -58,18 +59,18 @@ namespace DSA {
 	class EMPTY_ALLOCATOR {
 	public:
 
-		using INDEX = typename Configuration::INDEX;
-		using T = typename Configuration::T;
+		using INDEX = Configuration::INDEX;
+		using T = Configuration::T;
 
 		constexpr static bool IGNORE_FAILED_ALLOCATION = Configuration::IGNORE_FAILED_ALLOCATION;
 
-		static T* allocate(INDEX size) noexcept {
+		constexpr static T* allocate(INDEX size) noexcept {
 			return nullptr;
 		}
 
-		static void deallocate(T* block) noexcept {}
+		constexpr static void deallocate(T* block) noexcept {}
 
-		static T* reallocate(T* block, INDEX size) noexcept {
+		constexpr static T* reallocate(T* block, INDEX size) noexcept {
 			return block;
 		}
 

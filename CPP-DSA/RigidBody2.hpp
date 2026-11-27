@@ -1,5 +1,9 @@
 #pragma once
 
+#include <concepts>
+
+#include "Vector2.hpp"
+
 /*
 local function best_axis(a_verts: {number}, b_verts: {number}): (number, number, number, number)
 	local length = #a_verts
@@ -251,7 +255,7 @@ template <typename T, std::floating_point U>
 class RigidBody {
 protected:
 
-  using Vector = Vector2<T>;
+  using Vector = DSA::Vector2<T>;
   using Self = RigidBody;
 
 #pragma region Properties
@@ -271,14 +275,14 @@ public:
 #pragma region Methods
 
   template <std::floating_point DELTA_TIME>
-  constexpr void apply_force(Vector force, DELTA_TIME deltaTime) noexcept {
+  constexpr void apply_force(const Vector force, const DELTA_TIME deltaTime) noexcept {
     velocity.x += force.x * mass_inverse * deltaTime;
     velocity.y += force.y * mass_inverse * deltaTime;
     active = false;
     //active_timer = 0;
   }
   
-  constexpr void apply_impulse(Vector impulse, Vector impulsePosition) noexcept {
+  constexpr void apply_impulse(const Vector impulse, const Vector impulsePosition) noexcept {
     angular_velocity += (impulsePosition.x - position.x) * impulse.y - (impulsePosition.y - position.y) * impulse.x;
   	velocity.x += impulse.x * mass_inverse;
   	velocity.y += impulse.y * mass_inverse;
@@ -286,7 +290,7 @@ public:
     //active_timer = 0;
   }
 
-  [[nodiscard]] constexpr static RigidBody new_circle(U radius) noexcept {
+  [[nodiscard]] constexpr static RigidBody new_circle(const U radius) noexcept {
     return Self{ 0, 0, .5, .3, 1, 1, 1, 1, {}, {}, true };
 		//Vertices = {radius},
 		//update_AABB = Module.update_Circle_AABB,
@@ -296,7 +300,7 @@ public:
 		//_Index = 0
   }
 
-  [[nodiscard]] constexpr bool collide_circle_circle(Self other) noexcept {
+  [[nodiscard]] constexpr bool collide_circle_circle(const Self other) noexcept {
     const auto combinedRadius = radius + other.radius;
     const auto distanceSquared = position.distance_squared_from(other.position);
   	if (distanceSquared >= combinedRadius * combinedRadius)
@@ -322,7 +326,7 @@ public:
   	return true;
   }
 
-  [[nodiscard]] constexpr bool collide_polygon(Self other, Manifold manifold) noexcept {
+  [[nodiscard]] constexpr bool collide_polygon(const Self other, const Manifold manifold) noexcept {
     const auto va = world_vertices();
     const auto vb = other.world_vertices();
 

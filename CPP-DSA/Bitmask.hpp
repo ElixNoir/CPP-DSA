@@ -7,10 +7,10 @@
 
 namespace DSA {
 
-	template <std::unsigned_integral _T = uintmax_t>
+	template <std::unsigned_integral T_ = uintmax_t>
 	struct Bitmask {
 
-		using T = _T;
+		using T = T_;
 
 #pragma region Properties
 

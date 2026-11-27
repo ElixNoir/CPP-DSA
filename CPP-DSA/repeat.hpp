@@ -23,9 +23,8 @@ namespace Algorithms {
 	constexpr static void repeat(T* const destination, const size_t count) noexcept
 		requires std::is_trivially_copyable_v<T>
 	{
-		auto* destination = static_cast<std::byte*>(destination);
 		for (size_t written = sizeof(T); written < count * sizeof(T); written <<= 1)
-			std::memcpy(destination + written, destination, written);
+			std::memcpy(static_cast<std::byte*>(destination) + written, destination, written);
 	}
 
 	template <typename T>

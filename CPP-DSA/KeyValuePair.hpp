@@ -17,11 +17,11 @@ namespace DSA {
 
 	}
 
-	template <typename _KEY, typename _VALUE>
+	template <typename KEY_, typename VALUE_>
 	struct KeyValuePair {
 
-		using KEY = _KEY;
-		using VALUE = _VALUE;
+		using KEY = KEY_;
+		using VALUE = VALUE_;
 
 		KEY key;
 		[[no_unique_address]] VALUE value;
@@ -31,10 +31,10 @@ namespace DSA {
 
 	};
 
-	template <typename _KEY>
-	struct KeyValuePair<_KEY, void> {
+	template <typename KEY_>
+	struct KeyValuePair<KEY_, void> {
 
-		using KEY = _KEY;
+		using KEY = KEY_;
 		using VALUE = void;
 
 		KEY key;

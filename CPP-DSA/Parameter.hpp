@@ -16,6 +16,7 @@ struct Parameter<T, true> {
     T data;
 
     Parameter() = delete;
-    constexpr Parameter(T val) noexcept : data(val) {}
+
+    explicit constexpr Parameter(T val) noexcept : data(val) {}
 
 };

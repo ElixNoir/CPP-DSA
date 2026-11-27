@@ -5,32 +5,32 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, std::unsigned_integral _T = uintmax_t>
-	class Bitset : public ContainerPolicy::template STRUCTURE<Bitmask<_T>> {
+	template <concepts::ContainerPolicy ContainerPolicy, std::unsigned_integral T_ = uintmax_t>
+	class Bitset : public ContainerPolicy::template STRUCTURE<Bitmask<T_>> {
 	public:
 
-		using Base = ContainerPolicy::template STRUCTURE<Bitmask<_T>>;
+		using Base = ContainerPolicy::template STRUCTURE<Bitmask<T_>>;
 		using typename Base::INDEX;
 		using typename Base::T;
 
 		using BitIndex = promoted_t<INDEX>;
 
-		constexpr static _T bit_count = Bitmask<T>::bit_count;
-		constexpr static _T bit_shift = Bitmask<T>::bit_shift;
+		constexpr static T bit_count = Bitmask<T>::bit_count;
+		constexpr static T bit_shift = Bitmask<T>::bit_shift;
 
 #pragma region Methods
 
 #pragma region Getters
 
-		constexpr Bitmask<T>& get_bitmask_from_bitIndex(BitIndex bitIndex) noexcept {
+		constexpr Bitmask<T>& get_bitmask_from_bitIndex(const BitIndex bitIndex) noexcept {
 			return Base::get(bitIndex >> bit_shift);
 		}
 
-		constexpr const Bitmask<T>& get_bitmask_from_bitIndex(BitIndex bitIndex) const noexcept {
+		constexpr const Bitmask<T>& get_bitmask_from_bitIndex(const BitIndex bitIndex) const noexcept {
 			return Base::get(bitIndex >> bit_shift);
 		}
 
-		constexpr Bitmask<T>::T get_bit_at(BitIndex bitIndex) const noexcept {
+		constexpr Bitmask<T>::T get_bit_at(const BitIndex bitIndex) const noexcept {
 			return get_bitmask_from_bitIndex(bitIndex).get(bitIndex & (bit_count - 1));
 		}
 
@@ -39,13 +39,13 @@ namespace DSA {
 #pragma region Find
 
 		template <Direction DIRECTION = Direction::Forward, bool ONES>
-		constexpr BitIndex find_bit(INDEX begin = 0) const noexcept {
+		constexpr BitIndex find_bit(const INDEX begin = 0) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return find_bit<DIRECTION, ONES>(begin, capacity);
 		}
 
 		template <Direction DIRECTION = Direction::Forward, bool ONES>
-		constexpr BitIndex find_bit(INDEX begin, INDEX end) const noexcept {
+		constexpr BitIndex find_bit(const INDEX begin, const INDEX end) const noexcept {
 			int bitOffset;
 			if constexpr (DIRECTION == Direction::Forward) {
 				while (begin < end) {
@@ -81,16 +81,16 @@ namespace DSA {
 		}
 
 		template <bool ONES>
-		constexpr BitIndex find_first_bit_at_or_after(BitIndex bitBegin) const noexcept {
+		constexpr BitIndex find_first_bit_at_or_after(const BitIndex bitBegin) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return find_first_bit_at_or_after<ONES>(bitBegin, capacity);
 		}
 
 		template <bool ONES>
-		constexpr BitIndex find_first_bit_at_or_after(BitIndex bitBegin, INDEX end) const noexcept {
-			const Bitmask<T>::T initialOffset = bitBegin & (bit_count - 1);
+		constexpr BitIndex find_first_bit_at_or_after(const BitIndex bitBegin, const INDEX end) const noexcept {
+			const T initialOffset = bitBegin & (bit_count - 1);
 			const INDEX begin = bitBegin >> bit_shift;
-			const Bitmask<T>::T bitmask = Base::get(begin);
+			const T bitmask = Base::get(begin);
 			int bitOffset;
 			if constexpr (ONES)
 				bitOffset = bitmask.index_of_trailing_one(initialOffset);
@@ -110,16 +110,16 @@ namespace DSA {
 		}
 
 		template <bool ONES>
-		constexpr BitIndex find_last_bit_at_or_before(BitIndex bitEnd) const noexcept {
+		constexpr BitIndex find_last_bit_at_or_before(const BitIndex bitEnd) const noexcept {
 			const INDEX capacity = Base::get_capacity();
 			return find_last_bit_at_or_before<ONES>(0, bitEnd);
 		}
 
 		template <bool ONES>
-		constexpr BitIndex find_last_bit_at_or_before(INDEX begin, BitIndex bitEnd) const noexcept {
-			const Bitmask<T>::T initialOffset = bitEnd & (bit_count - 1);
+		constexpr BitIndex find_last_bit_at_or_before(const INDEX begin, const BitIndex bitEnd) const noexcept {
+			const T initialOffset = bitEnd & (bit_count - 1);
 			const INDEX end = bitEnd >> bit_shift;
-			const Bitmask<T>::T bitmask = Base::get(end);
+			const T bitmask = Base::get(end);
 			int bitOffset;
 			if constexpr (ONES)
 				bitOffset = bitmask.index_of_leading_one(initialOffset);
@@ -135,11 +135,11 @@ namespace DSA {
 
 #pragma region Setters
 
-		constexpr void reset_bit_at(BitIndex bitIndex) noexcept {
+		constexpr void reset_bit_at(const BitIndex bitIndex) noexcept {
 			get_bitmask_from_bitIndex(bitIndex).reset(bitIndex & (bit_count - 1));
 		}
 
-		constexpr void set_bit_at(BitIndex bitIndex) noexcept {
+		constexpr void set_bit_at(const BitIndex bitIndex) noexcept {
 			get_bitmask_from_bitIndex(bitIndex).set(bitIndex & (bit_count - 1));
 		}
 
@@ -150,33 +150,31 @@ namespace DSA {
 		template <bool ONES>
 		constexpr auto begin() const noexcept {
 			const INDEX capacity = Base::get_capacity();
-			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, false);
+			return BitsetIterator<INDEX, ONES, T>(Base::get_data(), capacity, false);
 		}
 
 		template <bool ONES>
 		constexpr auto end() const noexcept {
 			const INDEX capacity = Base::get_capacity();
-			return BitsetIterator<INDEX, ONES>(Base::get_data(), capacity, true);
+			return BitsetIterator<INDEX, ONES, T>(Base::get_data(), capacity, true);
 		}
 
 		constexpr auto ones() const noexcept {
-			const INDEX capacity = Base::get_capacity();
 			struct Proxy {
 				Bitset* self;
 
-				auto begin() noexcept { return self->template begin<true>(capacity); }
-				auto end() noexcept { return self->template end<true>(capacity); }
+				auto begin() const noexcept { return self->begin<true>(); }
+				auto end() const noexcept { return self->end<true>(); }
 			};
 			return Proxy{ this };
 		}
 
 		constexpr auto zeros() const noexcept {
-			const INDEX capacity = Base::get_capacity();
 			struct Proxy {
 				Bitset* self;
 
-				auto begin() noexcept { return self->template begin<false>(capacity); }
-				auto end() noexcept { return self->template end<false>(capacity); }
+				auto begin() const noexcept { return self->begin<false>(); }
+				auto end() const noexcept { return self->end<false>(); }
 			};
 			return Proxy{ this };
 		}

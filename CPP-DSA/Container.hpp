@@ -52,11 +52,11 @@ namespace DSA {
 	template <concepts::DynamicStoragePolicy STORAGE_POLICY>
 	struct ContainerPolicy<STORAGE_POLICY> : public STORAGE_POLICY {
 
-		template <typename _T, typename D = ContainerDerivation>
-		class STRUCTURE : public STORAGE_POLICY::template STRUCTURE<_T> {
+		template <typename T_, typename D = ContainerDerivation>
+		class STRUCTURE : public STORAGE_POLICY::template STRUCTURE<T_> {
 		public:
 
-			using Base = typename STORAGE_POLICY::template STRUCTURE<_T>;
+			using Base = STORAGE_POLICY::template STRUCTURE<T_>;
 			using typename Base::ALLOCATOR;
 			using typename Base::INDEX;
 			using typename Base::T;
@@ -79,7 +79,7 @@ namespace DSA {
 #pragma region Methods
 
 			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
-			constexpr void helper_resize(INDEX newCapacity)
+			constexpr void helper_resize(const INDEX newCapacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
@@ -87,7 +87,7 @@ namespace DSA {
 			}
 
 			template <ResizeOperation RESIZE_OPERATION = ResizeOperation::UNKNOWN>
-			constexpr void resize_from_capacity(INDEX newCapacity, INDEX capacity)
+			constexpr void resize_from_capacity(const INDEX newCapacity, const INDEX capacity)
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
@@ -132,7 +132,6 @@ namespace DSA {
 				noexcept (concepts::NothrowResizableStorage<Base>)
 				requires (is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
-				const INDEX capacity = get_capacity();
 				const T* const data = Base::get_data();
 				const INDEX otherCapacity = other.get_capacity();
 				const T* const otherData = other.get_data();
@@ -143,12 +142,15 @@ namespace DSA {
 					Base::no_move_resize(otherCapacity);
 					std::memcpy(data, otherData, capacity);
 				}
+
+				return *this;
 			}
 
 			STRUCTURE& operator=(const STRUCTURE& other)
 				requires (!is_dynamic && !is_offset && std::is_trivially_copyable_v<T>)
 			{
 				std::memcpy(Base::get_data(), other.get_data(), get_capacity());
+				return *this;
 			}
 
 			STRUCTURE(const STRUCTURE& other)
@@ -191,7 +193,6 @@ namespace DSA {
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				const INDEX capacity = get_capacity();
 				grow(capacity << 1);
 			}
 
@@ -199,7 +200,6 @@ namespace DSA {
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				const INDEX capacity = get_capacity();
 				grow(Math::ceiling(capacity * ratio));
 			}
 
@@ -225,7 +225,6 @@ namespace DSA {
 				noexcept (concepts::NothrowResizableAllocator<ALLOCATOR>)
 				requires (!is_offset && std::is_trivially_copyable_v<T>)
 			{
-				const INDEX capacity = get_capacity();
 				if (newCapacity > capacity)
 					grow(newCapacity);
 			}

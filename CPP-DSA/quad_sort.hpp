@@ -1,10 +1,6 @@
 #pragma once
 
-#include "Aggregation.hpp"
 #include "compare.hpp"
-#include "insertion_sort.hpp"
-#include "Sorting.hpp"
-#include "Storage.hpp"
 #include "swap.hpp"
 
 namespace Algorithms {

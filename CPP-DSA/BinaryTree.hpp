@@ -28,10 +28,10 @@ namespace DSA {
 
 	}
 
-	template <std::unsigned_integral _NODE_REFERENCE_TYPE = uint32_t>
+	template <std::unsigned_integral NODE_REFERENCE_TYPE_ = uint32_t>
 	struct BinaryTreeNode {
 
-		using NODE_REFERENCE_TYPE = _NODE_REFERENCE_TYPE;
+		using NODE_REFERENCE_TYPE = NODE_REFERENCE_TYPE_;
 
 #pragma region Properties
 
@@ -42,10 +42,10 @@ namespace DSA {
 
 	};
 
-	template <typename _T, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
+	template <typename T_, std::unsigned_integral NODE_REFERENCE_TYPE = uint32_t>
 	struct BinaryTreeValueNode : public BinaryTreeNode<NODE_REFERENCE_TYPE> {
 
-		using T = _T;
+		using T = T_;
 
 #pragma region Properties
 
@@ -157,7 +157,7 @@ namespace DSA {
 			requires is_dynamic
 		{
 			if constexpr (std::is_trivially_copyable_v<T> && IS_DENSE) {
-				Base::resize_from_size<RESIZE_OPERATION>(newCapacity, get_allocated_top());
+				Base::template resize_from_size<RESIZE_OPERATION>(newCapacity, get_allocated_top());
 				return;
 			}
 
@@ -168,7 +168,7 @@ namespace DSA {
 			if constexpr (std::is_nothrow_move_constructible_v<T>) {
 				INDEX count = targetSize;
 				if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK) {
-					pre_order([](INDEX index) -> bool {
+					pre_order([count, newData](const INDEX index) -> bool {
 						if (count == 0)
 							return false;
 						reconstruct_at(newData + index, std::move(Base::get(index)));
@@ -177,7 +177,7 @@ namespace DSA {
 					}, root);
 				}
 				else {
-					pre_order([](INDEX index) {
+					pre_order([newData](INDEX index) {
 						reconstruct_at(newData + index, std::move(Base::get(index)));
 					}, root);
 				}
@@ -186,7 +186,7 @@ namespace DSA {
 				INDEX count = targetSize;
 				if constexpr (RESIZE_OPERATION == ResizeOperation::SHRINK) {
 					try {
-						pre_order([](INDEX index) -> bool {
+						pre_order([count, newData](INDEX index) -> bool {
 							if (count == 0)
 								return false;
 							move_construct_at(newData + index, std::move(Base::get(index)));
@@ -195,7 +195,7 @@ namespace DSA {
 						}, root);
 					}
 					catch (...) {
-						post_order([](INDEX index) -> bool {
+						post_order([count, newData, targetSize](INDEX index) -> bool {
 							if (count == targetSize)
 								return false;
 							destroy_at(newData + index);
@@ -209,12 +209,12 @@ namespace DSA {
 				}
 				else {
 					try {
-						pre_order([](INDEX index) {
+						pre_order([newData](INDEX index) {
 							move_construct_at(newData + index, std::move(Base::get(index)));
 						}, root);
 					}
 					catch (...) {
-						post_order([](INDEX index) {
+						post_order([newData](INDEX index) {
 							destroy_at(newData + index);
 						}, root);
 
@@ -224,7 +224,7 @@ namespace DSA {
 				}
 
 				if constexpr (!std::is_trivially_destructible_v<T>) {
-					post_order([](INDEX index) {
+					post_order([oldData](INDEX index) {
 						destroy_at(oldData + index);
 					}, root);
 				}

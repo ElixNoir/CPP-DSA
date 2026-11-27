@@ -11,15 +11,15 @@ namespace DSA {
 	class StandardAllocator {
 	public:
 
-		using INDEX = typename Configuration::INDEX;
-		using T = typename Configuration::T;
+		using INDEX = Configuration::INDEX;
+		using T = Configuration::T;
 
 		constexpr static bool IGNORE_FAILED_ALLOCATION = Configuration::IGNORE_FAILED_ALLOCATION;
 
-		[[nodiscard]] static T* allocate(INDEX size)
+		[[nodiscard]] static T* allocate(const INDEX size)
 			noexcept (IGNORE_FAILED_ALLOCATION)
 		{
-			T* block = reinterpret_cast<T*>(std::malloc(size * sizeof(T)));
+			T* block = static_cast<T*>(std::malloc(size * sizeof(T)));
 			if constexpr (!IGNORE_FAILED_ALLOCATION)
 				if (block == nullptr)
 					throw std::bad_alloc();
@@ -30,14 +30,14 @@ namespace DSA {
 			std::free(reinterpret_cast<void*>(block));
 		}
 
-		[[nodiscard]] static T* reallocate(T* block, INDEX size)
+		[[nodiscard]] static T* reallocate(T* const block, const INDEX size)
 			noexcept (IGNORE_FAILED_ALLOCATION)
 		{
-			block = reinterpret_cast<T*>(std::realloc(reinterpret_cast<void*>(block), size * sizeof(T)));
+			const T* const newBlock = static_cast<T*>(std::realloc(reinterpret_cast<void*>(block), size * sizeof(T)));
 			if constexpr (!IGNORE_FAILED_ALLOCATION)
 				if (block == nullptr)
 					throw std::bad_alloc();
-			return block;
+			return newBlock;
 		}
 
 	};

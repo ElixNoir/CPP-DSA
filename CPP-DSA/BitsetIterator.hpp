@@ -7,11 +7,11 @@
 
 namespace DSA {
 
-	template <std::unsigned_integral INDEX, bool ONES>
+	template <std::unsigned_integral INDEX, bool ONES, std::unsigned_integral MASK_WORD = uintmax_t>
 	class BitsetIterator {
 	public:
 
-		using MASK = Bitmask<uintmax_t>;
+		using MASK = Bitmask<MASK_WORD>;
 
 #pragma region C++ Iterator Traits
 

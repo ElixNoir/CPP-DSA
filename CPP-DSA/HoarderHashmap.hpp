@@ -5,12 +5,12 @@
 
 namespace DSA {
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T>
-		requires std::is_nothrow_destructible_v<T>
-	class Hashmap : public TrackedContainer<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_>
+		requires std::is_nothrow_destructible_v<T_>
+	class Hashmap : public TrackedContainer<ContainerPolicy, T_> {
 	public:
 
-		using Base = TrackedContainer<ContainerPolicy, T>;
+		using Base = TrackedContainer<ContainerPolicy, T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -68,7 +68,7 @@ namespace DSA {
 								break;
 							T& key = oldData[index];
 							destroy_at(newData + Algorithms::hash(key) % newCapacity);
-							count++;
+							++count;
 						}
 					}
 					ALLOCATOR::deallocate(newData);
@@ -115,12 +115,12 @@ namespace DSA {
 			const INDEX begin = Algorithms::hash(key) % capacity;
 
 			INDEX index = begin;
-			for (; index < capacity; index++)
+			for (; index < capacity; ++index)
 				if (key == data[index])
 					return index;
 
 			index = 0;
-			for (; index < begin; index++)
+			for (; index < begin; ++index)
 				if (key == data[index])
 					return index;
 

@@ -4,7 +4,6 @@
 #include "swap.hpp"
 
 #include <bit>
-
 #include <iostream>
 
 namespace DSA {
@@ -17,12 +16,12 @@ namespace DSA {
 
 	};
 
-	template <concepts::ContainerPolicy ContainerPolicy, typename T, HeapType HEAP_TYPE = HeapType::MAXIMUM>
-		requires std::is_nothrow_destructible_v<T>
-	class Heap : public Collection<ContainerPolicy, T> {
+	template <concepts::ContainerPolicy ContainerPolicy, typename T_, HeapType HEAP_TYPE = HeapType::MAXIMUM>
+		requires std::is_nothrow_destructible_v<T_>
+	class Heap : public Collection<ContainerPolicy, T_> {
 	public:
 
-		using Base = Collection<ContainerPolicy, T>;
+		using Base = Collection<ContainerPolicy, T_>;
 		using typename Base::ALLOCATOR;
 		using typename Base::INDEX;
 		using typename Base::T;
@@ -33,16 +32,16 @@ namespace DSA {
 
 #pragma region Methods
 
-		constexpr bool is_min_level(INDEX index) const noexcept {
+		constexpr bool is_min_level(const INDEX index) const noexcept {
 			return ((std::bit_width(INDEX(index + INDEX(1))) - 1) & 1) == 0;
 		}
 
-		constexpr INDEX parent_of(INDEX index) const noexcept { return (index - 1) >> 1; }
-		constexpr INDEX left_of(INDEX index) const noexcept { return (index << 1) + 1; }
-		constexpr INDEX right_of(INDEX index) const noexcept { return (index << 1) + 2; }
+		constexpr INDEX parent_of(const INDEX index) const noexcept { return (index - 1) >> 1; }
+		constexpr INDEX left_of(const INDEX index) const noexcept { return (index << 1) + 1; }
+		constexpr INDEX right_of(const INDEX index) const noexcept { return (index << 1) + 2; }
 
 		template <bool MAXIMUM>
-		constexpr INDEX extreme_descendant(INDEX index) const noexcept {
+		constexpr INDEX extreme_descendant(const INDEX index) const noexcept {
 			INDEX extreme = index;
 
 			const INDEX size = Base::get_size();
@@ -118,7 +117,7 @@ namespace DSA {
 			bubble_up(index);
 		}
 
-		constexpr void remove(INDEX index)
+		constexpr void remove(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			const INDEX lastIndex = Base::get_size() - 1;
@@ -161,7 +160,7 @@ namespace DSA {
 
 #pragma region Bubble Up & Trickle Down
 
-		constexpr void bubble_up(INDEX index)
+		constexpr void bubble_up(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
@@ -189,7 +188,7 @@ namespace DSA {
 				bubble_up_min(index);
 		}
 
-		constexpr void bubble_up_max(INDEX index)
+		constexpr void bubble_up_max(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MAXIMUM)
 		{
@@ -215,7 +214,7 @@ namespace DSA {
 			}
 		}
 
-		constexpr void bubble_up_min(INDEX index)
+		constexpr void bubble_up_min(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MINIMUM)
 		{
@@ -241,7 +240,7 @@ namespace DSA {
 			}
 		}
 
-		constexpr void trickle_down(INDEX index)
+		constexpr void trickle_down(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 		{
 			if constexpr (HEAP_TYPE == HeapType::BIDIRECTIONAL) {
@@ -256,7 +255,7 @@ namespace DSA {
 				trickle_down_min(index);
 		}
 
-		constexpr void trickle_down_max(INDEX index)
+		constexpr void trickle_down_max(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MAXIMUM)
 		{
@@ -302,7 +301,7 @@ namespace DSA {
 			}
 		}
 
-		constexpr void trickle_down_min(INDEX index)
+		constexpr void trickle_down_min(const INDEX index)
 			noexcept (std::is_nothrow_swappable_v<T>)
 			requires (HEAP_TYPE == HeapType::BIDIRECTIONAL || HEAP_TYPE == HeapType::MINIMUM)
 		{
@@ -374,7 +373,7 @@ namespace DSA {
 			return root;
 		}
 
-		[[nodiscard]] constexpr bool can_insert(INDEX count = 1) const noexcept {
+		[[nodiscard]] constexpr bool can_insert(const INDEX count = 1) const noexcept {
 			return Base::can_add(count);
 		}
 

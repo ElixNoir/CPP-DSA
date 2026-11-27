@@ -3,7 +3,6 @@
 #include "Traits.hpp"
 
 #include <array>
-#include <bit>
 #include <tuple>
 #include <utility>
 
@@ -83,8 +82,8 @@ namespace DSA {
 		template <size_t INDEX>
 			requires (INDEX < field_count)
 		constexpr void set(smallest_uint_t<width_of<INDEX>()> value) noexcept {
-			constexpr REPRESENTATION shifted_mask = static_cast<REPRESENTATION>(mask_of<INDEX>() << offset_of<INDEX>());
-			const REPRESENTATION clean_bits = static_cast<REPRESENTATION>((static_cast<REPRESENTATION>(value) & mask_of<INDEX>()) << offset_of<INDEX>());
+			constexpr REPRESENTATION shifted_mask = mask_of<INDEX>() << offset_of<INDEX>();
+			const REPRESENTATION clean_bits = (static_cast<REPRESENTATION>(value) & mask_of<INDEX>()) << offset_of<INDEX>();
 			raw = static_cast<REPRESENTATION>((raw & ~shifted_mask) | clean_bits);
 		}
 
