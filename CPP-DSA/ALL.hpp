@@ -1,26 +1,27 @@
 #pragma once
 
-#include "Addable.hpp"
-#include "Aggregation.hpp"
-#include "Allocator.hpp"
-#include "Arithmetic.hpp"
-#include "AVLTree.hpp"
+/*
+#include "Structures/Addable.hpp"
+#include "Algorithms/Aggregation.hpp"
+#include "Structures/Allocator.hpp"
+#include "Algorithms/Arithmetic.hpp"
+#include "Structures/AVLTree.hpp"
 
 #include "BinarySearchTree.hpp"
 #include "BinaryTree.hpp"
-#include "Bitfield.hpp"
+#include "Structures/Bitfield.hpp"
 #include "Bitmask.hpp"
-#include "Bitset.hpp"
-#include "BloomFilter.hpp"
+#include "Structures/Bitset.hpp"
+#include "Structures/BloomFilter.hpp"
 #include "Bounds2.hpp"
-#include "Bounds3.hpp"
+#include "Structures/Bounds3.hpp"
 #include "BuddyArena.hpp"
-#include "BumpArena.hpp"
+#include "Structures/BumpArena.hpp"
 
-#include "Comparable.hpp"
-#include "Container.hpp"
+#include "Structures/Comparable.hpp"
+#include "Structures/Container.hpp"
 
-#include "Deque.hpp"
+#include "Structures/Deque.hpp"
 //#include "DFA.hpp"
 #include "DoublyLinkedList.hpp"
 #include "DoublyLinkedListIterator.hpp"
@@ -29,33 +30,34 @@
 #include "FenwickTree.hpp"
 
 #include "Hashable.hpp"
-#include "Heap.hpp"
-#include "HierarchicalBitset2.hpp"
+#include "Structures/Heap.hpp"
+#include "Structures/HierarchicalBitset2.hpp"
 #include "HoarderHashmap.hpp" // needs SoA variant with pool for values
 
 #include "Iterator.hpp"
 
-#include "LinkedList.hpp"
+#include "Structures/LinkedList.hpp"
 #include "LinkedListIterator.hpp"
 #include "LinkedListNode.hpp"
 
-#include "Multipliable.hpp"
+#include "Structures/Multipliable.hpp"
 #include "PatriciaTree.hpp" //! incomplete
-#include "PointerHashmap.hpp"
+#include "Structures/PointerHashmap.hpp"
 
 //#include "RedBlackTree.hpp"
 //#include "RTree.hpp"
 
-#include "SegmentTree.hpp"
-#include "SparseDeque.hpp"
+#include "Structures/SegmentTree.hpp"
+#include "Structures/SparseDeque.hpp"
 //#include "SplayTree.hpp"
 #include "Stack.hpp"
-#include "StackIterator.hpp"
-#include "Storage.hpp"
-#include "Swappable.hpp"
+#include "Structures/StackIterator.hpp"
+#include "Structures/Storage.hpp"
+#include "Structures/Swappable.hpp"
 #include "SWAR.hpp"
 
-#include "TrackedContainer.hpp"
+#include "Structures/TrackedContainer.hpp"
 
-#include "Vector2.hpp"
+#include "Structures/Vector2.hpp"
 #include "Vector3.hpp"
+*/

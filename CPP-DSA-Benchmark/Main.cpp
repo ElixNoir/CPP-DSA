@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "Stack.hpp"
+#include "../CPP-DSA/Structures/Stack.hpp"
 #include "Types.hpp"
 
 using namespace DSA;
